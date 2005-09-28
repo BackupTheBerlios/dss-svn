@@ -12,8 +12,6 @@ install:
 	cd confdir && tar cvfz ../deconfdir.tar.gz . && cd ../
 	
 	install -o root -g root -m 0644 deconfdir.tar.gz $(DSDIR)/
-	install -o root -g root -m 0644 DSS-scripts.tar.gz $(DSDIR)/
-	install -o root -g root -m 0644 DSS-etcskel.tar.gz $(DSDIR)/
 	install -o root -g root -m 0644 scripts/* $(LIBDIR)/scripts/
 	install -o root -g root -m 0644 functions $(LIBDIR)/
 	install -o root -g root -m 0644 default $(DSDIR)/
