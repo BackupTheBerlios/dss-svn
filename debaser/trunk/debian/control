@@ -1,7 +1,7 @@
 Source: debaser
 Section: utils
 Priority: optional
-Maintainer: Daniele Favara <sf.debaser@gmail.com>
+Maintainer: Daniele Favara <danjele@gmail.com>
 Build-Depends: debhelper (>= 4.0.0)
 Standards-Version: 3.6.1
 

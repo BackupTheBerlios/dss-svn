@@ -22,7 +22,7 @@ install:
 	install -o root -g root -m 0755 dpkg-genstatus $(DESTDIR)/usr/sbin/
 	install -o root -g root -m 0755 dpkg-rebuild $(DESTDIR)/usr/sbin/
 	install -o root -g root -m 0755 make-mod $(DESTDIR)/usr/sbin/
-	install -o root -g root -m 0755 make-iso $(DESTDIR)/usr/bin/
+	install -o root -g root -m 0755 make-iso $(DESTDIR)/usr/sbin/
 clean:
 	rm -r confdir deconfdir.tar.gz 
 	
