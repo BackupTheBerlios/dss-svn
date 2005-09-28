@@ -1,0 +1,13 @@
+debaser (0.01-2) unstable; urgency=low
+
+  * added dpkg-genstatus and dpkg-rebuild
+  * better integrated --mmaker option
+
+ -- Daniele Favara <sf.debaser@gmail.com>  Fri, 12 Aug 2005 19:03:50 +0200
+
+debaser (0.01-1) unstable; urgency=low
+
+  * Initial release 
+
+ -- Daniele Favara <sf.debaser@gmail.com>  Mon, 18 Jul 2005 09:55:42 +0200
+

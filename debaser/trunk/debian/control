@@ -1,0 +1,16 @@
+Source: debaser
+Section: utils
+Priority: optional
+Maintainer: Daniele Favara <sf.debaser@gmail.com>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.1
+
+Package: debaser
+Architecture: any
+Depends: debootstrap (>= 0.3.0.0), dpkg-dev, minirooter
+Description: Build a Debian Based system from Scratch
+ debaser can generate a basedebs.tar to use with debootstrap. It reads the packages
+ listed in the conf. files, solve dependencies and download all the debs from a mirror.
+ debaser can also be used to generate your own base module for Debased (Live CD | Live HD).
+ <http://debased.sourceforge.net>
+

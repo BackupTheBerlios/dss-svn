@@ -1,0 +1,890 @@
+#!/bin/bash
+# $Id: functions,v 1.28 2005/09/19 09:46:40 sf-debaser Exp $
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+usage()
+{
+  echo ""
+  echo "DEBASER : Generate a Debian Based  system."
+  echo "--"
+  echo "<http://debased.sourceforge.net>"
+  echo
+  cat <<EOF
+FIRST STAGE:
+    --control|-c  [yes|no] (default yes)       
+          generate the control files and  wget.lst	
+    --getdebs|-g  [yes|no] (default yes)          
+          generate the basedebs.tar
+
+SECOND STAGE:
+    --strap|-s  [yes|no] (default yes)          
+          run debootstrap unpacking the tarball
+    --reck-excl|-r [yes|no] (default no)        
+          in case something went wrong during debootstrap, add new 
+          packges in exclude dir. and don't select them during the 
+          installation process	
+    --post-strap|-p  [yes|no] (default no)     
+          configure the new installed system adding the default user 
+          to the necessary groups
+   
+    --all|-a             
+          first and second stage default options
+
+SPECIAL STAGES:
+    --debug|-d  file [ --dir-work path ]
+          use <file> as pkges list and generate control files
+          * file contains a list of pkges names
+    --mmaker|-m [unionfs]
+          generate a morphix basemod using script debase-$REL.basemod.
+          If unionfs is active debaser will split the packages from basemod.lst,
+          unionfs module and unionfs-utils are needed.
+          -hwconf=directory that contains the installed packages from basemod.list
+          -dirwork=directory that contains the standard packages
+          -UNIONFS=the unified fs (hwconf over dirwork)
+    --print-debs
+          print default base and required packages and exit. Useful to know
+          the packages you don't need to list.
+
+EXAMPLE:
+	# echo foo > /root/.debaser/exclude/foo
+	# debaser --strap --reck-excl=yes 
+  
+EOF
+} 
+
+mycat (){
+egrep -v '^(#.*)?$' $1
+}
+
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# ls from control/exclude -->  check_cnflct--> erase from toinclude  		
+#						
+#	
+#						
+#*******************************************************#
+
+check_cnflct() {
+a="$(ls -1 $DIR_CONTROL/$DIR_EX/ )"
+
+for file in $a; do
+
+	read pkge < $DIR_CONTROL/$DIR_EX/$file
+	if [ $( grep -wx "$file" /$DIR_WORK/toinclude ) ];then
+		if [ "$file" != "exim4-config" ];then
+			sed -i -e  "/^$file$/d"  /$DIR_WORK/toinclude
+		fi
+	fi
+
+done
+}
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# dependecies  -->  gen_it  --> control/<dir>/pkge  		
+# 
+# error if dependecies in exclude
+# TODO: remove files from exclude?
+#						
+#						
+#*******************************************************#
+
+gen_it() {
+
+#DIR_CONTROL=`pwd`
+#DIR_EX=excl
+#b=' libc6 (>= 2.3.2.ds1-4), initscripts, sysv-rc (>= 2.85-2) | file-rc (>> 0.7.0)'
+#write_out=sysvinit
+
+write_out=$2
+b=$1
+ifcflct=$3
+bclean=$(echo $b | sed 's/[()]//g')
+num=$(echo $bclean  | awk 'BEGIN { FS = "[,]+"  }{ print NF  }' )
+for ((a=1; a <= num ; a++))  # Double parentheses, and "LIMIT" with no "$".
+do
+	pkgeline=$(echo $bclean  | awk 'BEGIN { FS = "[,]+" ; try='$a' } {print $(try) }')
+	ornum=$(echo $pkgeline  | awk 'BEGIN { FS = "[|]+"  }{ print NF  }' )
+	if [ "$ornum" -gt 1 ];then
+	# if no pkge as been choosed use the first
+	pkgedefault=$(echo $pkgeline  | awk 'BEGIN { FS = "[|]+" } {print $1 }')
+		for ((ora=1; ora <= ornum ; ora++)) 
+		do
+			orpkgeline=$(echo $pkgeline  | awk 'BEGIN { FS = "[|]+" ; try='$ora' } {print $(try) }')
+			arrpkge[$ora]=$orpkgeline
+			# use the pkge choosed
+			if [  -f "$DIR_CONTROL/$(echo $orpkgeline  | awk '{print $1 }').control" ];then
+				pkgedefault=$orpkgeline 		
+			fi
+		done
+		# check if the first pkge is in exclude 
+		if [ ! -f "$DIR_CONTROL/$DIR_EX/$(echo $pkgedefault  | awk '{print $1 }')"  ];then
+
+			echo $pkgedefault >> $write_out
+		
+		else
+			# find one not in exclude
+			pkgedefault=
+			for ((reora=1; reora <= ornum ; reora++)) 
+			do
+				[ ! -f "$DIR_CONTROL/$DIR_EX/$(echo ${arrpkge[$reora]} | awk '{print $1}')"  ] && [ -z "$pkgedefault" ] && pkgedefault=${arrpkge[$reora]}
+
+			done
+			if [ -z  "$pkgedefault" ];then
+				if [ "$ifcflct" != "conflict" ];then
+				echo
+                #------ pritnt critical error
+				echo ----------------------
+				echo "remove one of these from exclude"
+				echo 
+				for ((p=1; p <= ornum ; p++)) 
+				do
+					echo ${arrpkge[$p]}
+				done
+				echo 
+				echo -----------------------
+				exit 0
+				fi
+			else
+			  echo $pkgedefault >> $write_out
+			fi
+		fi
+	else
+	if [ "$ifcflct" != "conflict" ];then
+			if [ ! -f "$DIR_CONTROL/$DIR_EX/$(echo $pkgeline  | awk '{print $1 }')"  ];then
+				echo $pkgeline >> $write_out
+			else
+				echo
+                #------ pritnt critical error
+				echo ----------------------
+				echo "remove this from exclude"
+				echo 
+			    echo "$pkgeline"
+				echo 
+				echo -----------------------
+				exit 0
+			fi
+		else
+			if [ ! -f "$write_out"  ];then
+				echo $pkgeline >> $write_out
+			fi
+		fi
+	fi
+#	echo $pkgeline "$ornum"
+done   
+
+}
+
+
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# pkge,ver -->  check_dep --> out($8 $9)	  		
+#						
+#	1) check dep		
+#	2) if not present add dep pkge to control file	
+#	3) if 2) write it to wget list						
+#	4) add it in pkges list to rck
+#	-----------------------------------
+#	[*]$DIR_CONTROL
+#	[*]$DIR_ORPHAN
+#						
+#*******************************************************#
+
+# how to call it from within another script
+
+#check_dep "$line" "$PKGES" "$MIRROR" "$FILES" "$PKGEDET"  "$MATCHED" "$RECK$C" 
+
+check_dep() {
+
+pkge_ver_in=$1 		# var:  pkge name  $pkge							
+PKGES=$2 			# src1: Packages file from apt mirror ex: Packages
+MIRROR=$3 			# src1: apt mirror ex: http://ftp2.it.debian.org/debian
+FILES=$4			# log/src1: list of files to wget 
+KNXDET=$5 			# src0: the bin file modified from pkgedetails (see debootstrap)	
+MATCHED=$6			# log:  file with infos about pkge found and ver matched
+RCK=$7           	# src1: list ok pkge added to solve dep and that still need a check
+					#	for their own dep
+	
+	
+b='8'               		
+				#      ex: 
+				#-----------
+				#	./knxdetails vim ftp packages.list |  awk '{print $8 $9 $10}'
+				#	libc6(>=2.3.2.ds1-21),
+				#	string='1 2 3 4 5 6 7  a1 (>= a3), b1 (>= b3), c1 (>= c3), d1 (>= d3)'
+				#----------
+	
+echo
+echo --------------------------
+echo Checking $pkge_ver_in ....
+
+
+	#  pkge_ver_in = pkge ver ( ex : sysvinit 2.87.knx )
+
+pkge_in="$( echo $pkge_ver_in | awk 'BEGIN { one=1 } { print $(one) }')" 
+	# = pkge ( ex : sysvinit) 
+ver_in="$( echo $pkge_ver_in | awk 'BEGIN { two=2 } { print $(two) }')" 
+	# = ver  ( ex : 2.87.knx )
+if [ ! -e  $DIR_CONTROL/$DIR_EX/$pkge_in ];then
+
+	
+	if [ ! -e $DIR_CONTROL/$pkge_in.control ]; then
+		#gen_PKGE_file "$pkge_in" "$PKGES"
+		echo "(EE) critical error check $pkge_ver_in (control file must exist)"
+		exit 0
+	fi
+	pkgedet=$( $PKGEDET $MIRROR  $DIR_CONTROL/$pkge_in.control )
+			# add dependencies infos about the pkge input
+	echo 
+	#-------------------------------------------------------CONFLICTS -------------------------------------------------------------------------------------------------------------------
+
+	echo Conflicts:
+	cnflct="$( grep -w "Conflicts:" "$DIR_CONTROL/$pkge_in.control" | awk 'BEGIN { FS= "[:]" }{ print $2  }'  )"
+	cnflct=${cnflct/Conflicts:}
+
+	
+	if [ "$cnflct" != "" ];then
+
+		if [ ! -e  "$DIR_CONTROL/$DIR_CNFLCT/$pkge_in" ];then
+		
+			gen_it "$cnflct" "$DIR_CONTROL/$DIR_CNFLCT/$pkge_in" "conflict"
+		
+			while read  line_in ; do
+				echo '          ' $line_in
+				arr=($line_in)
+				if [ "${arr[1]}" = "" ];then
+					if [ ! -e "$DIR_CONTROL/$DIR_EX/${arr[0]}" ];then
+						echo "$pkge_in" > $DIR_CONTROL/$DIR_EX/${arr[0]}
+					fi
+				fi
+				
+			done < "$DIR_CONTROL/$DIR_CNFLCT/$pkge_in"
+		fi
+
+	fi
+	
+	
+	#-------------------------------------------------------PROVIDES-------------------------------------------------------------------------------------------------------------------
+	echo Provides: 
+	
+	p=1
+	prvds="$( grep -w "Provides:" "$DIR_CONTROL/$pkge_in.control" | awk 'BEGIN { FS= "[:]" }{ print $2  }'  )"
+	
+	for ind in $prvds
+	do {
+			
+			pkge_prvd="$ind"
+			if [ "$pkge_prvd" = "${pkge_prvd/,}" ];then
+				COMMA=' '
+				let p+=1
+			else		
+				pkge_prvd=${pkge_prvd/,}
+				COMMA=,
+				let p+=1
+			fi
+			
+		if [ "$pkge_prvd" != "" ];then
+			if [ ! -e "$DIR_CONTROL/$pkge_prvd.control" ];then
+			echo > "$DIR_CONTROL/$pkge_prvd.control"
+			echo privided by $pkge_in >> "$DIR_CONTROL/$pkge_prvd.control" 
+			echo >> "$DIR_CONTROL/$pkge_prvd.control"
+			echo '          ' $pkge_prvd [ok]
+			else
+			echo '          ' $pkge_prvd already added			
+			fi
+		fi
+			
+		
+	}
+	done
+	
+#-------------------------------------DEPENDENCIES---------------------------------------------------
+	pkge_deps=$( grep -wn "Depends:" $DIR_CONTROL/$pkge_in.control )
+	tmp1=$( echo "$pkge_deps" | awk '{print $1}')				# line_num:Depends (Line_num:Pre-Depends)
+	
+	for ln in $tmp1; do
+	
+		tmp=$( echo "$pkge_deps" | grep -w "$ln" )
+		depends=${tmp/$ln}							# pkge_dep1 (>= ver_dep1), pkge_dep2a | pkge_dep2b (>= ver_dep2b), pkge_dep3, pkge_dep4
+		ln=$( echo $ln | awk 'BEGIN{ FS = "[:]" }{ print $2 }' )                # can be Depends or (Depends,Pre-Depends)
+	
+		if [ "$ln" = "Depends" ];then
+		
+			echo Depends:
+			DIR_DP=depend
+	     
+		elif [ "$ln" = "Pre-Depends" ];then
+	
+			echo Predepends:
+			DIR_DP=predepend
+	
+		fi
+	
+		
+		if [ "$depends" != "" ];then
+		
+			if [ ! -e  "$DIR_CONTROL/$DIR_DP/$pkge_in" ];then
+				gen_it "$depends" "$DIR_CONTROL/$DIR_DP/$pkge_in"
+				
+			fi
+		
+		fi
+	
+		if [ -e  "$DIR_CONTROL/$DIR_DP/$pkge_in" ];then
+		
+		while read  line_in ; do
+			arr=($line_in)
+			pkge_dep=${arr[0]}
+			pkge_op=${arr[1]}
+			pkge_ver=${arr[2]}
+				#now that we have pkge_dep and ver_dep .....
+			if [ ! -e "$DIR_CONTROL/$pkge_dep.control" ]; then
+				#NB!! <------------- here it's possible to add dependencies version check
+				gen_PKGE_file "$pkge_dep" "$PKGES"
+					
+				if [ ! -e "$DIR_CONTROL/$pkge_dep.control" ]; then
+					# if it still doesn't exist 
+					echo needed for $pkge_in >  $DIR_CONTROL/$DIR_ORPHAN/$pkge_dep
+					echo -n '           '
+					echo "$pkge_dep" 'not found ( maybe provided by one other )'
+						# check if it's provided by some other pkge
+					
+				elif [  -e "$DIR_CONTROL/$pkge_dep.control" ]; then
+					# if it exists now
+					depdet="$( $PKGEDET  $MIRROR  "$DIR_CONTROL/$pkge_dep.control" )"
+					arr2=($depdet)
+					pkge_xst=${arr2[0]}
+					ver_xst=${arr2[1]}  
+					file_xst=${arr2[4]}  
+					if [ ! -e  $DIR_CONTROL/$DIR_EX/$pkge_xst ];then
+						echo "$pkge_dep $ver_dep" necessary for "$pkge_in"  [ok] >>$MATCHED
+							# write in log file matched
+						echo "$pkge_xst $ver_xst" >> $RCK
+						TOINCLUDE=$pkge_xst,$TOINCLUDE
+						echo $MIRROR$file_xst >> $FILES
+							# write in wget list file
+						echo -n '           '
+						echo "$pkge_xst" "$ver_xst"   [ok]	
+						echo $pkge_xst  >> toinclude	
+							#write pkge to debootstrap's list
+					fi
+				fi
+			elif [  -e "$DIR_CONTROL/$pkge_dep.control" ]; then
+				
+				depdet="$( $PKGEDET  $MIRROR  "$DIR_CONTROL/$pkge_dep.control" )"
+					# has been already added to solve dep
+				arr2=($depdet)
+				pkge_xst=${arr2[0]}
+				ver_xst=${arr2[1]}
+				echo -n '           '
+				echo "$pkge_dep $ver_xst" already added 
+			else
+				echo "(EE)critical error not handled: problems with $pkge_in dependencies"
+				exit 0
+			fi
+		done < $DIR_CONTROL/$DIR_DP/$pkge_in
+		fi
+	done
+
+else 
+	echo -n '           '
+	echo in exluded pkges
+fi
+
+}
+
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# RECK -->  recheck_dep --> RECK.$	  		
+#						
+#	1) recheck dep while RECK file is not empty
+#	2) vars=to previouse chek_pkge (line_in not needed)
+#	-----------------------------------
+#	[*]$DIR_CONTROL
+#	[*]$DIR_ORPHAN
+#						
+#*******************************************************#
+
+recheck_dep(){
+
+PKGES=$1
+MIRROR=$2
+FILES=$3
+KNXDET=$4
+MATCHED=$5
+RECK=$6
+C=$7
+
+i_1="$( cat $RECK  )"
+
+echo --------------------------------------
+cp $RECK $RECK$C
+while [ "$i_1" != ""   ]
+do {
+	
+	let C+=1;
+	echo
+	echo Checking dependencies : loop $C
+	echo ------------------------------------
+	while read line 
+	do {
+		check_dep "$line" "$PKGES" "$MIRROR" "$FILES" "$PKGEDET"  "$MATCHED" "$RECK$C" 
+	} 
+	done< $RECK
+	if [ -e "$RECK$C" ];then
+	i_1="$( cat $RECK$C  )"
+	rm $RECK
+	
+	cp $RECK$C $RECK
+	else
+		echo ------------------------------------
+		#let C-=1
+		echo 'found all dependencies at loop' "$C"
+		i_1=
+		rm $RECK
+	fi
+	
+	}
+done 
+echo ---------------------------------
+}
+
+#*******************************************************#
+#						
+#			DESCRIPTION:		
+#						
+# wget.lst->create_basedir->basedebs.tar			
+#												
+#*******************************************************#
+
+create_basedir () {
+	FILES=$1
+	DIR_WORK=$2
+	MIRROR=$3
+	LNG_NAME=$4
+
+
+	cd $DIR_WORK/var/cache/apt/archives
+	wget  -c  -i $FILES
+
+	cd $DIR_WORK/var/cache/apt
+    [ ! -x "/usr/bin/dpkg-scanpackages" ] && echo "You should apt-get install dpkg-dev" && exit 0
+	[ -x "/usr/bin/dpkg-scanpackages" ] && dpkg-scanpackages archives/ /dev/null > Packages
+	echo 
+	echo Generating $LNG_NAME
+	echo 
+	cp Packages $DIR_WORK/var/lib/apt/lists/$LNG_NAME
+	cd $DIR_WORK && chown -R root.root ./ 
+	tar cvf $PATH_NOW/basedebs.tar * && cd $PATH_NOW 
+}
+
+#*******************************************************#
+#						
+#		DESCRIPTION:			
+#						
+# pkge,PKGES --> gen_PKGE_file  --> DIR_CONTROL/pkge.control  		
+#						
+#	1) generate a file control (same as Packages but just one pkge) 
+#	-----------------------------------------------
+#	[*] DIR_CONTROL (from outside)
+#						
+#*******************************************************#:
+
+gen_PKGE_file(){
+
+	pkge=$1
+	PKGES=$2
+	trick=0	
+	max_line=$( wc -l $PKGES | awk '{print $1}')
+	pkge_line=$( grep -wxn "Package: $pkge" $PKGES | awk 'BEGIN { FS = "[:]" }{ print $1 }'  )
+	i=2
+if [ "$pkge_line" != "" ];then
+	for a in $pkge_line
+	do
+	        
+		to=$(echo $pkge_line | awk 'BEGIN { try='$i' } {print $(try) }')
+		
+		next_pkge=$(grep  -wn "Package:" $PKGES | grep -A 1 -w "$a" | awk 'BEGIN { FS = "[:]" }{ print $1 }')
+		
+		to=$( echo $next_pkge | awk '{print $2 }')
+		
+		if [ "$to" = "" ];then
+			to=$max_line
+		fi	
+		let to-=1
+		tmp=$(sed -ne "$a,$to"p $PKGES)
+		ver=$( echo "$tmp" | grep -w "Version:" | awk '{print $2}' )
+			
+			if dpkg --compare-versions "$ver" gt "$trick";then
+			new_tmp=$tmp
+			#echo "$ver" : better then  "$trick"
+			trick=$ver
+			#else
+			#	echo "$ver" : worst then "$trick"
+			fi
+		let i+=1
+		
+	done
+	echo "$new_tmp" > $DIR_CONTROL/$pkge.control
+	echo >> $DIR_CONTROL/$pkge.control
+
+fi
+		
+}
+
+
+#*******************************************************#
+#						
+#			DESCRIPTION:
+#	*obsolete
+#						
+# ?  --> mk_pkge_list -> 		
+#			  Packages)		
+#						
+#		1) erase kde desk from pkge to get		
+#		2) create pkge list  		
+#						
+#*******************************************************#
+
+mk_pkge_lst(){
+
+	PKGE_KNX=$1
+
+	APT_TO_GET=$2
+
+	sed -n  '/^ii/p' $PKGE_KNX > pack_ii_0
+			# just the ii $pkge $ver $desc  rows
+	
+	awk '{print $2 " " $3}' pack_ii_0 > pack_ii_1
+			# just the $pkge $ver rows
+
+	#sed '/^hwsetup/d' pack_ii_0 > pack_ii_1
+			#we need to purge hwsetup until it's not released a new version
+			#kudzu-knoppix autodiscover problem
+
+
+	#-----------------------------------------
+	# let's remove the kde desktop (so the user'll choose his own)
+	
+	sed -i -e '/^k[acfhimoprstvwx]/d' pack_ii_1 
+	#> pack_ii_0
+	sed -i -e '/^kbatt/d' pack_ii_1
+	# pack_ii_1
+	sed -i -e '/^kd/d' pack_ii_1 
+	#> pack_ii_0
+	sed -i -e '/^knotes/d' pack_ii_1
+	#> pack_ii_1
+	sed -i -e '/^kuser/d' pack_ii_1 
+	#> pack_ii_0
+	
+	#sed '/^libk/d' pack_ii_0 > pack_ii_1
+	#sed '/knop/d' pack_ii_1 > pack_ii_0
+	#sed '/^acror/d' pack_ii_0 > pack_ii_1
+	#sed '/^airo-mpi-modules/d' pack_ii_1 > pack_ii_0
+	#sed '/^captive-static/d' pack_ii_0 > pack_ii_1
+	#sed '/^convertfs/d' pack_ii_1 > pack_ii_0
+	#sed '/^dvdrecord/d' pack_ii_0 > pack_ii_1
+	#sed '/^fdisk-udeb/d' pack_ii_1 > pack_ii_0
+	
+	cp pack_ii_1 $APT_TO_GET
+	
+	#sed '1  i\ apt-get install -d'  pack_ii_0 > pack_ii_1  # old ... add 1th line (apt-get install -d)
+	#sed 's/.*/& \\/' pack_ii_0 > apt-to-get				# old
+	
+	rm pack_ii_1 pack_ii_0 
+	#& rm pack_ii_1
+	#chmod +x apt-to-get
+}
+#-------------------------------------------------------------------------------------
+
+#*******************************************************#
+#						
+#			DESCRIPTION:		
+#						
+# pkge.lst ------>    check_pkge  ------>  	<recheck>
+#				<log>
+#				<wget> 
+#				<notfound.lst> 
+#				(toinclude,toexclude)			
+#						
+#	1) read pkge ver from pkge.lst  		
+#	2) check if pkge is in Packages file		
+#	3) write pkge.control file				
+#	7) write http address to wget file 
+#	5) write pkge if found in file toinclude (it'll be necessary for debootstrap script knx)
+#	6) recheck contains all deps 		
+#		(still to check their own deps)		
+#						
+#*******************************************************#
+
+check_pkge (){
+
+	LITIN=$1
+	PKGES=$2
+	MIRROR=$3
+	FILES=$4
+	FILES_NO=$5
+	KNXDET=$6
+	MATCHED=$7
+	TOINCLUDE=$8
+	TOEXCLUDE=$9
+	RCK=${10}
+
+Lines=0
+#exec 3<>
+while read line 
+#----start while----------
+do 
+	# inputs from file . split it in 2 vars
+	pkge="$( echo $line | awk '{print $1}')" 
+		# ex: pkge=vim
+	ver="$( echo $line | awk '{print $2}')" 
+		# ex: ver=1:6.3-071+1
+
+	#---------------------------------------------------------------------------------
+if [ ! -e  $DIR_CONTROL/$DIR_EX/$pkge ];then
+	if [  -e $DIR_CONTROL/$pkge.control ]; then
+	
+		pkgedet="$( $PKGEDET  $MIRROR    $DIR_CONTROL/$pkge.control)"
+		pkge_xst="$( echo $pkgedet | awk 'BEGIN { one=1 } { print $(one) }')" 
+		ver_xst="$( echo $pkgedet| awk 'BEGIN { two=2 } { print $(two) }')"    
+   		if [ "$ver" == "$ver_xst" ];then
+				echo ---------------------------------
+				echo "$Lines" "$pkge" "$ver" already added as dep
+		else
+			if [ "$ver_xst" = "1:$ver" ]; then
+				echo ---------------------------------
+					echo "$Lines" "$pkge" "$ver" already added as dep
+			else
+				echo ---------------------------------
+				if [ -z "$ver" ];then
+					echo "$Lines $pkge $ver_xst already added as dep"	
+				else
+					echo "$Lines $pkge not found $ver but $ver_xst already added as dep"
+				fi
+			fi
+		fi
+	else
+	if [ ! -e  $DIR_CONTROL/$DIR_EX/$pkge ];then
+		gen_PKGE_file "$pkge" "$PKGES"
+		
+		if [  -e $DIR_CONTROL/$pkge.control ]; then
+		
+			pkgedet="$( $PKGEDET  $MIRROR  "$DIR_CONTROL/$pkge.control")"
+		
+				# all  vars to split (get infos about $pkge from Packages file)
+			ver_det="$( echo $pkgedet | awk '{ print $2 }')"
+			pkge_det="$( echo $pkgedet  | awk '{ print $1 }')"
+			file_det="$( echo $pkgedet | awk '{ print $5 }')"
+			
+			if [ "$ver" == "$ver_det" ];then
+				
+				echo ---------------------------------
+				echo "$pkge" "$ver" [ok+] >> $MATCHED
+				echo "$Lines" "$pkge" "$ver" [ok+] 
+				TOINCLUDE="$pkge,$TOINCLUDE"
+				echo $MIRROR$file_det >> $FILES
+					# write filename to wget list	
+				echo $pkge_det $ver_det >> 	$RCK
+					# write $pkge_ver_in to reck file
+				echo $pkge_det >> toinclude	
+			
+			else
+				# ex: $ver= 6.3-071+1 $ver_det=1:6.3-071+1
+				if [ "$ver_det" = "1:$ver" ]; then
+					echo ---------------------------------
+					echo "$pkge $ver_det" [ok] >> $MATCHED
+					echo "$Lines" "$pkge" "$ver" [ok]
+					TOINCLUDE="$pkge,$TOINCLUDE"
+					echo $MIRROR$file_det >> $FILES
+						# write filename to wget list	
+					echo $pkge_det $ver_det >> 	$RCK
+						# write $pkge_ver_in to reck file
+					echo $pkge_det >> toinclude	
+						
+				else
+					echo ---------------------------------
+					echo "$pkge not found $ver using $ver_det" [ok-] >> $MATCHED
+					echo "$Lines"  "$pkge" not found "$ver" using "$ver_det" [ok-]
+					TOINCLUDE="$pkge,$TOINCLUDE"
+					echo $MIRROR$file_det >> $FILES
+						# write filename to wget list	
+					echo $pkge_det $ver_det >> 	$RCK
+						# write $pkge_ver_in to reck file
+					echo $pkge_det >> toinclude	
+						
+				fi
+			fi
+	# no way :(
+		else
+			echo 	---------------------------------
+			echo "$Lines" "$pkge $ver not found" [no]
+			echo "$pkge" "$ver"  >>$FILES_NO 
+			TOEXCLUDE="$pkge,$TOEXCLUDE"
+		  	# we need to remove the empty control file (it should exist)
+			if [  -e $DIR_CONTROL/$pkge.control ]; then
+				echo 
+				echo "(EE) file $DIR_CONTROL/$pkge.control doesn't exist .. better to stop" >2
+				exit 0
+			fi
+		
+		fi
+	fi
+	fi
+	#---------------------------------------------------------------------------------
+  
+#else 
+#	echo $pkge  # to add a check
+fi
+(( Lines++ ));	
+#--------close while-------------
+done < $LITIN
+
+	echo ---------------------------------
+	echo 
+	echo "Number of lines read = $Lines" 
+	echo
+	echo
+	echo
+}
+
+#*******************************************************#
+#						
+#		DESCRIPTION:			
+#						
+# debootstrap -->  gen_lst --> $LIST	  		
+#						
+#	1) generate pkge list	as debootstrap
+#						
+#*******************************************************#:
+
+gen_lst () {
+	REL=$1
+	TMP=debaser
+	MIRROR=$2
+	PKGE_STRAP=$3
+	ADD=$4
+	DIST=$5
+	auto=
+	
+	[ "$REL" = "testing" ] && REL="etch"
+	[ "$REL" = "unstable" ] && REL="sid"
+	[ "$REL" = "stable" ] && REL="sarge"
+
+	for i in $DIR_CONTRL/exclude/* ; do		
+	[ -f "$DIR_CONTRL/exclude/$i" ]	&& dontstrap="$(basename $i),$dontstrap"
+	done
+	if [ -n "$VAR" ];then
+#echo /usr/sbin/debootstrap --arch $ARCH --exclude=$dontstrap --include=$auto  --print-debs $REL $TMP $MIRROR  $DELIB/scripts/$script 	
+	strap="$(/usr/sbin/debootstrap --arch $ARCH --exclude=$dontstrap --include=$auto  --print-debs $REL $TMP $MIRROR  $DELIB/scripts/$script )"
+
+	else
+	 strap="$(/usr/sbin/debootstrap --arch $ARCH --exclude=$dontstrap --include=$auto  --print-debs $REL $TMP $MIRROR  )"
+	fi
+	b=1
+	pkge="$( echo $strap |  awk 'BEGIN { try='$b' } { print $( try )}')"
+	
+while [ "$pkge" != ''   ]
+	do {
+		echo $pkge	>> $PKGE_STRAP
+		
+		# POSTFIX and EXIM can cause problems
+		if [ "$pkge" = "postfix" ];then
+			echo "added by debaser : found postfix" > $DIR_WORK/debaser/control/exclude/exim4
+		elif [ "$pkge" = "exim4" ];then
+			echo "added by debaser : found exim4" > $DIR_WORK/debaser/control/exclude/postfix
+		fi
+		
+		let b+=1
+		pkge="$( echo $strap |  awk 'BEGIN { try='$b' } { print $( try )}')"
+	}
+	done
+		
+	for i in   $DIR_WORK/debaser/prepkge/* 
+	do
+		i=$( basename $i )
+				#if mmaker we need to check if prepkge dir is empty
+			   [ -e "$DIR_WORK/debaser/prepkge/$i" ] && mycat  $DIR_WORK/debaser/prepkge/$i >> $PKGE_STRAP
+	done
+}
+
+#*******************************************************#
+#						
+#			DESCRIPTION:		
+#						
+# ?  -->get_DEB_PKGE --> Packages."$REL"			
+#							
+#						
+#*******************************************************#
+
+get_DEB_PKGE(){
+
+MIRROR=$1		#=http:// .....
+REL=$2
+ARCH=$3
+COMP_ALL=$4             #="main non-free contrib"
+EXT=$5			#=.gz
+STYLE=$6
+
+[ -z "$STYLE" ] && STYLE=$REL
+
+# get main Packages
+	#-----------
+for COMP in $COMP_ALL
+do
+	INDEX="dists/$REL/$COMP/binary-$ARCH/Packages$EXT"
+	echo
+	echo Retrieving Packages file 
+	echo Archive: $REL
+	echo Component: $COMP
+	echo Architecture: $ARCH
+	wget  "$MIRROR$INDEX" 1>/dev/null
+	gunzip "Packages$EXT"
+	cat Packages >> "Packages.$STYLE"
+	echo
+	echo [OK]
+	rm Packages
+done
+
+}
+get_LV_PKGE(){
+
+MIRROR=$1		#=http:// .....
+PKGE_LV=$2		#=Packages.$LV
+EXT=$3			#=.gz
+LV=${PKGE_LV/$PKGE.}
+    [ -e "$PKGE$EXT" ] && rm $PKGE$EXT
+	[ -e "$PKGE" ] && rm $PKGE
+	echo
+	echo "Retrieving $MIRROR Packages file"
+	wget  -q $MIRROR/$PKGE$EXT  	
+	gunzip "Packages$EXT"
+	mv $PKGE $PKGE_LV
+	echo
+	if [ -e "$PKGE_LV" ];then
+		echo [OK]
+	else
+		echo '(EE) NOT FOUND !!'
+		echo check $MIRROR/$PKGE$EXT
+		exit 0
+	fi
+
+}

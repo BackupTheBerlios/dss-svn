@@ -1,0 +1,26 @@
+# to maintain compatibility between 
+# xorg and xfree naming it's possible 
+# to use a metapackage as x-window-sytem-core
+# if you don't want all the packages that it recalls
+# as dependencies it's possible to place some in exlude
+# directory ( also x-window-system-core)
+xorg-common
+xserver-common
+xfonts-base
+xterm
+xbase-clients
+xserver-xorg
+# in exclude:
+#xfonts-100dpi
+#xfonts-100dpi-transcoded
+#xfonts-75dpi
+#xfonts-75dpi-transcoded
+#xfonts-artwiz
+#xfonts-base-transcoded
+#xfonts-bolkhov-cp1251-75dpi
+#xfonts-bolkhov-cp1251-misc
+#xfonts-konsole
+#xfonts-scalable
+#xfonts-terminus
+#x-window-system-core
+

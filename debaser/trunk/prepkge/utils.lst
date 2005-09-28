@@ -1,0 +1,12 @@
+udev
+hal
+initrd-tools
+kernel-package
+dpkg-repack
+sudo
+locales
+# pmount from hoary miss pmount.allow file
+# in debased.sourceforge.net there is a newer
+# version compiled for this rel. (see deb1.lst)
+#pmount
+

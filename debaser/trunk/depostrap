@@ -1,0 +1,222 @@
+#!/bin/bash
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# ghost/postsel/kernel--> ext_post --> extract kernel pkges
+# 
+# TODO: 
+# 1) ar -p var/cache/apt/archives/emelfm2_0.0.8-1_i386.deb control.tar.gz | zcat | tar -xf  - -C tmp ?
+# 2) Packages.gz from debaser.sourceforge.net ?												
+#*******************************************************#
+
+ext_post(){ 
+DIR_NOW=`pwd`
+DBED_DIR=$1 #the post deboostrap dir (/tmp/debased)
+cd $DBED_DIR
+while read  line_in ; do
+	[ "$line_in" = "hwdata-knoppix" ] && echo >> "ghost/control/$line_in.control"
+	[ "$line_in" = "emelfm2" ]  && echo >> "ghost/control/$line_in.control"
+	[ "$line_in" = "redhat-artwork" ] && echo >> "ghost/control/$line_in.control"
+	if [ -e "ghost/control/$line_in.control" ];then
+	a=$(grep -w 'Filename:'  "ghost/control/$line_in.control" )
+	a=${a/Filename:}
+	last=$( echo $a | awk 'BEGIN { FS = "[/]" }{ print NF  }')
+	pkge_deb=$( echo $a | awk 'BEGIN { FS = "[/]"; name='$last' } {print $(name) }')
+	[ "$line_in" = "hwdata-knoppix" ] && pkge_deb="hwdata-knoppix_0.107-8_all.deb" 
+	[ "$line_in" = "emelfm2" ] && pkge_deb="emelfm2_0.0.8-1_i386.deb"
+	[ "$line_in" = "redhat-artwork" ] && pkge_deb="redhat-artwork_0.96-2_i386.deb"
+
+if [ "$pkge_deb" != "" ];then
+	if [ -e "var/cache/apt/archives/$pkge_deb" ];then
+		echo "Extracting .... $line_in"
+		ar -p var/cache/apt/archives/$pkge_deb data.tar.gz | zcat | tar -xf -
+	fi
+	fi
+	else
+		echo  	
+	fi
+	
+done < "$DBED_DIR/ghost/postsel/kernel"
+cd $DIR_NOW
+
+
+}
+
+
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# /tmp/debased --> gen_lnk--> debase the sys  
+#
+#	[*] minirooter needed											
+#*******************************************************#
+
+gen_lnk () { 
+	
+
+BACK=`pwd`
+TARGET=$1
+ 
+    #-----------------------
+number='0 1 2 3 4 5 6 S'
+for num in $number; do
+	 a=$( ls  --color=none  $TARGET/etc/rc"$num".d )
+		for i in $a
+			do echo $i >> $TARGET/etc/rc"$num".d/README 
+		done
+done
+#to remove in 2 apmd and acpi pcmcia
+index="S 2"
+   for a in $index; do 
+	lsdir=$( ls  --color=none  $TARGET/etc/rc$a.d/ )
+	
+	rc2no="initrd-tools.sh keymap.sh module-init-tools modutils procps.sh  makedev acpid apmd console-screen.sh hwclock.sh"
+	rc2yes="mountvirtfs udev bootlogd checkroot.sh hostname.sh"
+    rc2del="apmd acpi"
+# ----> hotplug hotplug-net ( later ? -- removable devices ere added in fstab if plugged at boot)
+if [ "$a" = "S" ];then
+	for b in $lsdir; do
+	name=$(echo $b | awk 'BEGIN { FS = "[SK0123456789]" }{ print $4  }') 
+	toexc=$(echo "$rc2no" | grep "$name")
+	toinc=$(echo "$rc2yes" | grep "$name")
+		[ "$toinc" = "" ] &&  cp -a  "$TARGET/etc/rc$a.d/$b" "$TARGET/etc/rc5.d/S01$b" &&  [ "$toexc" = "" ] && 	cp -a  "$TARGET/etc/rc$a.d/$b" "$TARGET/etc/rc2.d/S02$b"
+		[ "$toinc" = "" ] &&  rm $TARGET/etc/rc$a.d/$b
+	done 
+
+elif [ "$a" = "2" ];then
+	for b in $lsdir; do 
+	name=$(echo $b | awk 'BEGIN { FS = "[SK0123456789]" }{ print $4  }') 
+	todel=$(echo "$rc2del" | grep "$name")
+	[ "$todel" = "" ] && rm "$TARGET/etc/rc$a.d/$b"
+	done 
+fi
+done
+   
+#for autoconfiguration
+rcs_lnk="debaser1-locales debaser2-fstab debaser3-hwsetup debaser4-dma debaser5-powermng  mkxf86config"
+cd $TARGET/etc/rc2.d/
+
+   for a in $rcs_lnk; do
+   num=01
+   [ "$a" = "mkxf86config" ] && num=60
+	ln -s /initrd/etc/init.d/$a  S$num$a 2>/dev/null
+	chmod +x S$num$a 
+   done
+
+rc2_lnk="sudoers"
+cd $TARGET/etc/rc2.d/
+num=21
+   for a in $rc2_lnk; do
+   [ -e "$a" ]&&  mv -f $a $a.orig$
+	ln -s /initrd/etc/init.d/$a  S$num$a 2>/dev/null
+   done
+
+#init.d needed by debaser-autoconfig
+cd $TARGET/etc/init.d/
+initd="alsa-autoconfig"
+for a in $initd;do
+	[ -e "$a" ] &&  mv -f $a $a.orig
+	ln -s /initrd/etc/init.d/$a  $a 2>/dev/null
+done
+
+# -----------/etc/----------
+#here the file written by hwsetup
+cd $TARGET/etc/
+if [ -e "sysconfig" ];then
+	mv -f sysconfig "sysconfig.orig.$$"
+	echo 'moved by debaser if you want you can' >> sysconfig.orig.$$/README.debaser
+	echo 'move this dir back' >> sysconfig.orig.$$/README.debaser
+fi
+ln -s /initrd/etc/sysconfig sysconfig 2>/dev/null
+#filesystems fstab exports hostname profile
+etc_lnk="filesystems exports"
+for a in $etc_lnk;do
+	[ -e "$a" ] &&	mv -f $a $a.orig
+	ln -s /initrd/etc/$a $a 2>/dev/null
+	
+done
+
+#----------/etc/hotplug.d/ieee1394/------------------
+cd $TARGET/etc/hotplug.d/ieee1394/
+htplg="rescan-scsi-bus.sh"
+for a in $htplg;do
+	[  -e "$a" ] && mv -f $a $a.orig
+	ln -s /initrd/etc/hotplug.d/ieee1394/$a $a 2>/dev/null
+	chmod +x $a
+done
+
+#------------BOOTSPLASH-------------------------------------------------
+cd $TARGET
+[  -e "bootsplash" ] && mv -f bootsplash bootsplash.orig
+ln -s /initrd/bootsplash bootsplash 2>/dev/null
+cd $BACK	
+}
+
+#*******************************************************#
+#						
+#			DESCRIPTION		
+#						
+# /tmp/debased -->  fix_user--> add user and group 		
+#						
+#	
+#						
+#*******************************************************#
+
+fix_user(){
+TARGET=$1
+
+if [ -e "$TARGET/etc/passwd" ];then
+	if ! grep -w "debaser:" $TARGET/etc/passwd > /dev/null;then
+	echo 'debaser:$1$Fi6h9Z3E$4sTgZyXmqXBaIbboQeh2c.:1000:1000:,,,:/home/debaser:/bin/bash' >> $TARGET/etc/passwd 
+	fi
+fi
+if [ -e "$TARGET/etc/group" ];then
+	if ! grep -wq "debaser:x:1000:" $TARGET/etc/group;then
+	echo 'debaser:x:1000:' >> $TARGET/etc/group
+	fi
+fi
+
+user_groups="tty lp dialout audio video users plugdev"
+for i in $user_groups ; do
+	a=$( grep -w "$i" $TARGET/etc/group )
+	b=$(echo $a | awk 'BEGIN { FS = "[:]" }{ print $3 }')
+	new_line=${a/debaser}
+	add=$(echo "$a" | awk 'BEGIN { FS = "[:]" }{ print $1 }' )
+	[ "$a" = "$new_line" ] && sed -i -e  "/$add/s/$/debaser/" $TARGET/etc/group 
+done
+
+#debased
+echo debased >  $TARGET/etc/hostname
+echo "[ -f /initrd/etc/profile ] && . /initrd/etc/profile" >> $TARGET/etc/profile
+[ ! -e  $TARGET/home/debaser  ] && mkdir $TARGET/home/debaser && chown 1000:1000 $TARGET/home/debaser
+echo 127.0.0.1 debased.pc localhost debased > $TARGET/etc/hosts
+}
+
+ext_skel(){
+	TARGET=$1
+	PATH_NOW=`pwd`
+	echo Extracting .... etcskel-debaser
+	tar xvfj $PATH_NOW/etcskel-debaser.tar.bz2  -C $TARGET/home/debaser > /dev/null
+	}
+[ ! -d $1/ghost ] && echo path: $1  seems not correct && exit 0  
+ext_post $1
+gen_lnk  $1
+fix_user $1
+ext_skel $1
+

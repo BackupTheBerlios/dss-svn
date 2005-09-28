@@ -1,0 +1,45 @@
+# Debaser configure options
+# $Id: default,v 1.13 2005/09/19 09:46:40 sf-debaser Exp $
+
+
+# the tmp working dir ?
+DIR_WORK=/tmp/release/base
+
+# the install dir ?
+DIR_DEST=/tmp/release/base
+
+# Mirrors list:
+# the address to find the Packages(.gz) file
+# the default option is to use:
+# http://ftp.it.debian.org/debian/dists/sarge/main/binary-i386/Packages.gz  
+#DIST=debian
+#REL=etch
+#MIRROR_DEB=http://ftp.it.debian.org/debian/
+#COMP='main contrib non-free'
+#APTMIRROR="ftp://ftp.dss.berlios.de/debian/ sarge  main contrib | http://www.os-works.com/debian/ sarge main "
+
+#----------
+DIST=ubuntu
+REL=hoary
+MIRROR_DEB=http://archive.ubuntu.com/ubuntu/
+COMP='main multiverse restricted universe'
+APTMIRROR="http://dss.berlios.de/ubuntu/ hoary main universe "
+#ARCH=[i386 | powerpc | sparc (debian) | ... ]
+ARCH=i386
+EXT=.gz
+
+# Mirrors for autoconfig packages that can't be find
+# in debian mirror, (see prepkge/morphix.list)
+OTHERMIRROR="http://www.morphix.org/debian/ | http://developer.linuxtag.net/knoppix/"
+
+#this si the script variant <basemod>, if active 
+#it will add as default just the morphix basemod 
+#pkges, (light version of debase-hoary)
+#VAR=light
+#for morphix basemod
+VAR=basemod
+
+
+# use a local mirror 
+#MIRROR_LOC=http://debian/debian/
+MIRROR_LOC=$MIRROR_DEB

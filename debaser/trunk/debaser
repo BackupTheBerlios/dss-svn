@@ -1,0 +1,862 @@
+#!/bin/bash
+# $Id: debaser,v 1.46 2005/09/19 09:46:40 sf-debaser Exp $
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# Daniele Favara <sf.debaser@gmail.com> <http://debased.sourceforge.net>
+
+#TODO
+#1)option confdir (RCK_EXCL uses PATH_NOW) (done for debug)
+#2)add the possibility to use more than one standard apt mirror (done!)
+#3)find a smart (dhoo) solution for kernel.lst file
+#4)remove depostrap ?
+#5)default --> debaserrc
+#6)one day hopefully a gui to configure debaser
+#7)allow comments (mycat -- done!)
+#8)remove from gen_lst xorg.lst and xfree.lst
+
+
+START=`pwd`
+PATH_NOW=/etc/debaser
+DELIB=/usr/lib/debaser
+source "$DELIB/functions"
+
+
+if [ ! -d "$HOME/.debaser" ];then
+	if [ ! -e $PATH_NOW/deconfdir.tar.gz ]; then
+		echo "(EE) Couldn't find $PATH_NOW/deconfdir.tar.gz"
+		exit 0
+	else
+		mkdir -p $HOME/.debaser/
+		tar xvfz $PATH_NOW/deconfdir.tar.gz -C $HOME/.debaser/
+		cp $PATH_NOW/default $HOME/.debaser/
+	fi
+fi
+PATH_NOW="$HOME/.debaser"
+if [ -f $PATH_NOW/default ];then
+	source $PATH_NOW/default
+else
+	source /etc/debaser/default
+fi
+
+if [ -n "$EXT" ];then
+	[ "${EXT/.}" = "$EXT" ] && EXT=.$EXT
+fi
+
+DIR_CONTROL=$DIR_WORK/debaser/control
+DIR_ORPHAN=orphan
+DIR_RCK=rckdir
+DIR_CNFLCT=conflict
+DIR_EX=exclude					
+LIST=pkges.lst
+PKGE=Packages
+PKGE_DEB="$PKGE.$REL"  			
+
+#####################################################
+
+CONTROL="no"
+GETDEBS="no"
+STRAP="no"
+RCK_EXCL="no"
+POST_STRAP="no"
+MMAKER="no"
+DEBUG="no"
+while [ ! -z "$1" ];do
+    case "$1" in
+      --help|-h)
+        usage
+        exit 
+        ;;
+      --control|-c)
+	  	CONTROL=
+        CONTROL=$2
+		if [ "$CONTROL" = 'yes' ]; then
+ 			shift 2
+		elif [ "$CONTROL" = 'no' ]; then
+ 			shift 2
+		else
+			CONTROL="yes"
+			shift 1
+		fi
+		notall="yes"
+       
+        ;;
+	  --getdebs|-g)
+	  	GETDEBS=$2
+	  	if [ "$GETDEBS" = 'yes' ];then
+			shift 2
+		elif [ "$GETDEBS" = 'no' ];then
+			shift 2
+		else
+			GETDEBS="yes"
+			shift 1
+		fi
+		notall="yes"
+		;;
+      --strap|-s)
+        STRAP=$2
+		if [ "$STRAP" = 'yes' ];then
+        	shift 2
+		elif [ "$STRAP" = 'no' ];then
+			shift 2
+		else
+			STRAP="yes"
+			shift 1
+		fi
+		notall="yes"
+        ;;
+	  --reck-excl|-r)
+	  	RCK_EXCL="$2"
+		if [ "$RCK_EXCL" = "yes" ];then
+			shift 2
+		elif [ "$RCK_EXCL" = "no" ];then
+			shift 2
+		else
+			RCK_EXCL="yes"
+			shift 1
+		fi
+		notall="yes"
+
+		;;
+	  --post-strap|-p)
+	  	POST_STRAP=$2
+		if [ "$POST_STRAP" = 'yes' ];then
+			shift 2
+		elif [ "$POST_STRAP" = 'no' ];then
+			shift 2
+		else
+			POST_STRAP=no
+			shift 1
+		fi
+		notall="yes"
+		;;
+	  --all|-a)
+	  	RCK_EXCL="no"
+		POST_STRAP="no"
+		CONTROL="yes"
+		GETDEBS="yes"
+		STRAP="yes"
+		if [ "notall" = "yes" ];then
+			echo "------"
+			echo "(EE): Don't use --all with others options"
+			echo "------"
+			usage
+			exit 0
+		fi
+		shift 1
+		;;
+	  --debug|-d)
+
+	  	DEBUG="yes"
+		LIST=$2
+		[ -z "$2" ] && echo "you must specify a file" && exit 0
+		if [ ! -f $LIST  ];then
+				echo "files $LIST does not exist"
+				exit 0
+		fi
+		CONTROL="yes"
+		MMAKER=
+		notall="yes"
+		if [ "$3" = "--dir-work" ];then
+			DIR_WORK=$4
+			DIR_CONTROL=$DIR_WORK/debaser/control
+			MEM=yes
+			shift 4
+		else
+		DIR_WORK=/tmp/debug-debaser.$$
+		DIR_CONTROL=$DIR_WORK/debaser/control
+	  	shift 2
+		fi
+	   ;; 
+	  --mmaker|-m)
+	  MMAKER=yes
+	  if [ "$2" = "unionfs"  ];then
+		  UNIONFS=yes
+		 shift 2
+	   else
+			 shift 1
+	   fi
+	  ;;
+	  --print-debs)
+	  if [ -n "$VAR" ];then
+		[ -n "$VAR" ] && VAR=.$VAR
+		script=debase-$REL$VAR
+		/usr/sbin/debootstrap --arch $ARCH  --include=$auto  --print-debs $REL $DIR_WORK $MIRROR_DEB  $DELIB/scripts/$script | tr ' ' '\n' | sed -e '/^$/d' | sort 
+	  else
+	 	/usr/sbin/debootstrap --arch $ARCH   --print-debs $REL $DIR_WORK $MIRROR_DEB  | tr ' ' '\n' | sed -e '/^$/d' | sort 
+	  fi
+		exit 
+	  ;;
+      *)
+	  	usage
+		echo "---"
+		echo "(EE): $1  not a valid option"
+		echo ""
+		exit 1
+        ;;
+    esac
+  done
+
+if [ "$MMAKER" = "no" ] ;then
+
+	[ "$CONTROL" = "no" ] && [ "$GETDEBS" = "no" ] && [ "$STRAP" = "no" ] && [ "$RCK_EXCL" = "no" ] && [ "$POST_STRAP" = "no" ] && usage && exit 0
+
+elif [ "$MMAKER" = "yes" ] ;then
+
+	[ "$CONTROL" = "yes" ] || [ "$GETDEBS" = "yes" ] || [ "$STRAP" = "yes" ] || [ "$RCK_EXCL" = "yes" ] || [ "$POST_STRAP" = "yes" ] && usage && exit 0
+
+fi
+
+########################################################
+if [ "$MMAKER" = "no" ];then
+
+packages=debootstrap.invalid_dists_"$REL"_main_binary-"$ARCH"_Packages
+MIRROR_STRAP="file://$DIR_DEST/var/cache/apt/"
+[ -n "$VAR" ] && VAR=.$VAR
+script=debase-$REL$VAR
+echo ""
+echo "DEBASER : Generate a Debian Based  system."
+echo "--"
+echo "<http://debased.sourceforge.net>"
+echo
+echo "---------------------------------------"
+echo "  tmp working dir    : $DIR_WORK"
+echo "  install dir        : $DIR_DEST"
+echo "  release            : $REL     "
+echo "  mirror             : $MIRROR_DEB"
+echo "  generate control   : $CONTROL"
+echo "  download debs      : $GETDEBS" 
+echo "  install            : $STRAP"
+echo "  recheck exclude    : $RCK_EXCL"
+echo "  post debootstrap   : $POST_STRAP"
+echo "  script             : $script"
+echo "---------------------------------------"
+
+
+elif [ "$MMAKER" = "yes" ];then
+
+packages=debootstrap.invalid_dists_"$REL"_main_binary-"$ARCH"_Packages
+
+VAR=basemod
+[ -n "$VAR" ] && VAR=.$VAR
+script=debase-$REL$VAR
+echo ""
+echo "DEBASER : Generate a Debian Based  system."
+echo "--"
+echo "<http://debased.sourceforge.net>"
+echo
+echo "---------------------------------------"
+echo "  tmp working dir    : $DIR_WORK"
+echo "  release            : $REL     "
+echo "  mirror             : $MIRROR_DEB"
+httpnum=$(echo $OTHERMIRROR  | sed 's/[|]//g' | awk '{ print NF  }' )
+for ((httpvar=1; httpvar <= httpnum ; httpvar++))  # Double parentheses, and "LIMIT" with no "$".
+do
+echo "  mirror"$httpvar"            : $(echo $OTHERMIRROR  | sed 's/[|]//g' | awk 'BEGIN {  try='$httpvar' } {print $(try) }')"
+done
+echo "  script             : $script"
+echo
+echo "debaser will generate a morphix basemod"
+echo "---------------------------------------"
+
+elif [ "$MMAKER" = "" ];then
+
+MMAKER="no"
+
+echo ""
+echo "DEBASER : Generate a Debian Based  system."
+echo "--"
+echo "<http://debased.sourceforge.net>"
+echo
+echo "---------------------------------------"
+echo "  tmp working dir    : $DIR_WORK"
+echo "  release            : $REL     "
+echo "  mirror             : $MIRROR_DEB"
+echo "  file               : $LIST"
+echo
+echo "debaser will debug reading pkges from $LIST"
+echo "---------------------------------------"
+
+fi
+httpvar=
+echo -n "Should I run debaser?: [N/y]"
+
+read ansfer
+
+if [ "$ansfer" = "n" ];then
+	exit 0
+elif [ "$ansfer" = "N" ];then
+	exit 0
+elif [ "$ansfer" = "y" ];then
+	echo
+	echo "Starting Debaser"
+	echo
+elif [ "$ansfer" = "Y" ];then
+	echo
+	echo "Starting Debaser"
+	echo
+else
+	exit 0
+fi
+
+#for i in $PATH_NOW/exclude/* ; do
+#	dontstrap="$(basename $i),$dontstrap"
+#	echo "$(basename $i)" >> $DIR_WORK/toexclude1	
+#done
+#debootstrap --arch $ARCH  --verbose  --keep-debootstrap-dir --exclude=$dontstrap --unpack-tarball   $PATH_NOW/basedebs.tar $REL $DIR_DEST $MIRROR_STRAP $PATH_NOW/scripts/$script
+#exit 0
+
+mkdir -p $DIR_WORK/debaser/{exclude,postsel,prepkge,live}
+mkdir -p $DIR_WORK/var/{cache/apt/archives,lib/apt/lists}
+mkdir -p $DIR_CONTROL/{$DIR_ORPHAN,$DIR_RCK,$DIR_CNFLCT,$DIR_EX,depend,predepend}
+
+if [ "$MMAKER" = "no" ];then
+	if [ "$DEBUG" = "no" ];then
+cp  $PATH_NOW/postsel/* $DIR_WORK/debaser/postsel/
+cp  $PATH_NOW/exclude/* $DIR_WORK/debaser/exclude/
+cp  $PATH_NOW/prepkge/* $DIR_WORK/debaser/prepkge/
+cp  $PATH_NOW/live/* $DIR_WORK/debaser/live/
+#HERE THE PKGES TO EXLUDE while running debaser
+cp $PATH_NOW/exclude/* $DIR_CONTROL/$DIR_EX/
+fi
+fi
+if [ "$DEBUG" = "yes" ];then
+	mycat "$LIST" > $DIR_WORK/$LIST
+		
+		# POSTFIX and EXIM can cause problems
+		if [ -n "$(grep -w "postfix" $LIST )" ];then
+			echo "added by debaser : found postfix" > $DIR_WORK/debaser/control/exclude/exim4
+		elif [ -n "$(grep -w "exim" $LIST )"  ];then
+			echo "added by debaser : found exim4" > $DIR_WORK/debaser/control/exclude/postfix
+		fi
+fi
+######################################################
+#
+#  MMAKER
+#
+#
+####################################################à
+if [ "$MMAKER" = "yes" ];then
+
+ 
+cd $DIR_WORK
+get_DEB_PKGE "$MIRROR_DEB" "$REL" "$ARCH" "$COMP" "$EXT"
+gen_lst "$REL" "$MIRROR_DEB" "$LIST" "$LV" "$DIST"
+FILES=wget.lst
+NOTFOUND=notfound.lst
+PKGEDET=$DELIB/pkgedet
+MATCHED=debaser.log
+TOINCLUDE=
+TOEXCLUDE=
+PKGES_RCK=/$DIR_CONTROL/$DIR_RCK/recheck_deb
+MIRROR_STRAP="file://$DIR_WORK/var/cache/apt/"
+if [ ! -f "$DIR_WORK/debaser/live/basemod.lst"  ];then
+cat >$DIR_WORK/debaser/live/basemod.lst<<EOF
+kernel-image-2.6.11
+usleep-knoppix
+mountmodule
+morphix-base-scripts
+morphix-base-splash
+morphix-base-grub
+morphix-base-conf
+cloop-module-2.6.11
+linux-wlan-ng-modules-2.6.11
+ndiswrapper-modules-2.6.11
+ipw2100-modules-2.6.11
+unionfs-modules-2.6.11
+EOF
+fi
+mycat $DIR_WORK/debaser/live/basemod.lst >> $LIST
+check_pkge  "$LIST" "$PKGE_DEB" "$MIRROR_LOC" \
+	"$FILES" "$NOTFOUND" "$PKGEDET" \
+	"$MATCHED" "$TOINCLUDE" "$TOEXLUDE" "$PKGES_RCK" 
+if [ -z "$OTHERMIRROR" ] ;then
+	[ -f "$NOTFOUND" ] && mv  $NOTFOUND $NOTFOUND$d
+	[ -e "$PKGE$EXT" ] && rm $PKGE$EXT
+	[ -e "$PKGE" ] && rm $PKGE
+fi
+d=0 #index for notfound
+#----------------------------------------------------------------------NEWMIRROR loop start
+for NEWMIRROR in "$OTHERMIRROR" "$APTMIRROR"
+do
+ck_ntf=0
+if [ "$NEWMIRROR" = "$OTHERMIRROR" ];then
+	httpnum=$(echo $OTHERMIRROR  | sed 's/[|]//g' | awk '{ print NF  }' )
+	style=lv
+elif [ "$NEWMIRROR" = "$APTMIRROR" ];then
+	httpnum=$(echo $APTMIRROR | awk 'BEGIN { FS = "[|]+"  }{ print NF  }')
+	style=deb
+fi
+
+for ((httpvar=1; httpvar <= httpnum ; httpvar++))  # Double parentheses, and "LIMIT" with no "$".
+do
+	[ -f "$NOTFOUND" ] && mv  $NOTFOUND $NOTFOUND$d
+	LV=$style$httpvar
+	NOTFOUND_LV="notfound_$LV.lst"
+
+	if [ -f "$DIR_WORK/debaser/live/$LV.lst" ];then
+		mycat $DIR_WORK/debaser/live/$LV.lst >> $NOTFOUND$d
+		mycat $DIR_WORK/debaser/live/$LV.lst >> $LIST
+	fi
+
+if [ "$MEM" != "yes" ];then
+	if [ "$style" = "lv" ] ;then
+		MIRROR_LV="$(echo $OTHERMIRROR  | sed 's/[|]//g' | awk 'BEGIN {  try='$httpvar' } {print $(try) }')"
+		get_LV_PKGE "$MIRROR_LV" "$PKGE.$LV" "$EXT"
+		echo 
+		echo Checking in $MIRROR_LV
+		echo
+	elif [ "$style" = "deb" ] ;then
+		NEWMIRROR=$(echo $APTMIRROR | awk 'BEGIN { FS = "[|]+"  }{ print $1  }' | tr ' ' '\n')
+		MIRROR_LV=$(echo $NEWMIRROR | awk ' {print $1} ')
+		RELV=$(echo $NEWMIRROR | awk ' {print $2} ')
+		numcomp=$(echo $NEWMIRROR | awk ' {print NF} ')
+		for ((compind=3; compind <= numcomp ; compind++))
+		do
+			NEWCOMP="$NEWCOMP $(echo $NEWMIRROR | awk 'BEGIN {  try='$compind' } {print $(try) }')"
+		done	 
+		get_DEB_PKGE "$MIRROR_LV" "$RELV" "$ARCH" "$NEWCOMP" "$EXT" "$LV"
+	fi
+fi
+
+
+while [ -e "$NOTFOUND$d"  ]
+	do {
+	echo
+	echo using notfound $NOTFOUND$d $NOTFOUND_LV $PKGE.$LV 
+	echo 
+ 	check_pkge  "$NOTFOUND$d" "$PKGE.$LV" "$MIRROR_LV" \
+				"$FILES" "$NOTFOUND_LV" "$PKGEDET" \
+				"$MATCHED" "$TOINCLUDE" "$TOEXLUDE" "$PKGES_RCK" 
+	echo recheck $d
+	echo
+	if [ -e $PKGES_RCK ]; then
+		recheck_dep    "$PKGE_DEB" "$MIRROR_DEB" "$FILES" \
+			"$PKGEDET" "$MATCHED"  "$PKGES_RCK"  "$RCKNDX"
+	fi
+
+		for orph in $DIR_CONTROL/$DIR_ORPHAN/*
+		do
+
+			i=$( basename $orph )
+			if [ -f " $DIR_CONTROL/$DIR_ORPHAN/$i" ];then
+			echo checking : $i
+			
+			ck_if=$( grep -w "$i" $NOTFOUND_LV  )
+			
+			md5_1=$(echo  $ck_if | md5sum)  
+			md5_2=$(echo  $i | md5sum  )
+			
+			if [ "$md5_1"  !=  "$md5_2" ];then
+				echo $i >> $NOTFOUND_LV
+				rm  "$DIR_CONTROL/$DIR_ORPHAN/$i"
+			fi
+			fi
+		done 
+		[ -f "$NOTFOUND_LV" ] && mem=$( cat $NOTFOUND_LV  )
+		[ -f "$NOTFOUND$d" ] && mem_old=$( cat $NOTFOUND$d  )
+		if [ "$mem" != "$mem_old"  ];then
+			rm $NOTFOUND$d
+			let d+=1
+			[ -f "$NOTFOUND_LV" ] && mv $NOTFOUND_LV $NOTFOUND$d
+		elif [ "$ck_ntf" -le 4  ];then
+			rm $NOTFOUND$d
+			let ck_ntf+=1
+			let d+=1
+			[ -f "$NOTFOUND_LV" ] && mv $NOTFOUND_LV $NOTFOUND$d
+		elif  [ "$ck_ntf" -gt 4  ];then
+		if  [ "$httpvar" -lt "$httpnum"  ];then
+			[ -f "$NOTFOUND_LV" ] && mv $NOTFOUND_LV $NOTFOUND
+			[ -f "$NOTFOUND$d" ] && rm $NOTFOUND$d
+			let d+=1
+		else
+			echo ------------------------------------------
+			echo '(WW) Could not find the following packages'
+			echo 
+			cat $NOTFOUND$d
+			mv $NOTFOUND$d $NOTFOUND
+			rm  $NOTFOUND_LV
+		fi	
+	fi
+
+	}
+done 
+done
+done
+#----------------------------------------------------------------------NEWMIRROR loop end
+#----------needed untill in morphix mirror they are not present
+wget http://debased.sourceforge.net/$DIST/hwconf
+cat hwconf >> $FILES
+#--------------------------------------------------------------
+cp $FILES   $DIR_WORK/var/cache/apt/archives/
+cp $DELIB/script/$script  $DIR_WORK/debaser/
+LNG_NAME=$packages
+
+create_basedir "$FILES" "$DIR_WORK" "$MIRROR_LOC" "$LNG_NAME"
+if [ -e $PATH_NOW/basedebs.tar ] ;then
+	mv $PATH_NOW/basedebs.tar $START/basedebs.tar
+fi
+#echo 	debootstrap --arch $ARCH  --verbose  --keep-debootstrap-dir --exclude=$dontstrap --unpack-tarball   $PATH_NOW/basedebs.tar $REL $DIR_DEST $MIRROR_STRAP $DELIB/scripts/$script
+debootstrap --arch $ARCH  --verbose  --keep-debootstrap-dir  $REL $DIR_WORK $MIRROR_STRAP $DELIB/scripts/$script
+[ -d $DIR_WORK/deboostrap ] && [ ! -d $DIR_WORK/debaser/debootstrap ] && mkdir -p $DIR_WORK/debaser/debootstrap && cp -r $DIR_WORK/debootstrap/* $DIR_WORK/debaser/debootstrap/ && rm -r $DIR_WORK/debootstrap
+cp /etc/resolv.conf  $DIR_WORK/etc/resolv.conf
+cd $DIR_WORK
+tomove="$MATCHED $NOTFOUND $LIST $FILES toinclude toexclude"
+for i in $tomove ;do
+	[ -f "$i" ] && mv $i debaser/
+done
+for i in $PKGE* ;do
+	[ -f "$i" ] && mv $i debaser/
+done
+[ -d debootstrap ] && mv debootstrap/* debaser/debootstrap/
+cat >$DIR_WORK/debaser/postinstall.sh<<'EOF'
+#!bin/bash
+apt-get update
+while read i
+do 
+	apt-get -y --force-yes  install $i
+done < /debaser/live/basemod.lst
+
+apt-get -y --force-yes  install hwsetup-morphix hwdata-morphix ddcxinfo-knoppix
+EOF
+echo "deb file:///var/cache/apt/ ./">  etc/apt/sources.list
+
+if [ "$UNIONFS" = "yes" ];then
+	if [ -x unionctl ];then
+	modprobe unionfs
+	UNIONFS=/tmp/UNIONFS.$$
+	HWCONF=/tmp/HWCONF.$$
+	mkdir $UNIONFS
+	mkdir $HWCONF
+	mount -t unionfs -o dirs=$DIR_WORK=ro unionfs $UNIONFS/
+	unionctl $UNIONFS --add --mode rw $HWCONF
+	sleep 4
+	chroot $UNIONFS /bin/bash debaser/postinstall.sh
+	#mv etc/apt/sources.list.bk etc/apt/sources.list
+	unionctl $UNIONFS --list
+	#umount $UNIONFS
+	
+	else
+		echo "(EE) install uinonfs-utils: unionctl not found"
+		exit 0
+	fi
+else
+	chroot $DIR_WORK /bin/bash debaser/postinstall.sh
+fi
+umount $DIR_WORK/.dev
+umount $DIR_WORK/dev
+cd $DIR_WORK
+[ ! -d dev/pts ] && mkdir dev/pts
+[ ! -e dev/console ] && mknod dev/console c 5 1
+[ ! -e dev/null ] && mknod dev/null c 1 3
+[ ! -e dev/ram ] && mknod dev/ram b 1 1
+[ ! -e dev/systty ] && mknod dev/systty c 4 0
+[ ! -e dev/tty ] && mknod dev/tty c 5 0
+for i in 1 2 3 4 5 6; do
+ [ ! -e dev/tty$i ] && mknod dev/tty$i c 4 $i;
+done
+[ ! -e dev/urandom ] && mknod dev/urandom c 1 9 
+exit 0
+fi
+
+
+###################################################################
+
+
+
+
+
+
+
+
+
+############################################geneate control dir (solve deps)
+if [ "$CONTROL" = "yes" ];then
+
+cd $DIR_WORK
+
+# if --dir-work  don't dwl Packages files
+if [ "$MEM" != "yes" ];then
+get_DEB_PKGE "$MIRROR_DEB" "$REL" "$ARCH" "$COMP" "$EXT"
+fi
+
+if [ "$DEBUG" = "no" ] ; then
+	gen_lst "$REL" "$MIRROR_DEB" "$LIST" "$LV" "$DIST"
+fi
+
+FILES=wget.lst
+NOTFOUND=notfound.lst
+PKGEDET=$DELIB/pkgedet
+MATCHED=debaser.log
+TOINCLUDE=
+TOEXCLUDE=
+PKGES_RCK=/$DIR_CONTROL/$DIR_RCK/recheck_deb
+
+# --- akw == gawk
+	try=$( grep -w awk  $LIST)
+	[ ! -z $try ] && sed -i -e "s/awk/gawk/"  $LIST 
+#----
+
+check_pkge  "$LIST" "$PKGE_DEB" "$MIRROR_LOC" \
+	"$FILES" "$NOTFOUND" "$PKGEDET" \
+	"$MATCHED" "$TOINCLUDE" "$TOEXLUDE" "$PKGES_RCK" 
+
+echo rechek all
+
+RCKNDX=0
+if [ -e "$PKGES_RCK" ];then
+	recheck_dep    "$PKGE_DEB" "$MIRROR_LOC" "$FILES" \
+			"$PKGEDET" "$MATCHED"  "$PKGES_RCK"  "$RCKNDX" 
+fi
+
+
+# KNOPPIX/MORPHIX/KANOTIX/?
+# OTHERMIRROR="http://www.morphix.org/debian/ | http://developer.linuxtag.net/knoppix/"
+# ex: http://www.morphix.org/debian/ == lv1 [ read pkges list from $DIR_WORK/debaser/live/lv1   ]
+# ex: http://developer.linuxtag.net/knoppix/ == lv2 [ read pkges list from $DIR_WORK/debaser/live/lv2   ]
+# ---------if for ddcxinfo-knoppix is in lv1 and debase can't find it in morphix.org it will search
+# ---------in mirror2 [ mirror3 mirrorn ] because it will be in notfound list
+if [ -z "$OTHERMIRROR$NEWMIRROR" ] ;then
+	[ -f "$NOTFOUND" ] && mv  $NOTFOUND $NOTFOUND$d
+	[ -e "$PKGE$EXT" ] && rm $PKGE$EXT
+	[ -e "$PKGE" ] && rm $PKGE
+fi
+
+d=0 #index for notfound
+
+#----------------------------------------------------------------------NEWMIRROR loop start
+for NEWMIRROR in "$OTHERMIRROR" "$APTMIRROR"
+do
+ck_ntf=0
+if [ "$NEWMIRROR" = "$OTHERMIRROR" ];then
+	httpnum=$(echo $OTHERMIRROR  | sed 's/[|]//g' | awk '{ print NF  }' )
+	style=lv
+elif [ "$NEWMIRROR" = "$APTMIRROR" ];then
+	httpnum=$(echo $APTMIRROR | awk 'BEGIN { FS = "[|]+"  }{ print NF  }')
+	style=deb
+fi
+for ((httpvar=1; httpvar <= httpnum ; httpvar++)) 
+do
+	[ -f "$NOTFOUND" ] && mv  $NOTFOUND $NOTFOUND$d
+	LV=$style$httpvar
+	NOTFOUND_LV="notfound_$LV.lst"
+
+	if [ -f "$DIR_WORK/debaser/live/$LV.lst" ];then
+		mycat $DIR_WORK/debaser/live/$LV.lst >> $NOTFOUND$d
+		mycat $DIR_WORK/debaser/live/$LV.lst >> $LIST
+	fi
+
+if [ "$MEM" != "yes" ];then
+	if [ "$style" = "lv" ] ;then
+		MIRROR_LV="$(echo $OTHERMIRROR  | sed 's/[|]//g' | awk 'BEGIN {  try='$httpvar' } {print $(try) }')"
+		get_LV_PKGE "$MIRROR_LV" "$PKGE.$LV" "$EXT"
+		echo 
+		echo Checking in $MIRROR_LV
+		echo
+	elif [ "$style" = "deb" ] ;then
+		NEWMIRROR=$(echo $APTMIRROR | awk 'BEGIN { FS = "[|]+"  }{ print $1  }' | tr ' ' '\n')
+		MIRROR_LV=$(echo $NEWMIRROR | awk ' {print $1} ')
+		RELV=$(echo $NEWMIRROR | awk ' {print $2} ')
+		numcomp=$(echo $NEWMIRROR | awk ' {print NF} ')
+		for ((compind=3; compind <= numcomp ; compind++))
+		do
+			NEWCOMP="$NEWCOMP $(echo $NEWMIRROR | awk 'BEGIN {  try='$compind' } {print $(try) }')"
+		done	 
+		get_DEB_PKGE "$MIRROR_LV" "$RELV" "$ARCH" "$NEWCOMP" "$EXT" "$LV"
+	fi
+fi
+
+while [ -e "$NOTFOUND$d"  ]
+	do {
+	echo
+	echo using notfound $NOTFOUND$d $NOTFOUND_LV $PKGE.$LV 
+	echo 
+ 	check_pkge  "$NOTFOUND$d" "$PKGE.$LV" "$MIRROR_LV" \
+				"$FILES" "$NOTFOUND_LV" "$PKGEDET" \
+				"$MATCHED" "$TOINCLUDE" "$TOEXLUDE" "$PKGES_RCK" 
+
+	echo recheck $d
+	echo
+	if [ -e $PKGES_RCK ]; then
+		recheck_dep    "$PKGE_DEB" "$MIRROR_DEB" "$FILES" \
+			"$PKGEDET" "$MATCHED"  "$PKGES_RCK"  "$RCKNDX"
+	fi
+	
+	for orph in $DIR_CONTROL/$DIR_ORPHAN/*
+		do
+
+			i=$( basename $orph )
+			if [ -f " $DIR_CONTROL/$DIR_ORPHAN/$i" ];then
+			echo checking : $i
+			
+			ck_if=$( grep -w "$i" $NOTFOUND_LV  )
+			
+			md5_1=$(echo  $ck_if | md5sum)  
+			md5_2=$(echo  $i | md5sum  )
+			
+			if [ "$md5_1"  !=  "$md5_2" ];then
+				echo $i >> $NOTFOUND_LV
+				rm  "$DIR_CONTROL/$DIR_ORPHAN/$i"
+			fi
+			fi
+	done 
+	
+	[ -f "$NOTFOUND_LV" ] && mem=$( cat $NOTFOUND_LV  )
+	[ -f "$NOTFOUND$d" ] && mem_old=$( cat $NOTFOUND$d  )
+	if [ "$mem" != "$mem_old"  ];then
+		rm $NOTFOUND$d
+		let d+=1
+		[ -f "$NOTFOUND_LV" ] && mv $NOTFOUND_LV $NOTFOUND$d
+	elif [ "$ck_ntf" -le 4  ];then
+		rm $NOTFOUND$d
+		let ck_ntf+=1
+		let d+=1
+		[ -f "$NOTFOUND_LV" ] && mv $NOTFOUND_LV $NOTFOUND$d
+	elif  [ "$ck_ntf" -gt 4  ];then
+		if  [ "$httpvar" -lt "$httpnum"  ];then
+			[ -f "$NOTFOUND_LV" ] && mv $NOTFOUND_LV $NOTFOUND
+			[ -f "$NOTFOUND$d" ] && rm $NOTFOUND$d
+			let d+=1
+		else
+			echo ------------------------------------------
+			echo '(WW) Could not find the following packages'
+			echo 
+			cat $NOTFOUND$d
+			mv $NOTFOUND$d $NOTFOUND
+			rm  $NOTFOUND_LV
+		fi	
+	fi
+
+	}
+done 
+done
+done
+#----------------------------------------------------------------------NEWMIRROR loop end
+
+check_cnflct
+
+#DON''T DSELECT THE FOLLOWING
+
+if [ "$DEBUG" = "yes" ];then
+	exit 0
+fi
+
+for i in  $DIR_WORK/debaser/postsel/*
+do
+	if [ "$i" != "" ];then
+		while read  line_in
+		do
+		if [ "$line_in" = "kbd" ];then
+			if grep -wx console-tools $DIR_WORK/toinclude ;then
+				sed -i -e '/^kbd$/d' $DIR_WORK/toinclude
+			fi
+			
+		else
+			sed -i -e "/^$line_in$/d" $DIR_WORK/toinclude
+		fi
+		done < $i
+	fi			
+done 
+
+
+
+#----------------------------------------------------
+# from debian : hwdata, kudzu [no]
+# from knoppix: hwdata-knoppix, kudzu-knoppix, hwsetup [no] [hwsetup bug?]
+# from morphix : hwdata-morphix, hwsetup-morphix [no] [ hwdata-morphix bug? ]
+# hwdata-knoppix [knoppix], hwsetup-morphix [morphix] [OK!]
+#hwdata-knoppix needed ... not hwdata or hwdata-morphix
+#------------------------------------------------------
+
+cp $FILES   $DIR_WORK/var/cache/apt/archives/
+
+for i in $DIR_WORK/debaser/exclude/* ; do
+	dontstrap="$(basename $i),$dontstrap"
+	echo "$(basename $i)" >> $DIR_WORK/toexclude
+done
+
+
+
+if [ "$GETDEBS" = "yes" ];then
+LNG_NAME=$packages
+create_basedir "$FILES" "$DIR_WORK" "$MIRROR_LOC" "$LNG_NAME" 
+else
+	echo "Stopping now as you request: check $DIR_WORK/control"
+	exit 0
+fi
+fi
+###############################################################end gencontrol
+
+if [ "$STRAP" = "yes"  ];then
+	script=debase-$REL
+	if [ "$RCK_EXCL" = "yes" ];then
+		for i in $PATH_NOW/exclude/* ; do
+			dontstrap="$(basename $i),$dontstrap"
+			echo "$(basename $i)" >> $DIR_WORK/toexclude
+		done
+	fi
+	dontstrap="$(basename $i),$dontstrap"
+	debootstrap --arch $ARCH  --verbose  --keep-debootstrap-dir --exclude=$dontstrap --unpack-tarball   $PATH_NOW/basedebs.tar $REL $DIR_DEST $MIRROR_STRAP $DELIB/scripts/$script
+fi
+
+[ ! -d $DIR_DEST/debaser/debootstrap ] && mkdir -p $DIR_DEST/debaser/debootstrap 
+cp -r $DIR_DEST/debootstrap/* $DIR_DEST/debaser/debootstrap/ && rm -r $DIR_DEST/debootstrap
+cp /etc/resolv.conf  $DIR_WORK/etc/resolv.conf
+cd $DIR_DEST
+tomove="$MATCHED $NOTFOUND $LIST $FILES toinclude toexclude"
+for i in $tomove ;do
+	[ -f "$i" ] && mv $i debaser/
+done
+for i in $PKGE* ;do
+	[ -f "$i" ] && mv $i debaser/
+done
+cat >$DIR_WORK/debaser/postinstall.sh<<'EOF'
+#!bin/bash
+apt-get update
+for file in /debaser/postsel/*
+do
+	if [ -f "$file" ];then
+	while read i
+	do 
+		apt-get -y --force-yes  install $i
+	done < $file
+	fi
+done
+for i in /lib/modules/* 
+do
+	[ -d "$i" ] && KVER=$(basename $i) && depmod -b /  $KVER
+done
+EOF
+echo "deb file:///var/cache/apt/ ./">  etc/apt/sources.list
+
+
+echo '--------------------'
+echo 'Done'
+echo "Check  $DIR_DEST/debaser/debootstrap/debootstrap.log"
+echo 
+if [ -e "$PATH_NOW/basedebs.tar" ]; then
+mv $PATH_NOW/basedebs.tar $START/basedebs.tar
+fi
+
+if [ "$POST_STRAP" = "yes" ];then
+chroot $UNIONFS /bin/bash debaser/postinstall.sh
+for i in $DEST_DIR/lib/modules/* 
+do
+	[ -d "$i" ] && KVER=$(basename $i) && depmod -b $DEST_DIR  $KVER
+done
+fi
+
+umount $DIR_DEST/.dev && umount $DIR_WORK/.dev
+umount $DIR_DEST/dev && umount $DIR_WORK/dev
+exit 0                                         

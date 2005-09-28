@@ -1,0 +1,14 @@
+# from debased.sourceforge.net
+# if DIST=ubuntu
+# APTMIRROR="http://debased.sourceforge.net/ubuntu/ hoary main universe"
+#                          [deb1.lst]
+# if DIST=debian
+# APTMIRROR="http://debased.sourceforge.net/debian/ sarge main contrib | http://www.os-works.com/debian/ sarge main"
+#                          [deb1.lst]                                              [deb2.lst]
+emelfm2
+links2
+xtdesktop
+pmount
+#debaser
+#minirooter
+#debootstrap

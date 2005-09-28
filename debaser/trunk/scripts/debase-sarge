@@ -1,0 +1,300 @@
+# $Id: debase-sarge,v 1.4 2005/09/19 09:46:40 sf-debaser Exp $
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# Daniele Favara <sf.debaser@gmail.com> <http://debased.sourceforge.net>
+
+mirror_style main
+download_style apt
+#finddebs_style from-indices
+REQUIRED_DEBASED=required.debased
+BASE_DEBASED=base.debased
+TOINCLUDE_DEBASED=toinclude
+DIR_DEBASED=ghost/debootstrap
+#----------------------------------------
+#	/usr/sbin/debootstrap
+#		|
+#		|_work_out_debs :
+#		|	|_ required="$required" >  $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED 
+#		|	|_ base="toinclude - $required" > $TARGET/$DIR_DEBASED/$BASE_DEBASED
+#		|	|_ required="$required $base" && base='' (if not some packages will compare two times)
+#		|_base=$(without "$base $additional" "$exclude") (after this seems we have base='')
+#		|_pkge in required and $path/*_xyz_arch.deb >  $TARGET/debootstrap/debpath
+#		|_first_stage_install:
+#		|	|_	required=$(cat $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED )
+#		|	|_	base=$(cat $TARGET/$DIR_DEBASED/$BASE_DEBASED)
+#		|_second_stage_install:
+#			|_	required=$(cat $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED )  
+#			|_  base=$(cat $TARGET/$DIR_DEBASED/$BASE_DEBASED)
+#
+#    
+#	bug ? -- base='' after going out from work_out_debs, if required="$required $base" && base='' everything seems ok
+#
+work_out_debs () {
+	
+	# to write base  and required pkges
+    [ ! -d  "$TARGET/$DIR_DEBASED" ] &&  mkdir -p "$TARGET/$DIR_DEBASED"
+    
+	required="base-files base-passwd bash bsdutils coreutils libacl1 libattr1 debconf debconf-i18n liblocale-gettext-perl libtext-wrapi18n-perl libtext-charwidth-perl debianutils diff dpkg dselect libblkid1 e2fsprogs e2fslibs libcomerr2 libss2 libuuid1 findutils grep gzip hostname libcap1 libc6 libdb1-compat libdb3 libncurses5 libnewt0.51 libpam-modules libpam-runtime libpam0g libperl5.8 libpopt0 login makedev mawk modutils mount ncurses-base ncurses-bin passwd perl-base procps sed slang1a-utf8 initscripts sysvinit sysv-rc tar util-linux whiptail libgcc1 gcc-3.3-base libstdc++5"
+	
+	# write required packages 
+	[ -f $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED ] && rm -f  $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED
+	touch  $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED
+	for i in $required; do
+	
+		echo $i >> $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED 
+
+	done
+	
+    #base="adduser apt apt-utils libdb4.2 at base-config aptitude libsigc++-1.2-5c102 bsdmainutils console-common console-tools libconsole console-data cpio cron dhcp-client ed exim4 exim4-base exim4-config exim4-daemon-light libgcrypt11 libgnutls11 libgpg-error0 libopencdk8 libtasn1-2 fdutils gettext-base groff-base ifupdown info klogd libssl0.9.7 liblzo1 zlib1g liblockfile1 libpcre3 libwrap0 logrotate mailx man-db libgdbm3 manpages nano net-tools netbase netkit-inetd iputils-ping nvi ppp pppconfig pppoe pppoeconf libpcap0.7 sysklogd tasksel libtextwrap1 tcpd telnet libtext-iconv-perl wget"
+	[ -f $TARGET/$DIR_DEBASED/$BASE_DEBASED ] && rm -f  $TARGET/$DIR_DEBASED/$BASE_DEBASED
+	touch  $TARGET/$DIR_DEBASED/$BASE_DEBASED
+	while read line
+    do {
+		if test -z $(grep -wx $line $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED);then
+		if test -z $(grep -wx $line $TARGET/$DIR_DEBASED/$BASE_DEBASED);then
+ 	 		[ "$line" != "pcmcia-cs" ] && echo $line >> $TARGET/$DIR_DEBASED/$BASE_DEBASED
+			[ "$line" != "pcmcia-cs" ] && base="$base $line"
+		fi
+		fi
+    }
+    done<$TARGET/$TOINCLUDE_DEBASED
+	
+    without_package () {
+        echo "$2" | tr ' ' '\n' | grep -v "^$1$" | tr '\n' ' '
+    }
+    subst_package () {
+        echo "$3" | tr ' ' '\n' | sed "s/^$1$/$2/" | tr '\n' ' '
+    }
+
+    LIBC6=libc6
+    IPFWTOOL=iptables
+
+    case $ARCH in
+        "alpha")
+            required="$(subst_package "libc6" "libc6.1" "$required")"
+            base="$base pciutils"
+            LIBC6="libc6.1"
+	    IPFWTOOL="ipchains"
+            ;;
+        "arm")
+            base="$base libgpmg1"
+	    IPFWTOOL="ipchains iptables"
+            ;;
+        "i386")
+	    	required="$(without_package "libperl5.8" "$required")"
+			[ -f "$TARGET/toexclude" ] && [  "$( grep -wx modutils "$TARGET/toexclude")" != "" ] && required="$(without_package "modutils" "$required")"
+            [ -f "$TARGET/toinclude" ] && [  "$( grep -wx pciutils "$TARGET/toinclude")" = "" ] && base="pciutils $base "
+			base="$base psmisc"
+	    IPFWTOOL="ipchains iptables"
+            ;;
+        "ia64")
+            required="$(subst_package "libc6" "libc6.1" "$required") libreadline4"
+            base="$base elilo efibootmgr dosfstools libparted1.6-12 parted"
+            LIBC6="libc6.1"
+            ;;
+        "m68k")
+            required="$required libreadline4"
+            required="$required libreadline4"
+            base="$base atari-bootstrap atari-fdisk amiga-fdisk eject mac-fdisk pmac-fdisk-cross vmelilo"
+	    IPFWTOOL="ipchains"
+            ;;
+        "powerpc")
+            required="$required libreadline4"
+            base="$base mac-fdisk amiga-fdisk psmisc powerpc-utils pciutils hfsutils"
+	    IPFWTOOL="ipchains iptables"
+            ;;
+        "sparc")
+            base="$base silo eject pciutils sparc-utils"
+	    IPFWTOOL="ipchains iptables"
+            ;;
+        "mips")
+            base="$base dvhtool pciutils"
+            ;;
+        "mipsel")
+            base="$base pciutils"
+            ;;
+        "hppa")
+            base="$base palo pciutils"
+            required="$(without_package "libstdc++2.10-glibc2.2" "$required")"
+            ;;
+        s390|s390x)
+            # base-config depends on console-tools and console-data
+            # so we can't exclude them although they are useless on s390
+            base="$base s390-tools telnetd devfsd"
+            base="$(without_package "console-tools-libs" "$base")"
+            base="$(without_package "fdutils" "$base")"
+            base="$(without_package "ppp" "$base")"
+            base="$(without_package "pppconfig" "$base")"
+            base="$(without_package "pppoe" "$base")"
+            base="$(without_package "pppoeconf" "$base")"
+            ;;
+	sh*)
+	    base="$base libstdc++3 gcc-3.0-base"
+	    base="$(without_package "fdutils" "$base")"
+	    required="$required libgcc1"
+	    required="$(without_package "libstdc++2.10-glibc2.2" "$required")"
+	    ;;
+        "amd64")
+            required="$required libtext-iconv-perl zlib1g"
+            base="$base pciutils psmisc"
+	    IPFWTOOL="iptables"
+            ;;
+        *)
+            # who knows?
+            ;;
+    esac
+
+    base="$base $IPFWTOOL"
+	echo $base > $TARGET/$DIR_DEBASED/$BASE_DEBASED
+	[ -f "$TARGET/toexclude" ] && [  "$( grep -w "^modutils$" "$TARGET/toexclude")" != "" ] && required="$(without_package "modutils" "$required")"
+	echo $required > $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED 
+	
+#	required="$required $base"
+#	base=''
+	
+}
+
+first_stage_install () {
+#	required=$(cat $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED )
+#	base=$(cat $TARGET/$DIR_DEBASED/$BASE_DEBASED)
+#	all_debs="$required $base"
+    extract $required
+
+    mkdir -p "$TARGET/var/lib/dpkg"
+    : >"$TARGET/var/lib/dpkg/status"
+    : >"$TARGET/var/lib/dpkg/available"
+
+    setup_etc
+    if [ ! -e "$TARGET/etc/fstab" ]; then
+        echo '# UNCONFIGURED FSTAB FOR BASE SYSTEM' > "$TARGET/etc/fstab"
+        chown 0.0 "$TARGET/etc/fstab"; chmod 644 "$TARGET/etc/fstab"
+    fi
+
+    setup_devices
+
+    x_feign_install () {
+        local pkg="$1"
+        local deb="$(debfor $pkg)"
+        local ver="$(
+            ar -p "$TARGET/$deb" control.tar.gz | zcat |
+                tar -O -xf - control ./control 2>/dev/null |
+                sed -ne 's/^Version: *//Ip' | head -n 1
+        )"
+
+        mkdir -p "$TARGET/var/lib/dpkg/info"
+
+        echo \
+"Package: $pkg
+Version: $ver
+Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
+
+        touch "$TARGET/var/lib/dpkg/info/${pkg}.list"
+    }
+
+    x_feign_install dpkg
+}
+
+second_stage_install () {
+#	required=$(cat $TARGET/$DIR_DEBASED/$REQUIRED_DEBASED )
+#	base=$(cat $TARGET/$DIR_DEBASED/$BASE_DEBASED)
+#	all_debs="$required $base"
+    x_core_install () {
+	smallyes '' | in_target dpkg --force-depends --install $(debfor "$@")
+    }
+
+    p () {
+	baseprog="$(($baseprog + ${1:-1}))"
+    }
+
+    setup_proc
+    in_target /sbin/ldconfig
+
+    DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_FRONTEND
+
+    baseprog=0
+    bases=7
+
+    p; progress $baseprog $bases INSTBASE "Installing base system" #1
+    info INSTCORE "Installing core packages..."
+
+    p; progress $baseprog $bases INSTBASE "Installing base system" #2
+    ln -s mawk $TARGET/usr/bin/awk
+    x_core_install base-files base-passwd
+    p; progress $baseprog $bases INSTBASE "Installing base system" #3
+    x_core_install dpkg
+
+    if [ ! -e "$TARGET/etc/localtime" ]; then
+        ln -sf /usr/share/zoneinfo/UTC "$TARGET/etc/localtime"
+    fi
+
+    p; progress $baseprog $bases INSTBASE "Installing base system" #4
+    x_core_install $LIBC6
+
+    p; progress $baseprog $bases INSTBASE "Installing base system" #5
+    x_core_install perl-base
+    p; progress $baseprog $bases INSTBASE "Installing base system" #6
+    rm $TARGET/usr/bin/awk
+    x_core_install mawk
+    p; progress $baseprog $bases INSTBASE "Installing base system" #7
+    x_core_install debconf
+ 
+ 	baseprog=0
+    bases=$(set -- $required; echo $#)
+    info UNPACKREQ "Unpacking required packages..."
+
+   smallyes '' | 
+      (repeat 5 in_target_failmsg UNPACK_REQ_FAIL_FIVE "Failure while unpacking required packages.  This will be attempted up to five times." "" \
+      dpkg --status-fd 8 --force-depends --unpack $(debfor $required) 8>&1 1>&7 |
+      dpkg_progress $baseprog $bases UNPACKREQ "Unpacking required packages" UNPACKING) 7>&1
+
+    info CONFREQ "Configuring required packages..."
+
+    mv "$TARGET/sbin/start-stop-daemon" "$TARGET/sbin/start-stop-daemon.REAL"
+    echo \
+"#!/bin/sh
+echo
+echo \"Warning: Fake start-stop-daemon called, doing nothing\"" > "$TARGET/sbin/start-stop-daemon"
+    chmod 755 "$TARGET/sbin/start-stop-daemon"
+
+    setup_dselect_method apt
+
+    smallyes '' | 
+      (in_target_failmsg CONF_REQ_FAIL "Failure while configuring required packages." "" \
+      dpkg --status-fd 8 --configure --pending --force-configure-any --force-depends 8>&1 1>&7 |
+      dpkg_progress $baseprog $bases CONFREQ "Configuring required packages" CONFIGURING) 7>&1
+
+    baseprog=0
+    bases="$(set -- $base; echo $#)"
+
+    info UNPACKBASE "Unpacking the base system..."
+
+    smallyes '' | 
+      (repeat 5 in_target_failmsg INST_BASE_FAIL_FIVE "Failure while installing base packages.  This will be re-attempted up to five times." "" \
+      dpkg --status-fd 8 --force-auto-select --force-overwrite --force-confold --skip-same-version --unpack $(debfor $base) 8>&1 1>&7 |
+      dpkg_progress $baseprog $bases UNPACKBASE "Unpacking base system" UNPACKING) 7>&1
+
+    info CONFBASE "Configuring the base system..."
+
+    smallyes '' |
+      (repeat 5 in_target_failmsg CONF_BASE_FAIL_FIVE "Failure while configuring base packages.  This will be attempted 5 times." "" \
+      dpkg --status-fd 8 --force-confold --skip-same-version --configure -a 8>&1 1>&7 |
+      dpkg_progress $baseprog $bases CONFBASE "Configuring base system" CONFIGURING) 7>&1
+
+    mv "$TARGET/sbin/start-stop-daemon.REAL" "$TARGET/sbin/start-stop-daemon"
+
+    progress $bases $bases CONFBASE "Configuring base system"
+    info BASESUCCESS "Base system installed successfully."
+}

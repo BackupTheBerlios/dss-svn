@@ -1,0 +1,178 @@
+.TH "DEBASER" "8" "2005-06-11" "http://debased.sourceforge.net" "Debian GNU/Linux manual"
+.SH "NAME"
+debaser \-  Build a Debian Based System From Scratch
+.SH "SYNOPSIS"
+.B debaser
+.RB [ OPTION\&.\&.\&. ]
+
+.SH "DESCRIPTION"
+.B debaser
+build a debian based system from scratch. The process is divided into 2 stages:
+.PP 
+\fBFirst Stage:\fR
+.PP 
+a) Retrieve Packages.gz from 
+.I MIRROR_DEB 
+of 
+.I DIST 
+(eg, debian, ubuntu) and 
+.I REL 
+(eg, sarge, sid, hoary).
+.PP 
+b) Read the packages list from files:
+.PP 
+	* ~/.debaser/prepkge/foo
+.br 
+	* ~/.debaser/prepkge/bar
+.PP 
+excluding the ones in:
+.PP 
+	* ~/.debaser/.debaser/exclude/<pkge_name>
+.PP 
+c) Generate the control files, solving dependencies, in:
+.PP 
+	* DIR_WORK/control/
+.PP 
+the list of packages to debootstrap in
+.PP 
+	* DIR_WORK/toinclude
+.PP 
+the list of packages to don't debootstrap in:
+.PP 
+	* DIR_WORK/toexclude
+.PP 
+and the debs to wget in:
+.PP 
+	* DIR_WORK/var/cache/apt/archives/wget.lst
+.PP 
+d) The last step of this stage is to download all the files in wget.lst and generate a 
+.I basedebs.ta r 
+from 
+.I DIR_WORK.
+.PP 
+It is possible to download kernels and other packages from
+.I MIRROR_MPX 
+if listed in:
+.PP 
+	* ~/.debaser/prepkge/kernel
+.PP 
+search dependencies of those packages in 
+.I MIRROR_DEB 
+and then, if not found, 
+.I MIRROR_MPX.
+.PP 
+\fBSecond Stage:\fR
+.PP 
+a) Unpack 
+.I basedebs.ta r 
+in 
+.I DIR_DEST
+.PP 
+b) Run debootstrap
+.PP 
+	* mirror: MIRROR_STRAP="file://DIR_DEST/var/cache/apt/"
+.br 
+	* arch   : ARCH
+.br 
+	* suite  : REL
+.br 
+	* script : /usr/lib/debaser/scripts/debase\-SUITE
+.br 
+	* include: DIR_DEST/toinclude
+.br 
+	* exclude: DIR_DEST/toexclude | ~/.debaser/exclude/*
+.PP 
+c) If specified, recheck packages to exclude during bootstrap in 
+.PP 
+	* ~/.debaser/exclude/
+.PP 
+debaser as debootstrap can be used to install Debian in a system without using an installation disk but can also be used to generate your own base module for Debased (Live CD | Live HD). 
+.PP 
+.SH "OPTIONS"
+\fBFirst Stage:\fP
+.PP 
+.IP "\fB\-\-control|\-c [yes|no] (default yes)\fP"
+.br 
+Generate the control files and  wget.lst.
+.IP 
+.IP "\fB\-\-getdebs|\-g [yes|no] (default yes)\fP"
+.br 
+Generate the basedebs.ta r.
+.IP 
+.PP 
+\fBSecond Stage:\fP
+.PP 
+.IP "\fB\-\-strap|\-s [yes|no] (default yes)\fP"
+.br 
+Run bootstrap unpacking the tarball.
+.IP 
+.IP "\fB\-\-reck\-excl|\-r [yes|no] (default no)\fP"
+.br 
+In case something went wrong during bootstrap, add new packges in exclude dir. and don't select them during the installation process.
+.IP 
+.IP "\fB\-\-all|\-a\fP"
+.br 
+First and second stage default options.
+.IP 
+.IP "\fB\-\-debug|\-d file\fP"
+.br 
+File must contain a list of pckges to debug
+.IP 
+.IP "\fB\-\-mmaker|\-m [unionfs]\fP"
+.br 
+Generate a morphix basemod using script debase\-$REL.basemod.
+If unionfs is active debaser will split the packages from basemod.lst,unionfs module and unionfs\-utils are needed.
+.br 
+\-hwconf=directory that contains the installed packages from basemod.list
+.br 
+\-dirwork=directory that contains the standard packages
+.br 
+\-UNIONFS=the unified fs (hwconf over dirwork)
+.br 
+.IP 
+.PP 
+.SH "EXAMPLE"
+.
+.PP 
+To generate a \fIsarge\fR basedebs.ta r:
+.PP 
+[ ... edit ~/.debaser/default ]
+.PP 
+	DIR_WORK=/media/hda3
+.br 
+	DIST=debian
+.br 
+	MIRROR_DEB=http://ftp.it.debian.org/debian/
+.br 
+	REL=sarge
+.br 
+	COMP='main contrib non\-free'
+.br 
+	ARCH=i386 
+.br 
+	EXT=.gz
+.br 
+	MIRROR_MPX=http://www.morphix.org/debian/
+.br 
+	LV=mpx
+.PP 
+# debaser \-\-control \-\-getdebs
+.PP 
+[ check DIR_WORK/{toexclude,toinclude,control/} ]
+.PP 
+To create a complete Debian installation of \fIsarge\fR  from basedebs.ta r:
+.PP 
+	DIR_DEST=/media/hda3
+.br 
+	REL=sarge
+.br 
+	ARCH=i386
+.br  
+.PP 
+# debaser \-\-control=no \-\-getdebs=no \-\-strap \-\-reck\-excl=yes
+.PP 
+# cat DIR_DEST/debootstrap.debootstrap.log
+.PP 
+.SH "AUTHOR"
+.B debaser
+and the manpage was written by Daniele Favara <sf.debaser@gmail.com>.

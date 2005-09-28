@@ -1,0 +1,39 @@
+debaser for Debian
+------------------
+
+debaser  build a debian based system from scratch.
+
+debaser can be used to install Debian in a system  without  using
+an  installation  disk but can also be used to generate your own
+base module for Debased (Live CD | Live HD).
+
+--- <http://debased.sourceforge.net> ---
+
+The process is divided into 2 stages:
+
+
+FIRST STAGE:
+    --control[=yes|no] (default yes)
+	  generate the control files and  wget.lst
+    --getdebs[=yes|no] (default yes)
+	  generate the basedebs.tar
+
+SECOND STAGE:
+    --strap[=yes|no] (default yes)
+	  run debootstrap unpacking the tarball
+    --reck-excl[=yes|no] (default no)
+	  in case something went wrong during debootstrap, add new
+	  packges in exclude dir. and don't select them during the
+	  installation process
+    --post-strap[=yes|no] (default no)
+	  configure the new installed system adding the default
+	  user to the necessary groups
+
+    --all
+	  first and second stage default options
+EXAMPLE:
+	# echo foo > /etc/debaser/toexclude/foo # debaser --strap
+	--reck-excl=yes
+
+
+ -- Daniele Favara <sf.debaser@gmail.com>, Mon, 18 Jul 2005 09:55:42 +0200

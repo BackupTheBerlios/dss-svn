@@ -1,0 +1,9 @@
+kernel-image-2.6.11
+ipw2100-modules-2.6.11
+ndiswrapper-modules-2.6.11
+cloop-module-2.6.11
+unionfs-modules-2.6.11
+linux-wlan-ng-modules-2.6.11
+unionfs-source
+unionfs-utils
+

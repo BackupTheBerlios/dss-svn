@@ -1,0 +1,16 @@
+xsession-initscript-knoppix 
+xsession-knoppix 
+xf86config-knoppix
+usleep-knoppix
+user-profile-knoppix
+sudo
+rebuildfstab-knoppix 
+etcskel-knoppix
+automount-knoppix
+ddcxinfo-knoppix
+hotplug-knoppix
+kudzu-knoppix
+hwdata-knoppix
+hwsetup
+rebuildfstab-knoppix
+scanpartitions-knoppix

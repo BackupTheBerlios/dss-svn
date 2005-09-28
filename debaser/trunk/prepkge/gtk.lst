@@ -1,0 +1,31 @@
+libgdk-pixbuf2
+icewm-experimental
+aterm
+grun
+gftp
+gpdf
+gqview
+scite
+lostirc
+gmessage
+xfce4-icon-theme
+#
+#
+# from debased.sourceforge.net
+# if DIST=ubuntu
+# APTMIRROR="http://debased.sourceforge.net/ubuntu/ hoary main universe"
+# if DIST=debian
+# APTMIRROR="http://debased.sourceforge.net/debian/ sarge main contrib | http://www.os-works.com/debian/ sarge main"
+# it's better to list this packages in:
+# /root/.debaser/live/deb1.lst
+#
+#emelfm2
+#links2
+#xtdesktop
+#debaser
+#minirooter
+#
+# and if DIST=debian in
+# /root/debaser/live/deb2.lst
+#
+#xfce4-icon-theme

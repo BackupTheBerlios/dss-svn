@@ -1,0 +1,39 @@
+#!/bin/bash
+# $Id: pkgedet,v 1.2 2005/09/19 09:46:40 sf-debaser Exp $
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# Daniele Favara <sf.debaser@gmail.com> <http://debased.sourceforge.net>
+
+file=$2
+PACKAGE="$( grep -w "Package:" "$file" | awk 'BEGIN { FS= "[ ]" }{ print $2  }'  )"
+VERSION="$( grep -w "Version:" "$file" | awk 'BEGIN { FS= "[ ]" }{ print $2  }'  )"
+ARCHITECTURE="$( grep -w "Architecture:" "$file" | awk 'BEGIN { FS= "[ ]" }{ print $2  }'  )"
+FILENAME="$( grep -w "Filename:" "$file" | awk 'BEGIN { FS= "[ ]" }{ print $2  }'  )"
+#MD5SUM="$( grep -w "MD5sum:" "$file" | awk 'BEGIN { FS= "[:]" }{ print $2  }'  )"
+#SIZE="$( grep -w "Size:" "$file" | awk 'BEGIN { FS= "[:]" }{ print $2  }'  )"
+
+echo "$PACKAGE $VERSION $ARCHITECTURE $1 $FILENAME $MD5SUM $SIZE"
+
+#list=" "
+#for i in Package: Version: Filename: ;do
+#	set -x
+#	row="$( grep -w "$i" "$file")"
+#	col_1="$(echo "$row" | awk 'BEGIN { FS= "[:]" }{ print $1  }')"
+#	col_2="$(echo "$row" | awk 'BEGIN { FS= "[:]" }{ print $2  }')"
+#	to_print="$to_print $col_2"
+#	set +x
+#done
+
+#echo $to_print

@@ -1,0 +1,13 @@
+# to spped up debaser it's better to place these 
+# packages in :
+# /root/.debaser/live/lv1.lst
+# if using:
+# OTHERMIRROR="http://www.morphix.org/debian/ | http://developer.linuxtag.net/knoppix/"
+#                    [lv1.lst]                          [lv2.lst]
+#unionfs-utils
+#ipw2100-modules-2.6.11
+#cloop-module-2.6.11
+#unionfs-modules-2.6.11
+#linux-wlan-ng-modules-2.6.11
+#kernel-image-2.6.11
+
