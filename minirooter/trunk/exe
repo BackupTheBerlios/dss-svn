@@ -1,0 +1,16 @@
+# /etc/minirooter/exe : file exe to copy in miniroot
+#
+# This file should contain the names or full paths of exe files, one per line.
+# Comments begin with a `#', and everything on the line after them are ignored.
+#
+# You must run mkderooter(8) to effect this change.
+
+splash
+#depmod
+
+# Default
+
+#udevstart
+#unionctl
+#modprobe
+#$CONFDIR/busybox

@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# $Id$
+#
+# Script to build the Debased Live CD miniroot 
+# Daniele Favara, (c) 2005 <danjele@gmail.com>
+#
+# <http://dss.berlios.de>
+
+
+
+
+#---------------------------------------------
+CONFDIR=/usr/share/minirooter
+MINILIBS=/usr/lib/minirooter/functions
+EXE="unionctl udevstart reboot"
+BUSYBOX=$CONFDIR/busybox
+
+
+
+pnow=`pwd`
+cd $INITRDDIR
+cd ../
+# $INITRDDIR_UP/initrd==$INITRDDIR ($DESTDIR==$INITRDDIR_UP)
+INITRDDIR_UP=`pwd`
+cd $pnow
+#----------------------------------------------
+
+
+cp $CONFDIR/confdir/exedss $INITRDDIR_UP
+cp $CONFDIR/confdir/init   $INITRDDIR/sbin/
+
+
+#----------------------------------------------
+# source functions
+# gen_list "miniroot" "bim bum bam" "/usr/share/minirooter/busybox" "DESTDIR"
+# gen_env "DESTDIR" "$DESTDIR/minirooter" "file.list"
+
+. $MINILIBS
+#----------------------------------------------
+
+#----------------------------------------------
+gen_list "initrd" "$EXE" "$BUSYBOX"  "$INITRDDIR_UP"
+# generate:
+# 	 $INITRDDIR_UP/{exedss, libsdss.list, exedss.list}
+[ ! -d "$INITRDDIR/sbin" ] && mkdir -p "$INITRDDIR/sbin"
+gen_env  "$INITRDDIR_UP" "$INITRDDIR" "libsdss.list"
+gen_env  "$INITRDDIR_UP" "$INITRDDIR" "exedss.list"
+
+#----------------------------------------------
+
+while read i ; do
+	if [ ! -e "$INITRDDIR/$i" ];then
+	 d=${i/`basename $i`}
+	 [ ! -d $INITRDDIR/$d ] && mkdir -p $INITRDDIR/$d 
+	   ln -s /sbin/busybox $INITRDDIR/$i 2> /dev/null
+	fi
+done < $CONFDIR/busybox.links
+

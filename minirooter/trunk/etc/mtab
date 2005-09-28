@@ -1,0 +1,3 @@
+/proc /proc proc rw 0 0
+/dev/pts /dev/pts devpts rw 0 0
+/sys /sys sysfs rw 0 0

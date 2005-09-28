@@ -1,0 +1,21 @@
+Source: minirooter
+Section: admin
+Priority: extra
+Maintainer: Daniele Favara <danjele@gmail.com>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.1
+
+Package: minirooter
+Architecture: any
+Depends: coreutils, debianutils, sed, gawk | awk
+Recommends: debaser, udev, unionfs-utils, cloop-utils, cloop-src, unionfs-source
+Description: Creates a miniroot.gz for booting from a Debased live [CD|HD]
+ minirooter automates the generation of a miniroot to be used with a bootloader.
+ Upon bootup, the initrd image will try to locate a CD-ROM drive or a 
+ USB|Firewire mass storage device. When this does not succeed, it auto-probes 
+ for SCSI adapters and tries to locate SCSI drives. It also works when multiple 
+ CD-ROM drives are installed in the system by checking if the inserted CD is the
+ correct one for booting.
+ The linuxrc script uses udevstart to generate the devices, and mount all the 
+ compressed mods using unionfs ("The Upstream Salmon Struct").
+ <dss.berlios.de>

@@ -1,0 +1,223 @@
+#!/bin/sh
+#
+# $Id$
+#
+# Script to build the Debased Live CD miniroot 
+# Daniele Favara, (c) 2005 <danjele@gmail.com>
+#
+# <http://dss.berlios.de>
+
+usage() {
+
+	 cat >&2 << EOF
+
+Usage: [-k] [-l live] [-s] [-d confdir] -o outfile version
+
+Options:
+  -d confdir  Specify an alternative configuration directory.
+  -k          Keep temporary directory used to make the image.
+  -o outfile  Write to outfile.
+  -l live     live can be [dss | morphix]
+  -s          enable bootsplash (splash bin needed)
+
+See mkderooter(8) for further details.
+EOF
+	exit 1
+}
+
+find_mod (){
+all=""
+mods=$1
+for i in $mods ; do 
+	a=$(find /lib/modules/$KNAME/ -iname $i.* )
+	all="$a $all" 
+done
+b=$( echo $all | tr ' ' '\n'  )
+echo "$b" >> $DESTDIR/modules.list
+}
+
+CONFDIR=/etc/minirooter
+DESTDIR=/tmp/minirooter.$$
+MINIDIR=$DESTDIR/minirooter
+BUSYBOX=/usr/share/minirooter/busybox
+SPLASHDIR=/usr/share/minirooter/bootsplash
+ETCDIR=/usr/share/minirooter/etc
+MINILIBS=/usr/lib/minirooter/functions
+
+while getopts "sd:l:ko:" flag; do
+	case $flag in
+	s) 
+		splash=yes
+		;;
+	d)
+		CONFDIR="$OPTARG"
+		if [ ! -d "$CONFDIR" ]; then
+			echo "$PROG: $CONFDIR: Not a directory" >&2
+			exit 1
+		fi
+		;;
+
+	l)
+		if [ "${OPTARG}" = "dss" ] ;then
+			LIVECD="DSSCD"
+		elif [ "${OPTARG}" = "morphix" ] ;then
+			LIVECD="MorphixCD"
+		else
+			echo "(EE): choose debased or moprhix"
+			usage
+			exit 1
+		fi
+		out=yes
+		;;
+	k)
+		keep=yes
+		;;
+	o)
+		miniroot_file="${OPTARG}"
+		out=yes
+		;;
+
+	*)
+		usage
+		;;
+	esac
+done
+
+shift $(($OPTIND - 1))
+
+if ! [ $out ] || [ $# -gt 1 ]; then
+	usage
+fi
+
+KNAME=$1
+[ -z "$KNAME" ] && usage && exit 1
+[ ! -e "/lib/modules/$KNAME" ] && echo "----" && echo "(EE): $KNAME is not a valid kernel version" && echo "----" && usage && exit 1
+
+#---------------------------------------
+# Directory
+[ "$keep" = "yes" ] && echo "The working directory $DESTDIR will be kept."
+[ ! -f $CONFDIR/modules  ] && :>$CONFDIR/modules
+
+mkdir -p $MINIDIR/{cdrom,dev,etc,lib,mnt,proc,sbin,sys,UNIONFS}
+cp $CONFDIR/{exe,modules} $DESTDIR/
+cp $BUSYBOX.links $DESTDIR/
+[ ! -f $DESTDIR/busybox.links ] && exit 1
+#---------------------------------------
+
+#---------------------------------------
+# Devices
+mknod $MINIDIR/dev/hdc b 22 0
+mkdir $MINIDIR/dev/pts
+mknod $MINIDIR/dev/console c 5 1
+mknod $MINIDIR/dev/null c 1 3
+mknod $MINIDIR/dev/ram b 1 1
+mknod $MINIDIR/dev/systty c 4 0
+mknod $MINIDIR/dev/tty c 5 0
+for i in 1 2 3 4 5 6; do
+  mknod $MINIDIR/dev/tty$i c 4 $i;
+done
+mknod $MINIDIR/dev/urandom c 1 9   
+#---------------------------------------
+
+#--------------------------------------
+# Library and exe
+EXE="udevstart unionctl modprobe"
+
+#----------------------------------------------
+# source functions
+# gen_list "miniroot" "bim bum bam" "/usr/share/minirooter/busybox" "DESTDIR"
+# gen_env "DESTDIR" "$DESTDIR/minirooter" "file.list"
+
+. $MINILIBS
+
+#----------------------------------------------
+
+#----------------------------------------------
+
+gen_list "miniroot" "$EXE" "$BUSYBOX"  "$DESTDIR"
+# generate:
+# 	 $DESTDIR/{exe, libs.list, exe.list}
+
+#----------------------------------------------
+
+# Copy over etc plaintext configuration files
+
+if [ -e $CONFDIR/etc ]; then
+    cp -a $CONFDIR/etc/* $MINIDIR/etc/
+elif [ -d $ETCDIR ];then
+	cp -a $ETCDIR/* $MINIDIR/etc/
+else
+    echo "Sorry, unable to find etc files in  $CONFDIR/etc/"
+    echo "proceeding without, but your miniroot is likely broken!"
+fi
+if [ "$splash" = "yes" ];then
+if [ -d "$CONFDIR"/bootsplash ];then
+	mkdir -p $MINIDIR/bootsplash
+	cp -r $CONFDIR/bootsplash/* $MINIDIR/bootsplash
+elif [ -d $SPLASHDIR ];then
+	mkdir -p $MINIDIR/bootsplash
+	cp -r $SPLASHDIR/* $MINIDIR/bootsplash
+else
+	echo "(EE): $CONFDIR/bootsplash not found"
+	usage
+	exit 0
+fi
+fi
+#---------------------------------------
+# Modules
+usb="usbcore ehci-hcd ohci-hcd uhci-hcd usb-storage"
+echo "$( echo $usb | tr ' ' '\n' )" > $DESTDIR/usb.list
+find_mod "$usb"
+scsi="3w-xxxx BusLogic NCR53c406a a100u2w advansys \
+	aha152x aha1542 aic7xxx atp870u dtc eata fdomain \
+	gdth initio megaraid pas16 psi240i qlogicfas \
+	qlogicfc seagate t128 tmscsim u14-34f ultrastor wd7000"
+echo "$( echo $scsi | tr ' ' '\n' )" > $DESTDIR/scsi.list
+find_mod "$scsi"
+ide="ide-cd"
+echo "$( echo $ide | tr ' ' '\n' )" > $DESTDIR/ide.list
+find_mod "$ide"
+fs="nls_cp437 unionfs cloop"
+echo "$( echo "$fs" | tr ' ' '\n' )" > $DESTDIR/fs.list
+find_mod "$fs"
+[ -f $DESTDIR/modules  ] && addmod=$( cat $DESTDIR/modules ) && find_mod $addmod
+ldmod=$(egrep -v '^(#.*)?$' "$DESTDIR"/modules | cat -n )
+echo "$ldmod" | awk '{print $2}'  > $DESTDIR/loadmod.list
+echo "$ldmod" | awk '{ $1 = "modprobe -k "; print }'> $MINIDIR/addmodules
+[ -f $DESTDIR/loadmod.list  ] && loadmod=$( cat  "$DESTDIR/loadmod.list" ) && find_mod "$loadmod"
+
+#---------------------------------------
+
+#---------------------------------------
+# Copy all files
+
+gen_env  "$DESTDIR" "$MINIDIR" "exe.list"
+gen_env  "$DESTDIR" "$MINIDIR" "modules.list"
+gen_env  "$DESTDIR" "$MINIDIR" "libs.list"
+
+# Make links
+pnow=`pwd`
+cd $MINIDIR/sbin
+while read i ; do
+	[ ! -f $MINIDIR/$i ] && ln -s busybox `basename $i`
+done < $DESTDIR/busybox.links
+cd $pnow
+cp $CONFDIR/linuxrc $MINIDIR/ && chmod +x $MINIDIR/linuxrc
+
+if [ "$LIVECD" = "MorphixCD" ];then
+	sed -i -e "s/DSSCD/MorphixCD/g" $MINIDIR/linuxrc
+fi
+
+# Generate modules dependencies
+depmod -b $MINIDIR $KNAME
+#---------------------------------------
+if [ ! -z $miniroot_file ]; then
+    mkext2fs -f $MINIDIR $miniroot_file
+    if [ -e $miniroot_file ]; then
+	echo "Miniroot compressed as ext2 fs, gzip compressed to $miniroot_file"
+    else
+	echo "An error occurred in the miniroot-compressing stage"
+    fi
+fi
+
+[ "$keep" != "yes" ] && rm -r $DESTDIR

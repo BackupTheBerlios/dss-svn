@@ -1,0 +1,379 @@
+#!/bin2/sh
+#
+# $Id$
+#
+# Script to boot-up the Debased Live HD miniroot 
+# Daniele Favara, (c) 2005 <danjele@gmail.com>
+#
+# <http://dss.berlios.de>
+
+# mount an unionfs as root fs
+
+PATH=/sbin:/bin:/bin2:/usr/sbin:/usr/bin:
+
+
+set fb color mode
+RESET="]R"
+# ANSI COLORS
+# Erase to end of line
+
+
+CRE="[K"
+# Clear and reset Screen
+CLEAR="c"
+# Normal color
+NORMAL="[0;39m"
+# RED: Failure or error message
+RED="[1;31m"
+# GREEN: Success message
+GREEN="[1;32m"
+# YELLOW: Descriptions
+YELLOW="[1;33m"
+# BLUE: System mesages
+BLUE="[1;34m"
+# MAGENTA: Found devices or drivers
+MAGENTA="[1;35m"
+# CYAN: Questions
+CYAN="[1;36m"
+# BOLD WHITE: Hint
+WHITE="[1;37m"
+
+# Clear screen with colormode reset
+#call <SNR>3_SelectAll()
+# echo "$CLEAR$RESET"
+# echo "$CLEAR"
+# Just go to the top of the screen
+# echo -n "[H[J"
+echo ""
+# Be verbose
+echo "${WHITE}Welcome to the ${RED}DEBASER${WHITE} Upstream Salmon Boot${NORMAL}"
+echo ""
+echo ""
+get_cmdline() {
+	init=/sbin/init
+	root=
+	ide_options=
+	ro=r
+	noresume=
+	resume=${RESUME}
+	tmpfs=yes
+	debugme=no
+	for i in $(cat proc/cmdline); do
+		case $i in
+		init=*)
+			init=${i#init=}
+			;;
+		root=*)
+			root=${i#root=}
+			;;
+		ide*=* | hd[!=]*=*)
+			ide_options="$ide_options $i"
+			;;
+		ro)
+			ro=r
+			;;
+		rw)
+			ro=
+			;;
+		noresume | noresume=*)
+			noresume=$i
+			;;
+		resume=*)
+			resume=$i
+			;;
+		debaser=*)
+			debaser=${i#debaser=}
+			;;
+		overall=*)
+			overall=${i#overall=}
+			;;
+		tmpfs=*)
+			tmpfs=$i
+			;;
+		debugme=*)
+			debugme=$i
+			;;
+		esac
+	done
+
+	ide_options=${ide_options# }
+
+	CMDROOT=
+	case $root in
+	/dev/*)
+		CMDROOT=$root
+		;;
+	esac
+}
+
+BUILTIN_FS="iso9660 ext2 vfat ntfs ext3"
+mount_device() {
+	IFS=,
+	set -f
+	set +f -- $FSTYPES auto
+	unset IFS
+	for i; do
+		if
+			mount -n${ro}t "$i" ${flags:+-o "$flags"} \
+				$root /mnt > /dev/null 2>&1
+		then
+			break
+		fi
+	done
+}
+
+mountit(){
+# Usage: mountit src dst "options"
+    for fs in $BUILTIN_FS; do
+	test -b $1 && mount -t $fs $3 $1 $2 >/dev/null 2>&1 && return 0
+    done
+    return 1
+}
+mount_root() {
+	
+	local sysfs=
+	mount -nt proc proc proc
+# Disable kernel messages 
+
+	
+	if mount -nt sysfs sysfs sys > /dev/null 2>&1; then
+		sysfs=yes
+	fi
+if [ -z "$root" ];then 
+while read major minor blocks partition relax; do
+	partition="${partition##*/}"
+	[ -z "$partition" -o ! -e "/dev/$partition" ] && continue
+	[ "$blocks" -lt 2 ] && continue
+	case "$partition" in
+	[hs]d?) disks="$disks $partition";;
+	*) partitions="$partitions /dev/$partition";;
+	esac
+done <<EOT
+	$(awk 'BEGIN{old="__start"}{if($0==old){exit}else{old=$0;if($4&&$4!="name"){print $0}}}' /proc/partitions)
+EOT
+for i in $partitions
+do
+  if mountit $i /mnt "-o ro" >/dev/null 2>&1 > /dev/null
+      then
+      if test -f /mnt/findme
+	  then
+	  echo -n "${CRE} ${GREEN}Accessing ROOT at ${MAGENTA}$i${GREEN}...${NORMAL}"
+	  root="$i"
+	  break
+      fi
+      umount /mnt
+  fi
+done
+fi	
+	mount_device
+	
+	if [ $sysfs ]; then
+		umount -n sys
+	fi
+	umount -n proc
+}
+
+
+
+
+do_swsusp() {
+	local device major minor sysfs=
+	local resume="$resume"
+
+	if mount -nt sysfs sysfs sys > /dev/null 2>&1; then
+		sysfs=yes
+	fi
+
+	if [ -n "$resume" ]; then
+		device=${resume#*=}
+		if get_sysfs_device "$device"; then
+			if [ -f /sys/power/resume ]; then
+				echo -n "$major:$minor" >/sys/power/resume
+			fi
+		else
+			echo Failed to decode swap device "$device" >&2
+		fi
+	fi
+
+	if [ $sysfs ]; then
+		umount -n sys
+	fi
+}
+
+mount_tmpfs() {
+	mount -nt tmpfs tmpfs "$1" > /dev/null 2>&1 ||
+		mount -nt ramfs ramfs "$1"
+}
+
+call() {
+	. "$@"
+}
+
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/bin2
+
+. /linuxrc.conf
+
+#echo "initrd-tools: $VERSION"
+
+if [ $BUSYBOX ]; then
+	umount() {
+		if [ "$1" = -n ]; then
+			shift
+		fi
+		command umount "$@"
+	}
+fi
+echo "0" > /proc/sys/kernel/printk
+read root < bin/root
+umount -n bin
+echo $root > proc/sys/kernel/real-root-dev
+
+get_cmdline
+mount -nt sysfs sysfs sys
+if [ $IDE_CORE != none ] && [ -n "$ide_options" ]; then
+	echo modprobe -k $IDE_CORE "options=\"$ide_options\""
+	modprobe -k $IDE_CORE options="$ide_options"
+fi
+call /loadmodules
+case `uname -m` in
+	ppc) call /loadmodules.powerpc;
+	;;
+esac
+
+/sbin/udevstart && sleep 5
+
+if [ $DELAY -gt 0 ]; then
+	echo "Waiting for $DELAY seconds, press ENTER to obtain a shell."
+
+	trap "timeout=yes" USR1
+	timeout=
+	{ sleep $DELAY; kill -USR1 $$ 2> /dev/null; }&
+	pid=$!
+	read line
+	trap "" USR1
+	kill $pid
+	wait
+
+	[ $timeout ] || exec sh
+fi
+
+call /script
+ROOT=${CMDROOT:-$ROOT}
+
+if [ -n "$resume$noresume" ]; then
+	do_swsusp
+fi
+
+#umount -n devfs
+umount -n proc
+
+for i in /scripts/*; do
+	[ -f "$i" ] || continue
+	case "$i" in
+	*.sh)
+		(. $i)
+		;;
+	*)
+		$i
+		;;
+	esac
+done
+sleep 4
+cd /
+mount -nt proc proc proc
+rootdev=$(cat proc/sys/kernel/real-root-dev)
+cmdline=$(cat proc/cmdline)
+umount -n proc
+
+
+	if [ "$debugme" = "yes"  ];then
+	echo "--------------"
+	echo "Press CTRL+D"
+	echo "$tmpfs"
+	echo "--------------"
+	ash
+	fi
+if [ $rootdev != 256 ]; then
+	modprobe unionfs
+	modprobe cloop
+	mount_root
+	mount -nt proc proc proc
+	if [ ! -d /dev/pts ];then
+		mkdir /dev/pts
+	fi
+	mount -t devpts /dev/pts /dev/pts
+	if [ ! -d UNIONFS ];then
+		mkdir UNIONFS
+	fi
+	if [ ! -d debaser ];then
+		mkdir debaser
+	fi
+	mount -t unionfs -o dirs=mnt=ro unionfs /UNIONFS
+	if [ ! -b /dev/cloop0 ] ; then
+		mknod /dev/cloop0 b 240 0
+	fi
+    set -x
+	if [ "$tmpfs" = "yes" ];then
+	layer=/tmp
+	mount -t tmpfs  tmpfs "$layer"
+	else	
+		layer=/var
+		if [ ! -d "$layer" ];then
+			mkdir -p "$layer"
+		fi
+	fi
+	if [ "$debugme" = "yes"  ];then
+	echo "--------------"
+	echo "Press CTRL+D"
+	echo "$tmpfs"
+	echo "--------------"
+	ash
+	fi
+	set +x
+	ash
+	if [ -e "/mnt/$debaser" ];then
+		losetup /dev/cloop0 "/mnt/$debaser"
+		mountit /dev/cloop0 /debaser "-o ro"
+		unionctl /UNIONFS --add --mode ro /debaser
+	fi
+	unionctl /UNIONFS --add --mode rw "$layer"
+  echo -n "${GREEN}"
+	unionctl /UNIONFS --list
+   echo -n "${NORMAL}"
+	cd UNIONFS
+	[ $DEVFS ] && mount -nt devfs devfs dev
+	pivot_root . initrd
+	rootstring=$(grep "$root" /proc/mounts)
+	echo > /etc/fstab
+    echo 'proc      /proc       proc   defaults                     0 0' >>/etc/fstab
+	echo 'sysfs     /sys        sysfs  defaults                      0 0' >>/etc/fstab
+	echo 'devpts    /dev/pts    devpts rw,mode=0622                    0 0' >>/etc/fstab
+	echo "unionfs / unionfs defaults				                   0 0" >> /etc/fstab
+	echo "$rootstring" >> /etc/fstab
+	echo "/dev/fd0 /media/fd0    vfat defaults,noauto,rw 0 0 "			>> /etc/fstab 
+fi
+if [ "$debugme" = "yes"  ];then
+	echo "--------------"
+	echo "Press CTRL+D"
+	echo "--------------"
+	ash
+fi
+[ ! -d dev/pts ] && mkdir dev/pts
+[ ! -e dev/console ] && mknod dev/console c 5 1
+[ ! -e dev/null ] && mknod dev/null c 1 3
+[ ! -e dev/ram ] && mknod dev/ram b 1 1
+[ ! -e dev/systty ] && mknod dev/systty c 4 0
+[ ! -e dev/tty ] && mknod dev/tty c 5 0
+for i in 1 2 3 4 5 6; do
+ [ ! -e dev/tty$1 ] && mknod dev/tty$i c 4 $i;
+done
+[ ! -e dev/urandom ] && mknod dev/urandom c 1 9   
+if ! [ -x ${init#/} ]; then
+	init=/sbin/init
+fi
+if type chroot > /dev/null 2>&1; then
+	exec chroot . $init "$@" < dev/console > dev/console 2>&1
+fi
+
+exec $init "$@" < dev/console > dev/console 2>&1
+

@@ -1,0 +1,860 @@
+#!/sbin/sh
+#
+# Upstream Salmon Struct : startup script
+#
+# $Id$
+#
+# Script to boot-up Debased Live CD 
+# Daniele Favara, (c) 2005 <danjele@gmail.com>
+#
+# <http://dss.berlios.de>
+
+
+
+# We only need the builtin commands and /static at this point
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+umask 022
+
+
+RAMSIZE=1000000
+# End of options
+
+# Don't allow interrupt signals
+trap "" 1 2 3 15
+
+# "Safe" SCSI modules in the right order for autoprobe
+# Warning: The sym53c8xx.o and g_NCR* cause a kernel Oops if no such adapter
+# is present.
+#
+# NB: It looks like that ncr53c8xx.o is more stable than 53c7,8xx.o for
+# a ncr53c810 controller (at least on my installation box it's more
+# immune to SCSI timeouts)
+# Removed 53c7,8xx -> crashes if no device attached.
+# Removed AM53C974 -> crashes tmscsim if adapter found
+# Possible segfault with 2.6 ??
+# aha1740.ko, atp870u.ko, megaraid.ko, qlogicfc.ko, a100u2w.ko
+#KEXT=".ko"
+SCSI_MODULES="aic7xxx$KEXT BusLogic$KEXT \
+ncr53c8xx$KEXT NCR53c406a$KEXT \
+ata_piix$KEXT \
+advansys$KEXT aha1740$KEXT aha1542$KEXT aha152x$KEXT \
+atp870u$KEXT dtc$KEXT eata$KEXT fdomain$KEXT gdth$KEXT \
+megaraid$KEXT pas16$KEXT pci2220i$KEXT pci2000$KEXT psi240i$KEXT \
+qlogicfas$KEXT qlogicfc$KEXT qlogicisp$KEXT \
+seagate$KEXT t128$KEXT tmscsim$KEXT u14-34f$KEXT ultrastor$KEXT wd7000$KEXT \
+a100u2w$KEXT 3w-xxxx$KEXT"
+
+# Misc functions
+INSMOD="modprobe"
+#/static/[ -x /static/insmod ] && INSMOD="/static/insmod"
+
+RMMOD="rmmod"
+#/static/[ -x /static/rmmod ] && RMMOD="/static/rmmod"
+
+LOSETUP="losetup"
+#/static/[ -x /static/losetup ] && LOSETUP="/static/losetup"
+
+BUILTIN_FS="iso9660 ext2 vfat ntfs"
+
+LIVECD="DSSCD"
+
+mountit(){
+# Usage: mountit src dst "options"
+# Uses builtin mount of ash.knoppix
+# Builin filesystems
+    BUILTIN_FS="iso9660 ext2 vfat ntfs"
+    for fs in $BUILTIN_FS; do
+	test -b $1 && mount -t $fs $3 $1 $2 >/dev/null 2>&1 && return 0
+    done
+    return 1
+}
+debugmode()
+{
+
+	echo "${WHITE}Dropping to shell for debugging${NORMAL}"
+	sh 2>/dev/null
+
+}
+FOUND_SCSI=""
+FOUND_LIVE=""
+INTERACTIVE=""
+#USE_SQUASH="default"
+
+# Clean input/output
+exec >dev/console <dev/console 2>&1
+
+# Re
+
+set fb color mode
+RESET="]R"
+# ANSI COLORS
+# Erase to end of line
+
+
+CRE="[K"
+# Clear and reset Screen
+CLEAR="c"
+# Normal color
+NORMAL="[0;39m"
+# RED: Failure or error message
+RED="[1;31m"
+# GREEN: Success message
+GREEN="[1;32m"
+# YELLOW: Descriptions
+YELLOW="[1;33m"
+# BLUE: System mesages
+BLUE="[1;34m"
+# MAGENTA: Found devices or drivers
+MAGENTA="[1;35m"
+# CYAN: Questions
+CYAN="[1;36m"
+# BOLD WHITE: Hint
+WHITE="[1;37m"
+
+# Clear screen with colormode reset
+#call <SNR>3_SelectAll()
+# echo "$CLEAR$RESET"
+# echo "$CLEAR"
+# Just go to the top of the screen
+# echo -n "[H[J"
+
+
+
+# Mount /proc, /sys and /dev/pts 
+#echo "mounting proc devpts sysfs"
+mount -t proc /proc /proc
+mount -t devpts /dev/pts /dev/pts > /dev/null 2>&1
+mount -t sysfs /sys /sys > /dev/null 2>&1
+
+if test -e /sbin/udevsend ; then echo "/sbin/udevsend" > /proc/sys/kernel/hotplug ; fi
+
+#step 1
+
+
+# Read boot command line with builtin cat command (shell read function fails in Kernel 2.4.19-rc1)
+CMDLINE="$(cat /proc/cmdline)"
+# DMA is now on by default
+DMA="yes"
+
+# Check if we are in interactive startup mode
+case "$CMDLINE" in *BOOT_IMAGE=expert\ *) INTERACTIVE="yes"; :>/interactive; ;; esac
+# patch from Fabian's linuxrc_modules-disk.diff patch, 2003-07-28
+case "$CMDLINE" in *modules-disk*) INTERACTIVE="yes"; ;; esac
+NOCD=""
+case "$CMDLINE" in *\ nodma*) DMA=""; ;; esac
+case "$CMDLINE" in *\ fromhd*) NOCD="yes"; ;; esac
+case "$CMDLINE" in *\ fromdirectory*) NOCD="yes"; HD_DIRECTORY="Yes"; ;; esac
+case "$CMDLINE" in *\ fromnfs*) NOCD="yes"; NFS_SERVER="Yes"; ;; esac
+# Does the user want to skip scsi detection?
+NOSCSI=""
+case "$CMDLINE" in *\ noscsi*) NOSCSI="yes"; ;; esac
+case "$CMDLINE" in *\ debuglive*) DEBUG="yes"; ;; esac
+case "$CMDLINE" in *\ debugmini) DEBUGMINIROOT="yes"; ;; esac
+case "$CMDLINE" in *\ splash*) SPLASH="yes"; ;; esac
+
+# default 
+BASE=base
+KERNEL_VER=kernel
+DELIVER=deliver
+
+for i in $CMDLINE; do
+		case $i in
+		base=*)
+			BASE=${i#base=}
+			;;
+		toram*)
+			TORAM=${i#toram=}
+			;;
+		kernel=*)
+			KERNEL_VER=${i#kernel=}
+			;;
+		deliver=*)
+			DELIVER=${i#deliver=}
+			;;
+
+	esac
+done
+
+# added by guido socher to suppress warnings about nonexistant /proc/splash
+if [ ! -f "/proc/splash" ]; then
+     unset SPLASH
+fi
+
+if test -n "$DEBUGMINIROOT"; then
+	debuglive=debugmode
+fi
+# Bootsplash by Eadz at eadz.co.nz
+if test -n "$SPLASH"; then
+splash -s -u 0 /bootsplash/config/bootsplash-1024x768.cfg >/dev/null
+fi
+
+echo ""
+# Be verbose
+echo "${WHITE}Welcome to the ${GREEN}DEBASED${GREEN} ${WHITE}liveCD!${NORMAL}"
+echo ""
+echo ""
+
+# Disable kernel messages while probing modules in autodetect mode
+if test -n $SPLASH ; then
+	 echo "0" > /proc/sys/kernel/printk
+fi
+
+# Check for IDE-SCSI capable CD-Rom(s) first
+$INSMOD ide-scsi >/dev/null 2>&1
+# Use ide-cd for ATAPI-only CD-Rom(s)
+$INSMOD ide-cd >/dev/null 2>&1
+#cloop devices before udevstart
+$INSMOD -f cloop > /dev/null 2>&1
+#unionfs 
+$INSMOD -f unionfs > /dev/null 2>&1
+
+# Mount module disk
+mountmodules(){
+    TYPE="$1"; shift
+    echo -n "${CRE}${CYAN}Please insert ${TYPE} modules disk and hit Return. ${NORMAL}"
+    read a
+    echo -n "${CRE}${BLUE}Mounting ${TYPE} modules disk... ${NORMAL}"
+# We always mount over /modules/scsi (because it's there ;-)
+    if mountit /dev/fd0 /modules/scsi "-o ro"; then
+	echo "${GREEN}OK.${NORMAL}"
+	return 0
+    fi
+    echo "${RED}NOT FOUND.${NORMAL}"
+    return 1
+}
+
+# Unmount module disk
+umountmodules(){
+    TYPE="$1"; shift
+    echo -n "${CRE}${BLUE}Unmounting ${TYPE} modules disk... ${NORMAL}"
+    umount /modules/scsi >/dev/null
+    echo "${GREEN}DONE.${NORMAL}"
+}
+
+# Ask user for modules
+askmodules(){
+    TYPE="$1"; shift
+    echo "${BLUE}${TYPE} modules available:${WHITE}"
+    c=""; for m in "$@"; do
+	if test -f "/modules/scsi/$m"; then
+	    test -z "$c"  && { echo -n "	$m"; c="1"; } || { echo "		$m"; c=""; }
+	fi
+    done
+    [ -n "$c" ] && echo ""
+    echo "${CYAN}Load ${TYPE} Modules?${NORMAL}"
+    echo "${CYAN}[Enter full filename(s) (space-separated), Return for autoprobe, ${WHITE}n${CYAN} for none] ${NORMAL}"
+    echo -n "${CYAN}insmod module(s)> ${NORMAL}"
+    read MODULES
+    case "$MODULES" in n|N) MODULES=""; ;; y|"")  MODULES="$*"; ;; esac
+}
+
+# Try to load the given modules (full path or current directory)
+loadmodules(){
+    TYPE="$1"; shift
+    test -n "$INTERACTIVE" && echo "6" > /proc/sys/kernel/printk
+    for i in "$@"; do
+	echo -n "${CRE}${WHITE}Probing ${TYPE}... ${GREEN}$i${NORMAL}"
+	if test $INSMOD -f $i >/dev/null 2>&1
+	    then
+	    echo "${CRE} ${WHITE}Found ${TYPE} device(s) handled by ${GREEN}$i${GREEN}.${NORMAL}"
+	    case "$TYPE" in scsi|SCSI) FOUND_SCSI="yes"; ;; esac
+	fi
+    done
+    test -n "$INTERACTIVE" && echo "0" > /proc/sys/kernel/printk
+    echo -n "${CRE}"
+}
+
+case "$CMDLINE" in *bootusb2*) USBBOOT2="yes"; ;; esac
+case "$CMDLINE" in *bootusb1*) USBBOOT1="yes"; ;; esac
+
+if test -n "$USBBOOT2" -o -n "$USBBOOT1"
+    then
+# load usb-modules first (so that memory-stick becomes /dev/sda1)
+    [ -n $SPLASH ] && echo "6" > /proc/sys/kernel/printk
+    $INSMOD -f usbcore$KEXT >/dev/null
+# uncomment for USB 2.0 support (experimental)
+    if test -n "$USBBOOT2"
+	then
+	$INSMOD -f ehci-hcd$KEXT >/dev/null
+    fi
+    if test -n "$USBBOOT1"
+	then
+	$INSMOD -f uhci-hcd$KEXT >/dev/null
+	$INSMOD -f ohci-hcd$KEXT >/dev/null
+    fi
+    $INSMOD -f usb-storage$KEXT  >/dev/null
+    # wait 4 seconds for usb device to be registered
+    sleep 4
+    [ -n $SPLASH ] && echo "0" > /proc/sys/kernel/printk
+fi
+if test -f /addmodules ;then
+	 [ -n $SPLASH ] && echo "0" > /proc/sys/kernel/printk
+	. /addmodules >/dev/null
+	sleep 4
+	#[ -n $SPLASH ] && echo "0" > /proc/sys/kernel/printk
+fi
+
+#START devices here
+
+udevstart
+
+#step 2
+$debuglive
+
+# Check for SCSI, use modules on bootfloppy first
+if test -n "$INTERACTIVE"; then
+# Let the user select interactively
+askmodules SCSI $(cd /modules/scsi; echo *$KEXT)
+udevstart
+else
+# these are the autoprobe-safe modules
+MODULES="$SCSI_MODULES"
+fi
+test -z "$NOSCSI" && test -n "$MODULES" && loadmodules SCSI $MODULES
+# End of SCSI check
+
+# Check for misc modules in expert mode
+if test -n "$INTERACTIVE"; then
+    another=""; answer=""
+    while test "$answer" != "n" -a "$answer" != "N"; do
+	echo -n "${CYAN}Do you want to load additional modules from$another floppy disk? [${WHITE}Y${CYAN}/n] ${NORMAL}"
+	another=" another"
+	read answer
+	case "$answer" in n*|N*) break; ;; esac
+	if mountmodules new; then
+	    askmodules new $(cd /modules/scsi; echo *$KEXT)
+	    test -n "$MODULES" && loadmodules new $MODULES
+	    umountmodules current
+	fi
+    done
+fi
+#step 3
+$debuglive
+
+# All interactively requested modules should be loaded now.
+
+# Check for ide-scsi supported CD-Roms et al.
+test -f /proc/scsi/scsi && FOUND_SCSI="yes"
+
+# Disable kernel messages again
+[ -n $SPLASH ] && echo "0" > /proc/sys/kernel/printk
+#step 4
+#echo found SCSI : $FOUND_SCSI
+$debuglive
+
+if test -n "$NFS_SERVER" -a -f /nfsrc; then
+  . /nfsrc
+else
+if test -n "$NFS_SERVER"; then
+  echo "couldn't find nfsrc, booting from CDROM"
+fi
+
+# Now that the right SCSI driver is (hopefully) loaded, try to find CDROM
+DEVICES="/dev/hd?"
+test -n "$FOUND_SCSI" -a -z "$NOCD" && DEVICES="/dev/scd? /dev/scd?? $DEVICES"
+# New: Also try parallel port CD-Roms [for Mike].
+DEVICES="$DEVICES /dev/pcd?"
+# New: also check HD partitions for a MORPHIX/MORPHIX image
+test -n "$FOUND_SCSI" && DEVICES="$DEVICES /dev/sd?[1-9] /dev/sd?[1-9][0-9]"
+test -n "$USBBOOT2" -o -n "$USBBOOT1" && DEVICES="$DEVICES /dev/sda1"
+DEVICES="$DEVICES /dev/hd?[1-9] /dev/hd?[1-9][0-9]"
+DEVICES="$DEVICES /dev/ubd[1-9]" 
+
+for i in $DEVICES
+  do
+  echo -n "${CRE}${WHITE}Looking for CDROM in: ${GREEN}$i${NORMAL}   "
+  if mountit $i /cdrom "-o ro"   >/dev/null
+      then
+      if test -d /cdrom/base
+	  then
+	  echo -n "${CRE}${WHITE}Accessing  CDROM at ${GREEN}$i${GREEN}...${NORMAL}"
+	  FOUND_LIVE="$i"
+	  break
+      fi
+      umount /cdrom
+  fi
+done
+
+#step 5
+#echo devices found : $DEVICES
+$debuglive
+
+
+if test -n "$SPLASH"; then
+splash -s -u 1000 /bootsplash/config/bootsplash2-1024x768.cfg >/dev/null
+fi
+
+# We now enable DMA right here, for faster reading/writing from/to IDE devices
+# in NOCD mode
+if test -n "$DMA" ; then
+  echo ""
+  for d in $(cd /proc/ide  >/dev/null && echo hd[a-z]); do
+    if test -d /proc/ide/$d; then
+      MODEL="$(cat /proc/ide/$d/model 2>/dev/null)"
+      test -z "$MODEL" && MODEL="[GENERIC IDE DEVICE]"
+      echo "${WHITE}Enabling DMA acceleration for: ${GREEN}$d 	${YELLOW}[${MODEL}]${NORMAL}"
+      echo "using_dma:1" >/proc/ide/$d/settings
+    fi
+  done
+fi
+
+
+
+fi
+
+LIVEDEV=/cdrom
+
+# Copy the whole cdrom to ram ?
+if  test -n "$TORAM"; 
+then 
+  # Pre-test if everything succeeded. 
+  if test -n "$FOUND_LIVE" 
+  then 
+	 
+	  mount -t tmpfs -o size=800M /dev/shm /mnt
+	  if [ "$TORAM" = "custom" ] ; then
+		  mkdir -p /mnt/mainmod
+		  mkdir -p /mnt/base
+		  mkdir -p /mnt/kernel
+		  mkdir -p /mnt/deliver
+		  echo
+		  echo '   ' "${GREEN}[*]${WHITE} Copy the modules you need from /cdrom to /mnt${NORMAL}"
+		  echo '   ' "${WHITE}eg: ${GREEN}cp /cdrom/base/base /mnt/base/${NORMAL}"
+		  echo '   ' "${WHITE}eg: ${GREEN}cp /cdrom/kernel/2_kernel /mnt/kernel/${NORMAL}"
+		  sh   2>/dev/null
+	  else
+	  echo -n "${WHITE}Copying to RAM: ${GREEN}Please be patient${NORMAL}"
+	  cp -pidR /cdrom/* /mnt/  
+	  echo "${YELLOW}       [Done]${NORMAL}"
+  	  fi
+	  umount /cdrom  > /dev/null
+	  LIVEDEV=/mnt
+  fi
+fi
+#step 6 
+$debuglive
+# Harddisk-installed script part version has been removed
+# (MORPHIX can be booted directly from HD now).
+echo -n "${WHITE}Unifing: ${GREEN} "
+
+#------------
+# base module
+#------------
+
+if test -n "$FOUND_LIVE" -a -f $LIVEDEV/base/$BASE; then
+# DEBUG
+	if test -n "$DEBUG"; then
+	echo "6" > /proc/sys/kernel/printk
+	fi
+	if [ ! -b /dev/cloop0 ] ; then
+		mknod /dev/cloop0 b 240 0
+	fi
+	$LOSETUP /dev/cloop0 $LIVEDEV/base/$BASE
+	if [ ! -d "/UNIONFS" ] ;then
+		mkdir /UNIONFS
+	fi
+	mkdir -p /$LIVECD/base/
+	mountit /dev/cloop0 /$LIVECD/base/ "-o ro" || FOUND_LIVE="" 2> /dev/null
+	mount -t unionfs -o dirs=/$LIVECD/base=ro unionfs /UNIONFS
+	echo -n "$BASE" ' '
+else
+	echo
+    echo "${RED}(EE): unable to find base module!${NORMAL}"
+	debugmode
+	exit 0
+fi
+
+#------------
+# kernel module
+#------------
+num=1 # cloop0 for base module
+if test -n "$KERNEL_VER" -a -d $LIVEDEV/kernel/ -a -n "$(ls -A  $LIVEDEV/kernel/ )" ;then	
+	if test -n "$FOUND_LIVE" -a -f $LIVEDEV/kernel/$KERNEL_VER; then
+	# DEBUG
+		if test -n "$DEBUG"; then
+		echo "6" > /proc/sys/kernel/printk
+		fi
+		if [ ! -b /dev/cloop"$num" ] ;then 
+		mknod /dev/cloop"$num" b 240 "$num" > /dev/null 2>&1
+		fi
+		mkdir -p /$LIVECD/$KERNEL_VER/
+		$LOSETUP /dev/cloop$num $LIVEDEV/kernel/$KERNEL_VER;
+		mountit /dev/cloop$num /$LIVECD/$KERNEL_VER/ "-o ro" || FOUND_LIVE="" 2> /dev/null
+		unionctl /UNIONFS --add --mode ro "/$LIVECD/$KERNEL_VER"
+		echo -n "$KERNEL_VER" ' '
+		# if $KERNEL_VER exists let num+=1
+		let num+=1
+	else
+		echo
+    		echo "${RED}(EE): unable to find $KERNEL_VER module!${NORMAL}"
+		debugmode
+		exit 0
+	fi
+fi
+#------------
+# main modules
+#------------
+
+
+if [ -d $LIVEDEV/mainmod/  ];then
+all_mod=$(ls -1 $LIVEDEV/mainmod/ | sort -n ) 
+fi
+#MAINMODULES
+
+for i in $all_mod; do
+if test -f $LIVEDEV/mainmod/$i; then
+name_mod=$( echo $i | awk 'BEGIN { FS="[.]" }{ print $1 }' )
+if test "$num" -gt "6";then
+	echo -n "${RED}"$name_mod '(failed)'" ${MAGENTA}"
+else
+# DEBUG
+	if test -n "$DEBUG"; then
+	echo "6" > /proc/sys/kernel/printk
+	fi
+	#num=$( echo $i | awk 'BEGIN { FS="[_]" }{ print $1 }')
+	if [ ! -b /dev/cloop"$num" ] ;then 
+		mknod /dev/cloop"$num" b 240 "$num" > /dev/null 2>&1
+	fi
+	if [ -b /dev/cloop"$num" ] ;then
+			$LOSETUP /dev/cloop"$num" "$LIVEDEV/mainmod/$i"
+			mkdir -p /$LIVECD/$name_mod
+			mountit /dev/cloop"$num" /$LIVECD/$name_mod "-o ro"
+			echo -n "$name_mod "
+			unionctl /UNIONFS --add --mode ro "/$LIVECD/$name_mod"
+	else
+			echo -n "${RED}"$name_mod '(failed)'" ${MAGENTA}"
+	fi
+fi	
+fi
+let num+=1
+done
+
+#------------
+# deliver module
+#------------
+if test -n "$DELIVER" -a -d $LIVEDEV/deliver/ -a -n "$(ls -A  $LIVEDEV/deliver/ )" ;then	
+	if test -n "$FOUND_LIVE" -a -f $LIVEDEV/deliver/$DELIVER; then
+	# DEBUG
+		if test -n "$DEBUG"; then
+		echo "6" > /proc/sys/kernel/printk
+		fi
+		if [ ! -b /dev/cloop7 ] ;then 
+		mknod /dev/cloop7 b 240 7 > /dev/null 2>&1
+		fi
+		mkdir -p /$LIVECD/$DELIVER/
+		$LOSETUP /dev/cloop7 $LIVEDEV/deliver/$DELIVER
+		mountit /dev/cloop7 /$LIVECD/$DELIVER/ "-o ro" || FOUND_LIVE="" 2> /dev/null
+		unionctl /UNIONFS --add --mode ro "/$LIVECD/$DELIVER"
+		echo -n "$DELIVER" ' '
+		# if $KERNEL_VER exists let num+=1
+	else
+		echo
+    		echo "${RED}(EE): unable to find $DELIVER module!${NORMAL}"
+		debugmode
+		exit 0
+	fi
+fi
+
+
+	
+
+
+
+[ ! -d "/$LIVECD/overall" ] && mkdir /$LIVECD/overall
+mount -t tmpfs -o "size=${RAMSIZE}k" tmpfs /$LIVECD/overall
+unionctl /UNIONFS --add --mode rw /$LIVECD/overall
+echo  "overall ${NORMAL}"
+
+
+#step 7
+ctl=$( which unionctl)
+cd /UNIONFS
+if [ ! -d "/UNIONFS/initrd" ];then  mkdir /UNIONFS/initrd ; fi
+if [ ! -e /UNIONFS/dev/console ]; then mknod /UNIONFS/dev/console c 5 1; fi
+pivot_root . initrd
+/bin/mount --move initrd/proc /proc
+/bin/mount --move initrd/sys /sys
+/bin/mount --move initrd/dev/pts /dev/pts
+
+if [ ! -d /cdrom ] ; then  mkdir /cdrom ; fi
+if [ ! -n $TORAM ];then
+	/bin/mount --move initrd/cdrom /cdrom
+fi
+
+#/bin/mount --bind initrd/dev /dev
+
+if [ ! -e /dev/initctl ] ; then mkfifo /dev/initctl ; fi
+if [ ! -e /dev/console ] ; then mknod -m 660 console c 5 1 ; fi
+if [ ! -e /dev/null ] ; then mknod -m 660 null c 1 3 ; fi	
+#udevstart
+
+#try
+echo "256" > /proc/sys/kernel/real-root-dev
+
+
+rm -f /linuxrc
+echo 
+echo "${WHITE}The Upstream Salmon Struct:${YELLOW}"
+/initrd/$ctl / --list
+echo "${NORMAL}"
+
+/etc/init.d/udev stop  > /dev/null 2>&1 
+$debuglive
+cp /initrd/etc/fstab /etc/fstab
+echo $(grep -w 'unionfs' /proc/mounts) >> /etc/fstab
+mkdir /media/cdrom
+mkdir /media/floppy
+rm /etc/rcS.d/*checkroot.sh
+# Give control to the init process.
+echo "${CRE}${GREEN}Starting init process.${NORMAL}"
+
+exit 0
+
+
+
+# -------------------- 
+# not used in DSS-Live 
+# --------------------
+
+# COPYTORAM copied (ironic, isn't it?) from Fabian's linuxrc.rampatch 2003-07-26
+COPYTOHD=""
+COPYTO=""
+COPYTORAM=""
+
+case "$CMDLINE" in *toram*) COPYTO="yes"; COPYTORAM="yes"; ;; esac
+case "$CMDLINE" in *tohd=*) COPYTO="yes"; COPYTOHD="yes"; ;; esac
+
+# Copy the whole cdrom to ram ?
+if  test -n "$COPYTO"; 
+then 
+  # Pre-test if everything succeeded. 
+  if test -n "$FOUND_LIVE" 
+  then 
+    # copy library cache 
+    cat /$LIVECD/etc/ld.so.cache > /etc/ld.so.cache 
+    echo "" 
+
+    echo "Copying /cdrom to RamDisk/Harddisk, please be patient..." # Hey, we could use some fancy dialog skript here :-)) 
+    /bin/mkdir /cdrom2
+    if [ -n "$COPYTORAM" ]
+	then
+	/bin/mount -t tmpfs -o size=800M /dev/shm /cdrom2
+	/bin/cp -a /cdrom/* /cdrom2 # Copy everything to /cdrom2; yes we need more things then only the KNOPPIX/Morphix image, we don't want to produce problems we hadn't before, do we ? (note from Alex: this also copies any modules on the cdrom. Gotta love this patch :)
+    else
+	COPYTOHD=$(echo $CMDLINE | /usr/bin/tr ' ' '\n' | /bin/sed -n '/tohd=/s/.*=//p' | /usr/bin/tail -1)
+	echo -n "${CRE} ${GREEN}Copying CDROM to ${MAGENTA}/dev/$COPYTOHD${GREEN}... Please be patient. ${NORMAL}"
+	if mountit /dev/$COPYTOHD /cdrom2 >/dev/null
+	    then
+	    /bin/cp -a /cdrom/* /cdrom2
+	   #/bin/mount -o remount,ro /dev/$COPYTOHD /cdrom2
+	else
+	    echo "${CRE} ${RED}Copying KNOPPIX CDROM failed. /dev/$COPYTOHD is not mountable. ${NORMAL}"
+	fi
+    fi
+    umount /$LIVECD # unmount it
+    echo "6" > /proc/sys/kernel/printk # Debugging
+    $RMMOD cloop # release CD
+    echo "0" > /proc/sys/kernel/printk # Debugging
+    umount /cdrom  # unmount CD
+    if test -f /cdrom2/base/$BASE; then
+	if [ -z "$USE_SQUASH" ];then 
+	    $INSMOD -f /modules/cloop$KEXT 2> /dev/null
+	    $LOSETUP /dev/cloop /cdrom2/base/$BASE 
+	    mountit /dev/cloop /$LIVECD "-o ro" || FOUND_LIVE="" 2> /dev/null
+	else
+	    mount -t squashfs -o "loop,ro" /cdrom2/base/$BASE /$LIVECD  || FOUND_LIVE="" 2> /dev/null
+	fi
+    else
+      FOUND_LIVE=""
+    fi
+  fi 
+fi 
+ 
+ #echo "${CRE}${BLUE}Starting init process.${NORMAL}"
+# rm -f /linuxrc
+# exit 0
+
+
+
+	
+# Final test if everything succeeded.
+if test -n "$FOUND_LIVE"
+    then
+# copy library cache
+    cat /$LIVECD/etc/ld.so.cache > /etc/ld.so.cache
+    echo ""
+    
+# Enable kernel messages
+    echo "6" > /proc/sys/kernel/printk
+    
+# Set paths
+    echo -n "${CRE}${BLUE}Setting paths...${NORMAL}"
+    PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/X11R6/bin:."
+    export PATH
+    
+# Debian weirdness (is this necessary for Morphix?)
+    /bin/cp -a /$LIVECD/etc/alternatives /etc/ >/dev/null
+    
+# From here, we should have all essential commands available.
+    hash -r
+    
+# Did we copy from ram ? 
+    if  test -n "$COPYTO"; 
+	then 
+	rmdir /cdrom 
+	ln -s /cdrom2 /cdrom # make a symlink and go on to normal boot 
+    fi
+    
+# Clean up / (saves a meg)
+    rm -rf /modules &
+
+# New in Kernel 2.4.x: tempfs with variable ramdisk size.
+# We check for available memory anyways and limit the ramdisks
+# to a reasonable size.
+    FOUNDMEM="$(awk '/MemTotal/{print $2}' /proc/meminfo)"
+    TOTALMEM="$(awk 'BEGIN{m=0};/MemFree|Cached/{m+=$2};END{print m}' /proc/meminfo)"
+ 
+# Be verbose
+    echo "${CRE}${BLUE}Total memory found: ${YELLOW}${FOUNDMEM}${BLUE} kB${NORMAL}"
+
+# Now we need to use a little intuition for finding a ramdisk size
+# that keeps us from running out of space, but still doesn't crash the
+# machine due to lack of Ram
+
+# Minimum size of additional ram partitions
+    MINSIZE=2000
+# At least this much memory minus 30% should remain when home and var are full.
+    MINLEFT=16000
+# Maximum ramdisk size
+    MAXSIZE="$(expr $TOTALMEM - $MINLEFT)"
+# Default ramdisk size for ramdisk
+    RAMSIZE="$(expr $TOTALMEM / 5)"
+
+# Check for sufficient memory to mount extra ramdisk for /home + /var
+    if test -n "$TOTALMEM" -a "$TOTALMEM" -gt "$MINLEFT"; then
+	test -z "$RAMSIZE" && RAMSIZE=1000000
+	mkdir -p /ramdisk
+
+# tmpfs/varsize version, can use swap
+	RAMSIZE=$(expr $RAMSIZE \* 4)
+	echo -n "${CRE}${BLUE}Creating ${YELLOW}/ramdisk${BLUE} (dynamic size=${RAMSIZE}k) on ${MAGENTA}/dev/shm${BLUE}...${NORMAL}"
+# We need /bin/mount here for the -o size= option
+	/bin/mount -t tmpfs -o "size=${RAMSIZE}k" /dev/shm /ramdisk && mkdir -p /ramdisk/home /ramdisk/var /ramdisk/etc /ramdisk/dev && ln -s /ramdisk/home /ramdisk/var /
+	echo "${BLUE}Done.${NORMAL}"
+    else
+	mkdir -p /home /var
+    fi
+
+    if test -n "$DEBUGMORPHIX"; then
+	echo "Dropping to shell for debugging"
+	sh
+    fi
+
+#LAST STEP
+$debuglive
+
+
+
+
+
+    echo -n "${CRE}${BLUE}Creating directories and symlinks on ramdisk...${NORMAL}"
+# Create common WRITABLE (empty) dirs
+
+# We only need directories writeable that are used in the base module for
+# hardware detection. Some of these might be removeable
+    mkdir -p /var/run /var/backups /var/local \
+        /var/tmp /var/lib /var/state/misc \
+	/mnt/cdrom /mnt/floppy /mnt/hd /mnt/test \
+	/home/root /etc/sysconfig /etc/X11
+#       /home/morph
+#	/var/nis /var/preserve 
+#	/var/spool/cups/tmp \
+#    chown morph.morph /home/morph
+# Create empty utmp and wtmp
+    :> /var/run/utmp
+    :> /var/run/wtmp
+
+    cp -a /$LIVECD/var/local /$LIVECD/var/log \
+    /var/ >/dev/null
+#	/$LIVECD/var/spool 
+#    cp -a /$LIVECD/var/lib/nfs /$LIVECD/var/lib/xkb /$LIVECD/var/lib/isdn \
+#	/$LIVECD/var/lib/pcmcia /var/lib/ 2>/dev/null
+# Problematic directories in /var/lib (lots and lots of inodes)
+#    ln -s 
+#/$LIVECD/var/lib/dpkg /$LIVECD/var/lib/apt \
+#	/$LIVECD/var/lib/scrollkeeper \
+#	ln -s /var/lib/ 2>/dev/null
+# Debian-apt
+#    ln -s /$LIVECD/var/cache/apt /var/cache/ 2>/dev/null
+    ln -s /$LIVECD/etc/skel /etc/dhcpc/resolv.conf \
+	/etc/ >/dev/null
+
+# This is a memory-hogging hack, but somehow there isn't enough room on the first ramdisk 
+# to copy over the device nodes directly. TODO
+
+#    ln -s /$LIVECD/dev/* /dev/ >/dev/null 2>&1
+#    /bin/mount --bind /$LIVECD/dev /dev
+    cp -a /$LIVECD/dev/* /ramdisk/dev/
+    cp -a /dev /ramdisk/dev/
+    /bin/mount --bind /ramdisk/dev /dev
+
+# Index files can be HUGE, so better replace cache/man tree by links later
+# cp -a /$LIVECD/var/cache/man /var/cache/ 2>/dev/null
+# Create links from CDROM for UNWRITABLE (remaining) files
+    cp -aus /$LIVECD/var/* /var/ >/dev/null
+
+# This possibly causes more problems, but is linked to the same issues as above with /dev
+
+    cp -a /$LIVECD/etc/* /ramdisk/etc/
+    cp -a /etc /ramdisk/etc/
+    /bin/mount --bind /ramdisk/etc /etc
+#    cp -aus /$LIVECD/etc/* /etc/ >/dev/null
+
+# Make SURE that these are files, not links!
+#    rm -rf /etc/passwd /etc/shadow /etc/group \
+#	/etc/ppp /etc/isdn /etc/ssh /etc/ioctl.save \
+#	/etc/inittab /etc/network /etc/sudoers \
+#	/etc/init /etc/localtime /etc/dhcpc /etc/pnm2ppa.conf >/dev/null
+
+#    cp -a /$LIVECD/etc/passwd /$LIVECD/etc/shadow /$LIVECD/etc/group \
+#	/$LIVECD/etc/ppp /$LIVECD/etc/isdn /$LIVECD/etc/ssh \
+#	/$LIVECD/etc/inittab /$LIVECD/etc/network /$LIVECD/etc/sudoers \
+#	/$LIVECD/sbin/init /$LIVECD/etc/dhcpc /etc/ >/dev/null
+# Extremely important, init crashes on shutdown if this is only a link
+    :> /etc/ioctl.save
+    :> /etc/pnm2ppa.conf
+# Diet libc bug workaround
+#    cp -f /$LIVECD/etc/localtime /etc/localtime
+    echo "${BLUE}Done.${NORMAL}"
+
+# Now tell kernel where the real modprobe lives
+    echo "/sbin/modprobe" > /proc/sys/kernel/modprobe
+
+# Change root device from /dev/fd0 to /dev/ram0
+    echo "0x100" > /proc/sys/kernel/real-root-dev
+
+# Give control to the init process.
+    echo "${CRE}${BLUE}Starting init process.${NORMAL}"
+    rm -f /linuxrc
+    exit 0
+
+else
+    echo "${CRE}${RED}Can't find Morphix filesystem, sorry${NORMAL}"
+    echo "${RED}Dropping you to a busybox shell${NORMAL}"
+    echo "${RED}Make sure you have a Morphix Base image on your CD-ROM/HDD/NETWORK devices"
+    echo "${RED}Press reset button to quit.${NORMAL}"
+    echo ""
+    echo "Additional builtin commands avaliable:"
+    echo "busybox --help"
+    echo ""
+    PS1="Debased# "
+    export PS1
+    echo "6" > /proc/sys/kernel/printk
+# Allow signals
+    trap 1 2 3 15
+	#exec /static/ash
+    exec /bin/ash
+fi
+

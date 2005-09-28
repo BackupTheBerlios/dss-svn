@@ -1,0 +1,105 @@
+#!/bin/sh
+#
+# $Id$
+#
+# Script to build the Debased Live CD miniroot 
+# Daniele Favara, (c) 2005 <danjele@gmail.com>
+#
+# <http://dss.berlios.de>
+
+
+
+
+############################################################################
+gen_list (){
+#-----------------------
+#   
+# include shared executables in $exe
+# as well as any shared libraries that 
+# they are linked with.
+# generate:
+# 	DESTDIR/{exe|exedss, libs.list|libsdss.list, exe.list|exedss.list}
+# 
+# usage: 
+# gen_list "$miniroot" "bim bum bam" "/usr/share/minirooter/busybox" "DESTDIR"
+#
+# DSS=miniroot|initrd
+#----------------------
+
+DSS=$1
+exe=$2
+BUSY_BOX=$3
+DESTDIR=$4
+exe="$exe $BUSY_BOX"
+if [ "$DSS" = "initrd" ];then
+	EXE_FILE=exedss
+	LIBS_FILE=libsdss
+elif [ "$DSS" = "miniroot" ];then
+	EXE_FILE=exe
+	LIBS_FILE=libs
+else
+	echo '(EE)' It seems DSS variable is wrong
+	exit 0
+fi
+	
+for i in $exe; do
+	a=$(which $i)
+	if [ -z "$a" ];then
+		echo "(EE): $i not found"
+		exit 0
+	else
+		echo $a >>  $DESTDIR/$EXE_FILE
+	fi
+done
+[ ! -f "$DESTDIR/$EXE_FILE.list" ] && : > $DESTDIR/$EXE_FILE.list
+[ ! -f " $DESTDIR/$LIBS_FILE.list" ] && : > $DESTDIR/$LIBS_FILE.list
+ldexe=$( egrep -v '^(#.*)?$' "$DESTDIR"/$EXE_FILE )
+
+
+for i in $ldexe  ; do
+ path=$( which $i )
+ if [ -z $( grep -wx "^$path$" "$DESTDIR/$EXE_FILE.list" ) ];then
+ 	echo "$path" >> "$DESTDIR/$EXE_FILE.list"
+ fi
+ if ldd $path 1>/dev/null ; then
+	lib=$( ldd $path  )
+	 while read k; do
+		if [ $( echo $k | awk '{print NF}' ) = "2" ];then
+		 kpath=$( echo $k | awk '{print $1}'  )
+			if [ -z $( grep -wx "^$kpath$" "$DESTDIR/$LIBS_FILE.list" ) ];then
+ 				echo "$kpath" >> "$DESTDIR/$LIBS_FILE.list"
+	 		fi
+		elif [ $( echo $k | awk '{print NF}' ) = "4" ];then
+	 	 kpath=$( echo $k | awk '{print $3}'  )
+	 		if [ -z $( grep -wx "^$kpath$" "$DESTDIR/$LIBS_FILE.list" ) ];then
+ 				echo "$kpath" >> "$DESTDIR/$LIBS_FILE.list"
+	 		fi
+		fi
+	done <<< "$lib" 
+
+fi
+done
+}
+
+
+
+############################################################################
+gen_env (){
+# usage:
+# gen_env "DESTDIR" "$DESTDIR/minirooter" "file.list"
+DESTDIR=$1
+INSTALLDIR=$2
+FILE_LIST=$3
+while read i ;do
+	if [ -n "$i" ];then
+		if [ "$(basename $i)" = "busybox" ];then
+			 cp $i $INSTALLDIR/sbin/
+		else
+		abspath=${i/`basename $i`}
+		[ ! -d $INSTALLDIR/$abspath ] && mkdir -p $INSTALLDIR/$abspath
+		[ ! -e $INSTALLDIR/$i ] && cp $i $INSTALLDIR/$abspath/
+		fi
+	fi
+done < $DESTDIR/$FILE_LIST
+}
+

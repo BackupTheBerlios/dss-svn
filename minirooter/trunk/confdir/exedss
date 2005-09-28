@@ -1,0 +1,18 @@
+# /usr/share/minirooter/confdir/exedss : file exe to copy in miniroot
+#
+# This file should contain the names or full paths of exe files, one per line.
+# Comments are allowed here and begin with a `#', and everything on the line 
+# after them are ignored.
+#
+# You must run mkderooter(8) to effect this change.
+# see mkinitrd(8)
+
+#splash
+#depmod
+
+# Default
+
+#udevstart
+#unionctl
+#modprobe
+

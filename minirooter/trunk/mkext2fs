@@ -1,0 +1,59 @@
+#!/bin/bash
+# similar to mkcramfs (for use with debian mkinitrd)
+# mkext2fs [-f] dirname outfile
+# 
+# 	Written by: Fabian Franz <mkext2fs@fabian-franz.de>
+#
+# GPL v.2 - See: `locate gpl.txt`
+#       Adapted by: Daniele Favara <danjele@gmail.com>
+if [ $# -lt 2 ]
+then
+  echo "Usage: $(basename $0) [-f] dirname outfile" 1>&2
+  echo " -f         force creation of ext2-initrd even if a debian kernel is found" 1>&2
+  echo " dirname    root of the directory tree to be compressed" 1>&2
+  echo " outfile    output file" 1>&2
+  exit 1
+fi
+
+# commandline parameter "parsing"
+
+FORCE=""
+if [ "$1" = "-f" ]
+then
+  FORCE="yes"
+  shift
+fi
+
+# Search for cramfs module
+FOUND=$(find $1 -name "cramfs.*")
+
+# if not found, "fall back" to mkcramfs
+# as debian kernels won't work with mkext2fs
+
+if [ -z "$FOUND" -a -z "$FORCE" ]
+then 
+  echo "$(basename $0):" 1>&2
+  echo "Warning: A debian kernel was found, so mkcramfs will be called." 1>&2
+  echo "         Use -f to avoid this. You can change parameters and programs" 1>&2
+  echo "         in /etc/mkinitrd/mkinitrd.conf" 1>&2
+  exec mkcramfs "$@"
+fi
+
+TMPDIR=/tmp/tmp.$$
+mkdir $TMPDIR
+function clean_exit
+{
+  umount $TMPDIR/mnt 2>/dev/null
+  rm -rf $TMPDIR
+}
+
+trap clean_exit EXIT
+
+COUNT=$[$(du -s $1 | awk '{ print $1 }' )*2] # Add 100% filesystem overhead :-)
+dd if=/dev/zero of=$TMPDIR/image count=$COUNT bs=1k >/dev/null 2>/dev/null
+mke2fs -F -m0 $TMPDIR/image >/dev/null 2>/dev/null
+mkdir -p $TMPDIR/mnt
+mount -o loop $TMPDIR/image $TMPDIR/mnt
+cp -af $1/* $TMPDIR/mnt
+umount $TMPDIR/mnt
+cat $TMPDIR/image | gzip -9 - > $2

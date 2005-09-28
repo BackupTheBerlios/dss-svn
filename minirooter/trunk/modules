@@ -1,0 +1,63 @@
+# /etc/minirooter/modules: Kernel modules to load for initrd.
+#
+# This file should contain the names of kernel modules and their arguments
+# (if any) that are needed to mount the root file system, one per line.
+# Comments begin with a `#', and everything on the line after them are ignored.
+#
+# You must run mkderooter(8) to effect this change.
+#
+# (from mkinitrd(8))
+
+
+#IEEE
+#sd-mod
+ieee1394
+ohci1394
+raw1394
+sbp2  serialize_io=1 max_speed=2
+
+# -------
+# modules included as default
+# -------
+
+# SCSI (default)
+# 3w-xxxx
+# BusLogic
+# NCR53c406a
+# a100u2w
+# advansys
+# aha152x
+# aha1542
+# aic7xxx
+# atp870u
+# dtc
+# eata
+# fdomain
+# gdth
+# initio
+# megaraid
+# pas16
+# psi240i
+# qlogicfas
+# qlogicfc
+# seagate
+# t128
+# tmscsim
+# u14-34f
+# ultrastor
+# wd7000
+
+# USB (default)
+# usbcore
+# ehci-hcd
+# ohci-hcd
+# uhci-hcd
+# usb-storage
+
+# IDE (default)
+# ide-cd
+
+# FS (default)
+# nls_cp437
+# unionfs
+# cloop
