@@ -1,0 +1,265 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
+#export PATH
+locales="/etc/init.d/DSSLV-locales"
+FILECONF="/etc/sysconfig/sysconfig"
+lname="dss"
+
+#umask 022
+[ -e  "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions && hw_verbose="" 
+[ -e  "/lib/lsb/DSSLV-functions" ] && . /lib/lsb/DSSLV-functions 
+
+#. /etc/default/rcS
+# Ignore these signals: INT, TERM, SEGV
+trap "" 2 3 11
+
+run_rcs() {
+MNTPOINT="/media"
+
+[ ! -e $FILECONF ] && :> $FILECONF
+
+#---------------------------------------
+#		INTERACTIVE=?
+#---------------------------------------
+INTERACTIVE=""
+stringinstring "BOOT_IMAGE=expert " "$CMDLINE" && echo "INTERACTIVE=\"yes\"" >> $FILECONF
+
+#---------------------------------------
+#  		autoconfigure ?
+#---------------------------------------
+
+
+# Delete obsolete links and files before starting autoconfig
+
+if ! checkbootparam "nohwsetup"; then
+	to_del="desktop  floppy   mouse  netcard  sound  xserver i18n keyboard $lname sysconfig"
+	for i in $to_del 
+	do
+    	[ -f "/etc/sysconfig/$i" ] &&  rm -f /etc/sysconfig/$i 2>/dev/null 
+	done
+fi
+
+#---------------------------------------
+#		MYCONF=?
+#---------------------------------------
+
+MYCONF=""
+case "$CMDLINE" in *\ myconf*|*\ floppyconf*|*\ custom*) echo  "MYCONF=\"yes\"" >> $FILECONF ; ;; esac
+
+if [ -n "$MYCONF" ]; then
+# Check for given config directory
+    "MYCONFDIR=\"$(getbootparam 'myconfig')\""
+    [ -n "$MYCONFDIR" ] || echo  "MYCONFDIR=\"$(getbootparam 'myconf')\"" >> $FILECONF
+    [ -n "$MYCONFDIR" ] || echo  "MYCONFDIR=\"$(getbootparam 'floppyconfig')\"" >> $FILECONF
+    [ -n "$MYCONFDIR" ] || echo  "MYCONFDIR=\"$(getbootparam 'floppyconf')\"" >> $FILECONF
+    [ -n "$MYCONFDIR" ] || echo "MYCONFDIR=\"$(getbootparam 'custom')\"" >> $FILECONF
+fi
+
+
+
+#---------------------------------------
+#		localization
+#          . /etc/init.d/DSS-locales
+#---------------------------------------
+
+### localization
+# Allow language specification via commandline. The default language
+# will be overridden via "lang=de" boot commandline
+LANGUAGE="$(getbootparam lang 2>/dev/null)"
+[ -n "$LANGUAGE" ] || LANGUAGE="us"
+
+echo "LANGUAGE=\"$LANGUAGE\"" >> $FILECONF
+
+# Source the locales, which have been placed in a separate file
+
+. $locales
+
+# Export it now, so error messages get translated, too
+export LANG COUNTRY CHARSET
+
+
+#---------------------------------------
+#	        installed ?	
+#---------------------------------------
+
+if [ -e /proc/sys/kernel/real-root-dev ]; then
+    read ROOTDEV <<EOT
+$(cat /proc/sys/kernel/real-root-dev 2>/dev/null)
+EOT
+    case "$ROOTDEV" in 256|0x100) ;; *) echo "INSTALLED=\"$ROOTDEV\"" >> $FILECONF; ;; esac
+fi
+
+#---------------------------------------
+#             host name ?		
+#---------------------------------------
+
+# Set hostname
+echo "MHOSTNAME=\"$(getbootparam hostname)\"" >> $FILECONF
+if [ -n "$MHOSTNAME" ]; then
+	OLDNAME=$(cat /etc/hostname)
+    sed -i -e "s|$OLDNAME|$MHOSTNAME|g" /etc/hosts
+	echo $MHOSTNAME >  /etc/hostname
+fi
+
+#---------------------------------------
+#	       clock ?	
+#---------------------------------------
+
+# Set clock (Local time is more often used than GMT, so it is default)
+UTC=""
+checkbootparam utc >/dev/null 2>&1 && echo "UTC=\"-u\"" >> $FILECONF
+checkbootparam gmt >/dev/null 2>&1 && echo "UTC=\"-u\"" >> $FILECONF
+
+#hwclock $UTC -s
+
+#---------------------------------------
+#		KERNEL=?
+#              `uname -r`
+#---------------------------------------
+
+echo "KERNEL=\"$(uname -r)\"" >> $FILECONF
+#echo " ${GREEN}Running Linux Kernel ${YELLOW}$KERNEL${GREEN}.${NORMAL}"
+
+
+#---------------------------------------
+#               zoneinfo ?		
+#---------------------------------------
+
+echo "KTZ=\"$(getbootparam tz 2>/dev/null)\"" >> $FILECONF
+[ -f "/usr/share/zoneinfo/$KTZ" ] && echo "TZ=\"$KTZ\"" >> $FILECONF
+
+
+#---------------------------------------
+#               /etc/sysconfig/*
+#---------------------------------------
+
+# Standard variables/files
+echo "LANG=\"$LANG\""                  > /etc/sysconfig/i18n
+echo "COUNTRY=\"$COUNTRY\""           >> /etc/sysconfig/i18n
+echo "LANGUAGE=\"$LANGUAGE\""         >> /etc/sysconfig/i18n
+echo "CHARSET=\"$CHARSET\""           >> /etc/sysconfig/i18n
+echo "XMODIFIERS=\"$XMODIFIERS\""     >> /etc/sysconfig/i18n
+
+# Default Keyboard layout for console and X
+echo "KEYTABLE=\"$KEYTABLE\""          > /etc/sysconfig/keyboard
+echo "XKEYBOARD=\"$XKEYBOARD\""       >> /etc/sysconfig/keyboard
+echo "KDEKEYBOARD=\"$KDEKEYBOARD\""   >> /etc/sysconfig/keyboard
+echo "KDEKEYBOARDS=\"$KDEKEYBOARDS\"" >> /etc/sysconfig/keyboard
+echo "CONSOLEFONT=\"$CONSOLEFONT\"" >> /etc/sysconfig/keyboard
+
+# Desired desktop
+echo "DESKTOP=\"$DESKTOP\""            > /etc/sysconfig/desktop
+
+# Write all, including non-standard variables, to /etc/sysconfig/$lname
+echo "LANG=\"$LANG\""                  > /etc/sysconfig/$lname
+echo "COUNTRY=\"$COUNTRY\""           >> /etc/sysconfig/$lname
+echo "LANGUAGE=\"$LANGUAGE\""         >> /etc/sysconfig/$lname
+echo "CHARSET=\"$CHARSET\""           >> /etc/sysconfig/$lname
+echo "KEYTABLE=\"$KEYTABLE\""         >> /etc/sysconfig/$lname
+echo "XKEYBOARD=\"$XKEYBOARD\""       >> /etc/sysconfig/$lname
+echo "KDEKEYBOARD=\"$KDEKEYBOARD\""   >> /etc/sysconfig/$lname
+echo "KDEKEYBOARDS=\"$KDEKEYBOARDS\"" >> /etc/sysconfig/$lname
+echo "CONSOLEFONT=\"$CONSOLEFONT\""   >> /etc/sysconfig/$lname
+echo "DESKTOP=\"$DESKTOP\""           >> /etc/sysconfig/$lname
+echo "TZ=\"$TZ\""                     >> /etc/sysconfig/$lname
+
+checkbootparam "idecd" || checkbootparam "atapicd" || echo  "ide-scsi" >> /etc/modules && rmmod ide-cd > /dev/null 2>&1
+checkbootparam "idecd"  && echo "ide-cd" >> /etc/modules
+checkbootparam "atapicd" && echo "ide-cd" >> /etc/modules
+
+
+#---------------------------------------
+#          CPU INFO
+#---------------------------------------
+
+
+# Print CPU info
+#echo -n "${GREEN}"
+#awk -F: '/^processor/{printf " Processor"$2" is "};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null
+#echo -n "${NORMAL}"
+
+
+# Read in what hwsetup has found
+[ -f /etc/sysconfig/$lname ] && . /etc/sysconfig/$lname
+
+#---------------------------------------
+#              AGP ?               
+#---------------------------------------
+
+#if checkbootparam noagp; then
+#    echo " ${BLUE}Skipping AGP detection as requested on boot commandline.${NORMAL}"
+#else
+# Probe for AGP. Hope this can fail safely
+#    stringinfile "AGP" "/proc/pci" 2>/dev/null && insmod agpgart agp_try_unsupported=1 >/dev/null 2>&1 && echo " ${YELLOW}AGP bridge${GREEN} detected."
+#fi
+
+fistringinfile(){
+    case "$(cat $2)" in *$1*) return 0;; esac
+    return 1
+}
+
+
+NOSWAP=""
+DMA=""
+checkbootparam "noswap" && echo "NOSWAP=\"yes\"" >> $FILECONF
+checkbootparam "dma" && echo "DMA=\"yes\"" >> $FILECONF
+
+USERNAME="$(getbootparam username)"
+if [ -z $USERNAME ]; then
+    USERNAME="debaser"
+fi
+
+echo "USERNAME=\"$USERNAME\"" >> $FILECONF
+
+
+checkbootparam "nodosswap" && echo "NODOSSWAP=\"yes\"" >> $FILECONF
+
+echo "FREEMEM=\"$(awk 'BEGIN{m=0};/MemFree|Cached|SwapFree/{m+=$2};END{print m}' /proc/meminfo)\"" >> $FILECONF
+
+
+partitions=""
+IDEDISKS=""
+for d in `ls -1d /proc/ide/hd? 2>/dev/null`; do
+    IDEDISKS="$IDEDISKS ${d##*/}"
+done
+while read major minor blocks partition relax; do
+    partition="${partition##*/}"
+    [ -z "$partition" -o ! -e "/dev/$partition" ] && continue
+case "$partition" in
+    hd?) ;;                                               # IDE Harddisk, entire disk
+    sd?) ;;                                               # SCSI Harddisk, entire disk
+    [hs]d*) partitions="$partitions /dev/$partition";;    # IDE or SCSI disk partition
+esac
+done <<EOT
+$(awk 'BEGIN{old="__start"}{if($0==old){exit}else{old=$0;if($4&&$4!="name"){print $0}}}' /proc/partitions)
+EOT
+
+echo "partitions=\"$partitions\"" >> $FILECONF
+echo "IDEDISKS=\"$IDEDISKS\"" >> $FILECONF
+
+
+#[ -e /etc/sysconfig/sysconfig ] && cat /etc/sysconfig/sysconfig >> /etc/sysconfig/$lname
+# Re-enable signals
+trap 2 3 11
+dpkg-genstatus -g -d /  1>/dev/null
+bkvar=$(date +%s)
+[ -f /var/lib/dpkg/status ] &&  cp /var/lib/dpkg/status /var/lib/dpkg/status.$bkvar  
+[ -f /tmp/status ]  && cp /tmp/status /var/lib/dpkg/status
+
+}
+[ ! -n "$hw_verbose" ] && log_begin_msg "Configuring environment..." 
+
+run_rcs 2>/dev/null
+
+[ ! -n "$hw_verbose" ] && log_end_msg 0
+
+

@@ -1,0 +1,32 @@
+aterm*background:  black
+aterm*foreground:  gray
+aterm*cursorColor: red
+aterm*color0:      black
+aterm*color1:      #9e1828
+aterm*color2:      #aece92
+aterm*color3:      #968a38
+aterm*color4:      #414171
+aterm*color5:      #963c59
+aterm*color6:      #418179
+aterm*color7:      gray
+aterm*color8:      gray40
+aterm*color9:      #cf6171
+aterm*color10:     #c5f779
+aterm*color11:     #fff796
+aterm*color12:     #4186be
+aterm*color13:     #cf9ebe
+aterm*color14:     #71bebe
+aterm*color15:     white
+
+
+aterm*cutchars: !"$%'()*+,;<>[\]^` 
+aterm*scrollBar: false 
+aterm*borderLess: true 
+aterm*loginShell: true 
+aterm*transparent: true 
+aterm*tintingType: true 
+aterm*scrollTtyOutput: false 
+aterm*shading: 40 
+aterm*fading: 70 
+aterm*font: -misc-fixed-medium-r-normal-*-*-100-*-*-c-*-iso8859-2 
+aterm*pasteMouseOutside: true 

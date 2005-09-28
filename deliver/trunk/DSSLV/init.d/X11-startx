@@ -1,0 +1,15 @@
+#!/bin/bash
+# Prepare and start X11 
+# $Id$
+
+# use $dpi from cmdline ?
+
+if [ -e "/usr/bin/X11/startx" ];then
+echo "starting x11"
+if [ -n "$WINDOWMANAGER" ]; then
+     su -c "COLUMNS=80 /usr/bin/X11/startx -- -dpi 94 " - $USER & 
+fi
+else
+	echo '(WW) startx not found'
+fi
+

@@ -1,0 +1,8 @@
+table Icon
+ Type: Plugin
+ Library: /usr/share/xtdesktop/plugins/sysmon.so
+ CaptionAlign: left
+ X: 864
+ Y: 33
+ Fixed: no
+end

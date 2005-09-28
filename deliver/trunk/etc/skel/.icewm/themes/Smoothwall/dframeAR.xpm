@@ -1,0 +1,8 @@
+/* XPM */
+static char * frameAR_xpm[] = {
+"4 1 4 1",
+" 	c None",
+".	c #7898A8",
+"+	c #A8C4D0",
+"@	c #506878",
+"..+@"};

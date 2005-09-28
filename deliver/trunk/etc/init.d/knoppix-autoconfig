@@ -1,0 +1,850 @@
+#!/bin/bash
+# /MorphixCD/etc/init.d/knoppix-autoconfig
+# Basic system configuration and hardware setup
+# (C) Klaus Knopper <knopper@knopper.net> 2001
+#
+# Adapted for Morphix,
+# by Alex de Landgraaf <alextreme@xs4all.nl> 
+#
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
+export PATH
+
+umask 022
+
+# Ignore these signals: INT, TERM, SEGV
+trap "" 2 3 11
+
+# ANSI COLORS
+CRE="[K"
+NORMAL="[0;39m"
+# RED: Failure or error message
+RED="[1;31m"
+# GREEN: Success message
+GREEN="[1;32m"
+# YELLOW: Descriptions
+YELLOW="[1;33m"
+# BLUE: System messages
+BLUE="[1;34m"
+# MAGENTA: Found devices or drivers
+MAGENTA="[1;35m"
+# CYAN: Questions
+CYAN="[1;36m"
+# BOLD WHITE: Hint
+WHITE="[1;37m"
+
+CMDLINE="$(cat /proc/cmdline)"
+MNTPOINT="/mnt"
+
+function rc_splash()
+{
+    echo "show (( 665534 * ($progress + 1) / $num))" /proc/splash
+}
+
+function rc_splash2()
+{
+    echo "show $1">/proc/splash
+}
+
+case "$CMDLINE" in 
+    *splash*) 
+	if [ -e "/proc/splash" ]; then
+	    SPLASH="yes"; 
+	fi
+;; esac
+
+# Bootsplash section
+
+SPLASHBIN="/static/splash"
+
+### Utility Function(s)
+
+# Simple shell grep
+stringinfile(){
+    case "$(cat $2)" in *$1*) return 0;; esac
+    return 1
+}
+
+# same for strings
+stringinstring(){
+    case "$2" in *$1*) return 0;; esac
+    return 1
+}
+
+# Reread boot command line; echo last parameter's argument or return false.
+getbootparam(){
+    stringinstring " $1=" "$CMDLINE" || return 1
+    result="${CMDLINE##*$1=}"
+    result="${result%%[ 	]*}"
+    echo "$result"
+    return 0
+}
+
+# Check boot commandline for specified option
+checkbootparam(){
+    stringinstring " $1" "$CMDLINE"
+    return "$?"
+}
+
+# Reinit USB devices that could not be started from linuxrc
+# Adopted from /etc/hotplug/usb.rc with some changes.
+# Calling /etc/hotplug/usb.rc directly can result in crashes due
+# to quite cautiousless module probing there. -KK
+usbreinit(){
+    LISTER=/usr/sbin/usbmodules
+    test -x $LISTER || LISTER="$(type -p usbmodules 2>/dev/null)"
+    [ -z "$LISTER" -o ! -f /proc/bus/usb/devices ] && return 1
+# make sure the usb agent will run
+    ACTION="add" ; PRODUCT="0/0/0" ; DEVFS="/proc/bus/usb" ; DEVICE= ; DEVPATH=
+    export ACTION PRODUCT DEVFS DEVICE DEVPATH
+    echo -n "sync:["
+    if [ -d /sys/bus/usb/devices ]; then
+# Kernel 2.6
+	for device in /sys/bus/usb/devices/*; do
+	    DEVPATH="${device#/sys/}"
+	    echo -n "${DEVPATH##*/}" " "; /etc/hotplug/usb.agent >/dev/null 2>&1
+	done
+    else
+# Kernel 2.4
+	for DEVICE in /proc/bus/usb/*/*; do
+	    echo -n ${DEVICE##*/} " "; /etc/hotplug/usb.agent >/dev/null 2>&1
+	done
+    fi
+    echo -n "] "
+    return 0
+}
+
+fstype(){
+    case "$(file -s $1)" in
+	*[Ff][Aa][Tt]*|*[Xx]86*) echo "vfat"; return 0;;
+*[Rr][Ee][Ii][Ss][Ee][Rr]*)  echo "reiserfs"; return 0;;
+*[Xx][Ff][Ss]*)  echo "xfs"; return 0;;
+*[Ee][Xx][Tt]3*) echo "ext3"; return 0;;
+*[Ee][Xx][Tt]2*) echo "ext2"; return 0;;
+*data*)          echo "invalid"; return 0;;
+*) echo "auto"; return 0;;
+esac
+}
+
+# Try to mount this filesystem read-only, without or with encryption
+#trymount(){
+# Apparently, mount-aes DOES autodetect AES loopback files.
+#[ -b "$1" ] && { mount -t auto -o ro "$1" "$2" 2>/dev/null; RC="$?"; }
+# We need to mount crypto-loop files with initial rw support
+#[ -f "$1" ] && { mount -t auto -o loop,rw "$1" "$2" 2>/dev/null; RC="$?"; }
+#[ "$RC" = "0" ] && return 0
+#echo ""
+#echo "${CYAN}Filesystem not autodetected, trying to mount $1 with AES256 encryption${NORMAL}"
+#a="y"
+#while [ "$a" != "n" -a "$a" != "N" ]; do
+# We need to mount crypto-loop files with initial rw support
+# mount -t auto -o loop,rw,encryption=AES256 "$1" "$2" && return 0
+# echo -n "${RED}Mount failed, retry? [Y/n] ${NORMAL}"
+# read a
+#done
+#return 1
+#}
+
+### EOF utility functions
+#We mount udev before others
+[ -x /etc/init.d/udev ] && /etc/init.d/udev start
+
+# We need /proc here, so mount it in case we skipped the bootfloppy
+[ -f /proc/version ] || mount -t proc proc /proc 2>/dev/null
+stringinfile "/dev/pts" /proc/mounts || mount -t devpts /dev/pts /dev/pts 2>/dev/null
+# Kernel 2.6
+[ -d /sys/devices ] || mount -t sysfs /sys /sys 2>/dev/null
+
+# Check if we are in interactive startup mode
+INTERACTIVE=""
+stringinstring "BOOT_IMAGE=expert " "$CMDLINE" && INTERACTIVE="yes"
+
+# Check if we want the config floppy
+MYCONF=""
+case "$CMDLINE" in *\ myconf*|*\ floppyconf*|*\ custom*) MYCONF="yes"; ;; esac
+
+if [ -n "$MYCONF" ]; then
+# Check for given config directory
+    MYCONFDIR="$(getbootparam 'myconfig')"
+    [ -n "$MYCONFDIR" ] || MYCONFDIR="$(getbootparam 'myconf')"
+    [ -n "$MYCONFDIR" ] || MYCONFDIR="$(getbootparam 'floppyconfig')"
+    [ -n "$MYCONFDIR" ] || MYCONFDIR="$(getbootparam 'floppyconf')"
+    [ -n "$MYCONFDIR" ] || MYCONFDIR="$(getbootparam 'custom')"
+fi
+
+# Check if we want alsa
+USE_ALSA="yes"
+if checkbootparam noalsa >/dev/null 2>&1; then
+    USE_ALSA=""
+else
+    ALSA_CARD="$(getbootparam 'alsa' 2>/dev/null)"
+    [ -n "$ALSA_CARD" ] || ALSA_CARD="autodetect"
+fi
+
+### localization
+# Allow language specification via commandline. The default language
+# will be overridden via "lang=de" boot commandline
+LANGUAGE="$(getbootparam lang 2>/dev/null)"
+[ -n "$LANGUAGE" ] || LANGUAGE="us"
+
+# Source the locales, which have been placed in a separate file
+
+. /etc/init.d/knoppix-locales
+
+# Export it now, so error messages get translated, too
+export LANG COUNTRY CHARSET
+
+if test -n "$SPLASH"; then
+    echo "show 8000">/proc/splash 2>/dev/null
+fi
+
+if [ -e /proc/sys/kernel/real-root-dev ]; then
+    read ROOTDEV <<EOT
+$(cat /proc/sys/kernel/real-root-dev 2>/dev/null)
+EOT
+    case "$ROOTDEV" in 256|0x100) ;; *) INSTALLED="$ROOTDEV"; ;; esac
+fi
+
+# Set hostname
+MHOSTNAME="$(getbootparam hostname)"
+if [ -n "$MHOSTNAME" ]; then
+    rm /etc/hosts
+    sed -e "s|Morphix|$MHOSTNAME|g" /MorphixCD/etc/hosts >/etc/hosts
+    hostname $MHOSTNAME
+else
+    hostname Morphix
+fi
+
+# Set clock (Local time is more often used than GMT, so it is default)
+UTC=""
+checkbootparam utc >/dev/null 2>&1 && UTC="-u"
+checkbootparam gmt >/dev/null 2>&1 && UTC="-u"
+
+hwclock $UTC -s
+
+KERNEL="$(uname -r)"
+echo " ${GREEN}Running Linux Kernel ${YELLOW}$KERNEL${GREEN}.${NORMAL}"
+
+# / must be read-write in any case, starting from here
+mount -o remount,rw / 2>/dev/null
+
+# NOTE: CHECK IF THIS IS IN MORPHIX BASE!
+
+KTZ="$(getbootparam tz 2>/dev/null)"
+[ -f "/usr/share/zoneinfo/$KTZ" ] && TZ="$KTZ"
+if [ -f "/usr/share/zoneinfo/$TZ" ]; then
+   rm -f /etc/localtime
+   cp "/usr/share/zoneinfo/$TZ" /etc/localtime
+fi
+
+# Set up preliminary /etc/network/interfaces
+/usr/sbin/mknetworkinterfaces
+
+# Delete obsolete links and files before starting autoconfig
+if ! checkbootparam "nohwsetup"; then
+    rm -f /dev/cdrom* /dev/cdwriter* /dev/mouse* /dev/modem* /dev/scanner* \
+	/etc/sysconfig/i18n /etc/sysconfig/keyboard /etc/sysconfig/morphix-all \
+	2>/dev/null
+fi
+
+# Write Morphix config files for other scripts to parse
+# Standard variables/files
+echo "LANG=\"$LANG\""                  > /etc/sysconfig/i18n
+echo "COUNTRY=\"$COUNTRY\""           >> /etc/sysconfig/i18n
+echo "LANGUAGE=\"$LANGUAGE\""         >> /etc/sysconfig/i18n
+echo "CHARSET=\"$CHARSET\""           >> /etc/sysconfig/i18n
+echo "XMODIFIERS=\"$XMODIFIERS\""     >> /etc/sysconfig/i18n
+
+# Default Keyboard layout for console and X
+echo "KEYTABLE=\"$KEYTABLE\""          > /etc/sysconfig/keyboard
+echo "XKEYBOARD=\"$XKEYBOARD\""       >> /etc/sysconfig/keyboard
+echo "KDEKEYBOARD=\"$KDEKEYBOARD\""   >> /etc/sysconfig/keyboard
+echo "KDEKEYBOARDS=\"$KDEKEYBOARDS\"" >> /etc/sysconfig/keyboard
+echo "CONSOLEFONT=\"$CONSOLEFONT\"" >> /etc/sysconfig/keyboard
+
+# Desired desktop
+echo "DESKTOP=\"$DESKTOP\""            > /etc/sysconfig/desktop
+
+# Write all, including non-standard variables, to /etc/sysconfig/morphix-all
+echo "LANG=\"$LANG\""                  > /etc/sysconfig/morphix
+echo "COUNTRY=\"$COUNTRY\""           >> /etc/sysconfig/morphix
+echo "LANGUAGE=\"$LANGUAGE\""         >> /etc/sysconfig/morphix
+echo "CHARSET=\"$CHARSET\""           >> /etc/sysconfig/morphix
+echo "KEYTABLE=\"$KEYTABLE\""         >> /etc/sysconfig/morphix
+echo "XKEYBOARD=\"$XKEYBOARD\""       >> /etc/sysconfig/morphix
+echo "KDEKEYBOARD=\"$KDEKEYBOARD\""   >> /etc/sysconfig/morphix
+echo "KDEKEYBOARDS=\"$KDEKEYBOARDS\"" >> /etc/sysconfig/morphix
+echo "CONSOLEFONT=\"$CONSOLEFONT\""   >> /etc/sysconfig/morphix
+echo "DESKTOP=\"$DESKTOP\""           >> /etc/sysconfig/morphix
+echo "TZ=\"$TZ\""                     >> /etc/sysconfig/morphix
+
+# No kernel messages while probing modules
+echo "0" > /proc/sys/kernel/printk
+
+# Check for IDE-SCSI capable CD-Rom(s) first
+checkbootparam "idecd" || checkbootparam "atapicd" || modprobe ide-scsi >/dev/null 2>&1
+modprobe ide-cd >/dev/null 2>&1
+
+
+# Bring up loopback interface now
+ifconfig lo 127.0.0.1 up
+
+# CD Checker
+if checkbootparam "testcd"; then
+    echo -n " ${BLUE}Checking CD data integrity as requested by '${CYAN}testcd${BLUE}' boot option... ${NORMAL}"
+    ( tar cpPlf - /cdrom/ | dd of=/dev/null bs=64k ) >/dev/null 2>&1
+    if [ "$?" = "0" ]; then
+	echo "${GREEN}OK${NORMAL}"
+    else
+	echo "${RED}FAILED${NORMAL}"
+	echo "${RED} *** DATA ON YOUR CD MEDIUM IS POSSIBLY INCOMPLETE OR DAMAGED. ***${NORMAL}"
+	echo -n "${CYAN}Hit return to contine. ${NORMAL}"
+	read a
+    fi
+
+# MD5SUM checking instead of just checking readability of media
+# As we currently don't do this for Morphix, we'll have to either
+# add it to a different bootoption and/or integrate it in autobuilding
+
+    echo " ${BLUE}Checking CD data integrity as requested by '${CYAN}testcd${BLUE}' boot option.${NORMAL}"
+    echo " ${BLUE}Reading files and checking against MORPHIX/md5sums, this may take a while...${NORMAL}"
+    echo -n "${RED}"
+    ( cd /cdrom/ ; rm -f /tmp/md5sum.log ; LANG="$LANG" md5sum -v -c md5sums 2>&1 | tee /tmp/md5sum.log )
+    if [ "$?" = "0" ]; then
+	echo " ${GREEN}Everything looks OK${NORMAL}"
+    else
+	echo "${RED} *** CHECKSUM FAILED FOR THESE FILES:                          ***"
+	egrep -v '(^md5sum:|OK$)' /tmp/md5sum.log
+	echo "${RED} *** DATA ON YOUR CD MEDIUM IS POSSIBLY INCOMPLETE OR DAMAGED, ***${NORMAL}"
+	echo "${RED} *** OR YOUR COMPUTER HAS BAD RAM.                             ***${NORMAL}"
+	echo -n "${CYAN}Hit return to contine, or press the reset button to quit.${NORMAL} "
+	read a
+    fi
+fi
+
+if test -n "$SPLASH"; then
+    if [ -e $SPLASHBIN ]; then
+	$SPLASHBIN -s /bootsplash/config/bootsplash3-1024x768.cfg 2>&1 > /dev/null
+    fi
+    echo "show 12000">/proc/splash 2>/dev/null
+fi
+
+# Print CPU info
+echo -n "${GREEN}"
+awk -F: '/^processor/{printf " Processor"$2" is "};/^model name/{printf $2};/^vendor_id/{printf vendor};/^cpu MHz/{printf " %dMHz",int($2)};/^cache size/{printf ","$2" Cache"};/^$/{print ""}' /proc/cpuinfo 2>/dev/null
+echo -n "${NORMAL}"
+
+# HOTPLUG stuff
+# We should always set this, anyways
+# echo "/sbin/hotplug-knoppix" > /proc/sys/kernel/hotplug
+
+if [ -d /proc/acpi ]; then
+# ACPI
+    if checkbootparam "noacpi"; then
+	echo " ${BLUE}Skipping ACPI Bios detection as requested on boot commandline.${NORMAL}"
+    else
+	echo -n " ${GREEN}ACPI Bios found, activating modules:"
+	found=""
+	for a in /lib/modules/$KERNEL/kernel/drivers/acpi/*; do
+	    basename="${a##*/}"
+	    basename="${basename%%.*}"
+	    case "$basename" in *_acpi)
+		    egrep -qi "${basename%%_acpi}" /proc/acpi/dsdt 2>/dev/null || continue ;;
+	    esac
+	    modprobe $basename >/dev/null 2>&1 && echo -n " ${YELLOW}$basename${GREEN}" && found="yes"
+	done
+	test -z "$found" && echo -n "${BLUE}(none)"
+	echo "${NORMAL}"
+    fi
+else
+# If we don't have ACPI enabled, use APM instead
+    if checkbootparam "noapm"; then
+	echo " ${BLUE}Skipping APM Bios detection as requested on boot commandline.${NORMAL}"
+	modprobe apm power_off=1 >/dev/null 2>&1 && test -x /etc/init.d/apmd && /etc/init.d/apmd start && echo " ${GREEN}APM Bios found, power management functions enabled.${NORMAL}"
+    fi
+fi
+
+# Support for hotpluggable devices?
+HOTPLUG=""
+
+# Morphix autoconfig
+# First: PCMCIA Check/Setup
+# This needs to be done before other modules are being loaded by hwsetup
+
+if checkbootparam "nopcmcia"; then
+    echo " ${BLUE}Skipping PCMCIA detection as requested on boot commandline.${NORMAL}"
+else
+    insmod pcmcia_core >/dev/null 2>&1
+# Try Cardbus or normal PCMCIA socket drivers
+    insmod yenta_socket >/dev/null 2>&1 && HOTPLUG="yes" || insmod i82365 >/dev/null 2>&1 || insmod tcic >/dev/null 2>&1
+    if [ "$?" != "0" ]
+	then
+# No PCMCIA Bus present.
+	[ -n "$HOTPLUG" ] || rmmod pcmcia_core 2>/dev/null
+    else
+	echo " ${GREEN}PCMCIA found, starting cardmgr.${NORMAL}"
+	insmod ds >/dev/null 2>&1
+	cardmgr >/dev/null 2>&1 && sleep 4
+    fi
+fi
+
+# USB enable
+if checkbootparam "nousb"; then
+    echo " ${BLUE}Skipping USB detection as requested on boot commandline.${NORMAL}"
+else
+# USB/Mouse Check/Setup
+# This needs to be done before other modules are being loaded by hwsetup
+    insmod usbcore  >/dev/null 2>&1
+# We now try to load both USB modules, in case someone has 2 different
+# controllers
+    FOUNDUSB=""
+    USBREINIT="yes"
+    USBMODULES="usb-uhci usb-ohci"
+    case "$KERNEL" in 2.6.*) USBMODULES="uhci_hcd ohci_hcd";; esac
+    for u in $USBMODULES; do 
+	if stringinfile "$u" /proc/modules; then
+	    FOUNDUSB="yes"
+	elif modprobe "$u" >/dev/null 2>&1; then
+	    FOUNDUSB="yes"
+	    USBREINIT=""
+	fi
+    done
+    if [ -n "$FOUNDUSB" ]; then
+	echo -n " ${GREEN}USB found, managed by ${MAGENTA}hotplug${GREEN}"
+# We have to do this here, because /proc/bus/usb does not seem to exist before
+# the lowlevel controller module(s) are loaded.
+	mount -o devmode=0666 -t usbdevfs /proc/bus/usb /proc/bus/usb >/dev/null 2>&1
+	if [ -n "$USBREINIT" ]; then
+	    echo -n ": ${YELLOW}(Re-)scanning USB devices... "; usbreinit
+	    echo -n "Done."
+	else
+	    echo -n "."
+	fi
+	echo "${NORMAL}"
+    else
+# For an unknown reason, unloading the usbcore module seems to hang sometimes.
+# umount /proc/bus/usb >/dev/null 2>&1
+# rmmod usbcore 2>/dev/null
+	true
+    fi
+fi
+
+# Firewire enable
+if checkbootparam "nofirewire"; then
+    echo " ${BLUE}Skipping Firewire detection as requested on boot commandline.${NORMAL}"
+else
+# We now try to load the firewire module
+    insmod ieee1394 >/dev/null 2>&1
+    FOUNDFIREWIRE=""
+    FIREWIREREINIT="yes"
+    if stringinfile ohci1394 /proc/modules; then
+	FOUNDFIREWIRE="yes"
+	FIREWIREREINIT="yes"
+    elif modprobe ohci1394 >/dev/null 2>&1; then
+	FOUNDFIREWIRE="yes"
+	FIREWIREREINIT=""
+    fi
+    if [ -n "$FOUNDFIREWIRE" ]; then
+	HOTPLUG="yes"
+	echo -n " ${GREEN}Firewire found, managed by ${MAGENTA}hotplug${GREEN}"
+	if [ -n "$FIREWIREREINIT" -a -x /etc/hotplug.d/ieee1394/rescan-scsi-bus.sh ]; then
+	    echo -n ": ${YELLOW}(Re-)scanning firewire devices... "
+	    /etc/hotplug.d/ieee1394/rescan-scsi-bus.sh >/dev/null 2>&1
+	    echo -n "Done."
+	else
+	    echo -n "."
+	fi
+	echo "${NORMAL}"
+    else
+# For an unknown reason, unloading the ieee1394 module seems to hang sometimes.
+# rmmod ieee1394 2>/dev/null
+	true
+    fi
+fi
+
+# Start hotplug manager for PCI/USB/Firewire/Cardbus
+#if [ -n "$HOTPLUG" -a -x /sbin/hotplug-knoppix ]; then
+#    echo " ${GREEN}Enabling ${MAGENTA}hotplug${GREEN} manager.${NORMAL}"
+#    echo "/sbin/hotplug" > /proc/sys/kernel/hotplug ; sleep 3
+#fi
+
+# Second: Search & configure supported hardware
+# Check for options relevant to hwsetup
+NOAUDIO=""; HWSETUP_NOAUDIO=""
+checkbootparam noaudio >/dev/null 2>&1 && NOAUDIO="yes"
+checkbootparam nosound >/dev/null 2>&1 && NOAUDIO="yes"
+[ -n "$NOAUDIO" -o -n "$USE_ALSA" ] && HWSETUP_NOAUDIO="-a"
+NOSCSI=""; HWSETUP_NOSCSI=""
+checkbootparam noscsi  >/dev/null 2>&1 && NOSCSI="yes"
+[ -n "$NOSCSI" ] && HWSETUP_NOSCSI="-s"
+if checkbootparam "nohwsetup"; then
+    echo "${BLUE}Loading hardware profile from ${MAGENTA}/etc/modules${BLUE}.${NORMAL}"
+    /etc/init.d/module-init-tools start >/dev/null 2>/dev/null 	#replace modutils by his 2.6 version
+else
+    echo -n "${WHITE}"
+    if hwsetup -p $HWSETUP_NOAUDIO $HWSETUP_NOSCSI >/dev/null
+	then
+	echo -n "${NORMAL}"
+    else
+	echo " ${RED}Please check.${NORMAL}"
+    fi
+fi
+cat /etc/sysconfig/knoppix >> /etc/sysconfig/morphix
+
+# Read in what hwsetup has found
+[ -f /etc/sysconfig/morphix ] && . /etc/sysconfig/morphix
+
+# Mouse
+if [ -n "$MOUSE_DEVICE" ]
+    then
+    echo " ${GREEN}Mouse is ${YELLOW}${MOUSE_FULLNAME}${GREEN} at ${MAGENTA}${MOUSE_DEVICE}${NORMAL}"
+fi
+
+if test -n "$SPLASH"; then
+    echo "show 16000">/proc/splash 2>/dev/null
+fi
+
+# Soundcard
+if [ -n "$SOUND_FULLNAME" -o -n "$SOUND_DRIVER" -o -n "$USE_ALSA" ]
+    then
+# Setting micro input to zero to avoid subsonic disaster
+# if using alsa, this leads to error-messages
+    [ -z "$USE_ALSA" ] && ( exec aumix -m 0 >/dev/null 2>&1 & )
+    SOUNDCARD="$SOUND_DRIVER"
+    [ -n "$USE_ALSA" ] && SOUNDCARD="ALSA(${ALSA_CARD})"
+    echo -n " ${GREEN}Soundcard:"
+    [ -n "$SOUND_FULLNAME" ] && echo -n " ${YELLOW}$SOUND_FULLNAME${GREEN}"
+    [ -n "$SOUNDCARD" ] && echo -n " driver=${MAGENTA}$SOUNDCARD"
+    echo "${NORMAL}"
+fi
+
+# Check for blind option or brltty
+#
+# NOTE: This won't work in Morphix
+#
+BLIND=""
+checkbootparam "blind" && BLIND="yes"
+BRLTTY="$(getbootparam brltty 2>/dev/null)"
+
+if [ -n "$BLIND" -o -n "$BRLTTY" ]; then
+    if [ -x /sbin/brltty ]; then
+# Blind option detected, start brltty now.
+	CMD=brltty
+	BRLTYPE=""
+	BRLDEV=""
+	BRLTEXT=""
+	if [ -n "$BRLTTY" ]; then
+# Extra options
+	    BRLTYPE="${BRLTTY%%,*}"
+	    R="${BRLTTY#*,}"
+	    if [ -n "$R" -a "$R" != "$BRLTTY" ]; then
+		BRLTTY="$R"
+		BRLDEV="${BRLTTY%%,*}"
+		R="${BRLTTY#*,}"
+		if [ -n "$R" -a "$R" != "$BRLTTY" ]; then
+		    BRLTTY="$R"
+		    BRLTEXT="${BRLTTY%%,*}"
+		    R="${BRLTTY#*,}"
+		fi
+	    fi
+	fi
+	[ -n "$BRLTYPE" ] && CMD="$CMD -b $BRLTYPE"
+	[ -n "$BRLDEV" ] && CMD="$CMD -d $BRLDEV"
+	[ -n "$BRLTEXT" ] && CMD="$CMD -t $BRLTEXT"
+	echo " ${BLUE}Starting braille-display manager: ${GREEN}${CMD}${BLUE}.${NORMAL}"
+	( exec $CMD & )
+	sleep 2
+    fi
+fi
+
+if test -n "$SPLASH"; then
+    echo "show 20000">/proc/splash 2>/dev/null
+fi
+
+if [ -n "$INTERACTIVE" ]
+    then
+# Interactive configuration
+    echo "${BLUE}Entering interactive configuration second stage.${NORMAL}"
+
+    echo " ${GREEN}Your console keyboard defaults to: ${MAGENTA}${KEYTABLE}"
+    echo -n "${CYAN}Do you want to (re)configure your console keyboard?${NORMAL} [Y/n] "
+    read a
+    [ "$a" != "n" ] && /usr/sbin/kbdconfig
+# kbdconfig already loads the keyboard if modified.
+
+    echo -n "${CYAN}Do you want to (re)configure your soundcard?${NORMAL} [Y/n] "
+    read a
+    [ "$a" != "n" ] && sndconfig && aumix -m 0 >/dev/null 2>&1
+
+    if [ -n "$MOUSE_FULLNAME" -o -n "$MOUSE_DEVICE" ]
+	then
+	echo -n " ${GREEN}Your mouse has been autodetected as: ${MAGENTA}"
+	ls -l /dev/mouse | awk '{print $9 " " $10 " " $11}'
+	echo -n "${NORMAL}"
+    fi
+    echo -n "${CYAN}Do you want to (re)configure your mouse?${NORMAL} [Y/n] "
+    read a
+    [ -f /etc/sysconfig/mouse ] && . /etc/sysconfig/mouse
+    [ "$a" != "n" ] && mouseconfig
+fi
+
+if checkbootparam noagp; then
+    echo " ${BLUE}Skipping AGP detection as requested on boot commandline.${NORMAL}"
+else
+# Probe for AGP. Hope this can fail safely
+    stringinfile "AGP" "/proc/pci" 2>/dev/null && insmod agpgart agp_try_unsupported=1 >/dev/null 2>&1 && echo " ${YELLOW}AGP bridge${GREEN} detected."
+fi
+
+# KNOPPIX/Morphix automatic XFree86 Setup
+# now uses Fabians/Kano's ddcx patch
+if ! checkbootparam "nomkxf86config"; then
+    [ -x /usr/sbin/mkxf86config ] && /usr/sbin/mkxf86config
+fi
+
+# Read in changes
+[ -f /etc/sysconfig/morphix ] && . /etc/sysconfig/morphix
+#[ -f /etc/sysconfig/knoppix ] && . /etc/sysconfig/knoppix
+
+if [ -n "$INTERACTIVE" ]
+    then
+    echo -n "${CYAN}Do you want to (re)configure your graphics (X11) subsystem? (not currently working in Morphix)${NORMAL} [Y/n] "
+    read a
+    [ "$a" != "n" ] && xf86cfg -textmode -xf86config /etc/X11/XF86Config-4 >/dev/console 2>&1 </dev/console
+    echo " ${GREEN}Interactive configuration finished. Everything else should be fine for now.${NORMAL}"
+fi
+
+if test -n "$SPLASH"; then
+    if [ -e $SPLASHBIN ]; then
+	$SPLASHBIN -s /bootsplash/config/bootsplash4-1024x768.cfg 2>&1 > /dev/null
+    fi
+    echo "show 24000">/proc/splash 2>/dev/null
+fi
+
+#if [ -n "$USE_ALSA" -a -x /etc/init.d/alsa-autoconfig ]
+if [ -n "$USE_ALSA" -a -x /usr/sbin/snd-pcidevice ]
+    then
+    [ -n "$SOUND_DRIVER" ] && rmmod -r "$SOUND_DRIVER" >/dev/null 2>&1
+  # Export ALSA_CARD cariable to init script
+    case "$ALSA_CARD" in auto*) ALSA_CARD="";; esac
+    #/usr/sbin/snd-pcidevice &
+    #/usr/sbin/alsa_snddevices &
+    ALSA_CARD="$ALSA_CARD" /etc/init.d/alsa-autoconfig
+#   Something went wrong ?
+    [ ! -r /etc/modules.conf ] && cp /MorphixCD/etc/modules.conf /etc/modules.conf
+fi
+
+fistringinfile(){
+    case "$(cat $2)" in *$1*) return 0;; esac
+    return 1
+}
+
+addmount(){
+# /dev/device  options
+    d="${1##*/}"
+#    if [ -n "$AUTOMOUNTER" ]; then
+#	[ -d "/mnt/$d" -a ! -L "/mnt/$d" ] && rmdir /mnt/$d
+#	[ -d "/mnt/auto/$d" ] || mkdir -p "/mnt/auto/$d"
+#	[ -L "/mnt/$d" ] || ln -s "/mnt/auto/$d" "/mnt/$d"
+#	anew="$d     -fstype=auto,$2	:$i"
+#	stringinfile "$anew" "/etc/auto.mnt" || echo "$anew" >> /etc/auto.mnt
+#	AUTOMOUNTS="$AUTOMOUNTS $d"
+#	new="$1 /mnt/auto/$d  auto   users,noauto,exec,$2 0 0"
+#    else
+    [ ! -d $MNTPOINT/$d ] && mkdir -p $MNTPOINT/$d
+    new="$1 $MNTPOINT/$d  auto   users,noauto,exec,$2 0 0"
+#    fi
+    stringinfile "$new" "/etc/fstab" || echo "$new" >> /etc/fstab
+}
+
+#AUTOMOUNTER="yes"
+#AUTOMOUNTS="floppy cdrom"
+# Add new devices to /etc/fstab
+# maybe it's better to use CD drive information from /proc/sys/dev/cdrom/info ?
+for i in /dev/cdrom*; do
+    if [ -L $i ]; then
+	addmount "$i" "ro"
+    fi
+done
+
+NOSWAP=""
+DMA=""
+checkbootparam "noswap" && NOSWAP="yes"
+checkbootparam "dma" && DMA="yes"
+
+# Collect partitions from /proc/partitions first for enabling DMA
+partitions=""
+IDEDISKS=""
+for d in `ls -1d /proc/ide/hd? 2>/dev/null`; do
+    IDEDISKS="$IDEDISKS ${d##*/}"
+done
+while read major minor blocks partition relax; do
+    partition="${partition##*/}"
+    [ -z "$partition" -o ! -e "/dev/$partition" ] && continue
+case "$partition" in
+    hd?) ;;                                               # IDE Harddisk, entire disk
+    sd?) ;;                                               # SCSI Harddisk, entire disk
+    [hs]d*) partitions="$partitions /dev/$partition";;    # IDE or SCSI disk partition
+esac
+done <<EOT
+$(awk 'BEGIN{old="__start"}{if($0==old){exit}else{old=$0;if($4&&$4!="name"){print $0}}}' /proc/partitions)
+EOT
+
+if test -n "$SPLASH"; then
+    echo "show 28000">/proc/splash 2>/dev/null
+fi
+
+if [ -n "$DMA" ]; then
+    for d in $IDEDISKS; do
+	MODEL="$(LANG=C hdparm -qi /dev/$d 2>/dev/null)"
+	if [ "$?" = "0" ]; then
+	    MODEL="$(echo "$MODEL" | awk -F'[=,]' '/Model=/{print $2; exit;}')"
+	    echo "${BLUE}Enabling DMA acceleration for: ${MAGENTA}$d      ${YELLOW}${MODEL:+[$MODEL]}${NORMAL}"
+	    hdparm -qd1 "/dev/$d" 2>/dev/null
+	fi
+    done 
+fi
+
+# Start creating /etc/fstab with HD partitions and USB SCSI devices now
+echo -n "${BLUE}Scanning for Harddisk partitions and creating ${YELLOW}/etc/fstab${BLUE}... "
+USERNAME="$(getbootparam username)"
+if [ -z $USERNAME ]; then
+    USERNAME="morph"
+fi
+rebuildfstab -r -u $USERNAME >/dev/null 2>&1
+if [ -e /var/run/rebuildfstab.pid ]; then
+# Another instance of rebuildfstab, probably from hotplug, is still running, so just wait.
+    sleep 8
+fi
+echo "${GREEN}Done.${NORMAL}"
+
+if [ -n "$partitions" ]; then
+    while read p m f relax; do
+	case "$p" in *fd0*|*proc*|*\#*) continue;; esac
+	options="users,exec"
+	fnew=""
+	case "$f" in swap)
+		if [ -n "$NOSWAP" ]; then
+		    echo "${BLUE}Ignoring swap partition ${MAGENTA}$p${BLUE} as requested.${NORMAL}"
+		else
+		    echo "${BLUE}Using swap partition ${MAGENTA}$p${BLUE}.${NORMAL}"
+		    swapon $p 2>/dev/null
+		fi
+		continue
+		;;
+	esac
+# Create mountdir if not already present
+	d="/mnt/${p##*/}" ; [ -d "$d" ] || mkdir -p "$d"
+	case "$f" in vfat|msdos)
+		if [ -z "$NOSWAP" ] && mount -o uid=$USERNAME,gid=users,ro -t $f $p $d 2>/dev/null; then
+		    if [ -f $d/morphix.swp ]; then
+			mount -o remount,rw $d
+			if swapon $d/morphix.swp 2>/dev/null; then
+			    echo "${BLUE}Using Morphix swapfile ${MAGENTA}$d/morphix.swp${BLUE}.${NORMAL}"
+			    mount -o remount,ro $d 2>/dev/null
+			    fnew="$d/morphix.swp swap swap defaults 0 0"
+			    stringinfile "$fnew" "/etc/fstab" || echo "$fnew" >> /etc/fstab
+			else
+			    umount $d
+			fi
+		    else
+			umount $d
+		    fi
+		fi
+		;;
+	esac
+    done </etc/fstab
+fi
+
+if test -n "$SPLASH"; then
+    echo "show 32000">/proc/splash 2>/dev/null
+fi
+
+# New: Interactively create swapfiles on DOS partitions
+# (if necessary and possible)
+# reactivated for <=64MB pc's
+
+checkbootparam "nodosswap" && NODOSSWAP="yes"
+
+FREEMEM="$(awk 'BEGIN{m=0};/MemFree|Cached|SwapFree/{m+=$2};END{print m}' /proc/meminfo)"
+
+if [ "$FREEMEM" -lt 65000 -a -z "$NODOSSWAP" ]; then
+    if [ -x /usr/sbin/mkdosswapfile ]; then
+	case "$LANGUAGE" in
+	    de)
+		LOWMEM="Ihr Rechner verfügt nur über ${FREEMEM}kB freien RAM-Speicher. Dies ist für das Arbeiten mit Linux zwar generell ausreichend, aber leider nicht genug, um größere Anwendungen wie KDE oder Office-Pakete zu starten. Sie können im nächsten Schritt versuchen, eine sog. Auslagerungsdatei auf einer DOS-Partition (sofern vorhanden) einzurichten."
+		;;
+	    *)
+		LOWMEM="There are only ${FREEMEM}kB of RAM available in your computer. While this is usually sufficient for working under Linux, it is unfortunately not enough for starting bigger applications like KDE, or office suites. This is not a problem for Light, but might cause unexpected problems when using larger modules. You can try to create a so-called swapfile on an existing DOS-Partition (if available) in the next step, but this isn't mandatory"
+		;;
+	esac
+	dialog --msgbox "$LOWMEM" 12 65 </dev/console >/dev/console 2>&1 
+	/usr/sbin/mkdosswapfile </dev/console >/dev/console 2>&1 
+    fi
+fi
+
+# Check for configuration floppy add-on if not running from HD
+if [ -n "$MYCONF" ]; then
+    FOUND_CONFIG=""
+    echo -n "${CRE}${BLUE}Checking ${MAGENTA}/dev/fd0${BLUE} for Morphix configuration floppy...${NORMAL}"
+    if mount -t auto -o ro /dev/fd0 /mnt/floppy >/dev/null 2>&1; then
+	for i in morphix.sh MORPHIX.SH MORPHIX.sh Morphix.sh; do
+	    if [ -f /mnt/floppy/$i ]; then
+		echo ""
+		FOUND_CONFIG="yes"
+		echo " ${GREEN}Morphix Configuration floppy found, executing ${MAGENTA}$i${GREEN}.${NORMAL}"
+		echo "6" > /proc/sys/kernel/printk
+		. /mnt/floppy/$i /mnt/floppy || true
+		echo "0" > /proc/sys/kernel/printk
+		break
+	    fi
+	done
+	umount /mnt/floppy 2>/dev/null
+    fi
+    [ -n "$FOUND_CONFIG" ] || echo " ${BLUE}Not present.${NORMAL}"
+fi
+if test -n "$SPLASH"; then
+    echo "show 36000">/proc/splash
+
+fi
+# Check for extra shellscript on CD-Rom (/cdrom/base/morphix.sh)
+for i in morphix.sh MORPHIX.SH MORPHIX.sh Morphix.sh; do
+    if [ -f /cdrom/base/$i ]; then
+	echo ""
+	FOUND_CONFIG="yes"
+	echo " ${GREEN}Morphix Configuration file found in /cdrom/base, executing ${MAGENTA}$i${GREEN}.${NORMAL}"
+	echo "6" > /proc/sys/kernel/printk
+	. /cdrom/base/$i /cdrom/base || true
+	echo "0" > /proc/sys/kernel/printk
+	break
+    fi
+done
+
+
+
+echo "6" > /proc/sys/kernel/printk
+
+FORCEUSB="$(getbootparam forceusb)"
+
+if [ -n "$FORCEUSB" ]; then
+    # dirty hack, might actually work...
+    rmmod usb-uhci #does this umount usbdevfs?
+    modprobe usb-ohci
+    modprobe hid
+    modprobe keybdev
+    modprobe mousedev
+    modprobe usbmouse
+    echo "FORCING usb-ohci! Adding usbdevfs! (hope this works :o)"
+    mount -o devmode=0666 -t usbdevfs none /proc/bus/usb >/dev/null 2>&1
+    echo "adapting XF86Config-4 for usb-mouse"
+    sed -e 's/InputDevice *"Serial Mouse"/InputDevice "USB Mouse"/' /etc/X11/XF86Config-4 > /tmp/XF86Config-4-2
+    cp /tmp/XF86Config-4-2 /etc/X11/XF86Config-4
+fi
+
+if test -n "$SPLASH"; then
+    echo "show 40000">/proc/splash
+fi
+
+# Re-enable signals
+trap 2 3 11
+
+# Morphix-start gets run at runlevel 2

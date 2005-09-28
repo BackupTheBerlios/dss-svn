@@ -1,0 +1,12 @@
+# -- THEME AUTO-WRITTEN DO NOT EDIT
+include "/usr/share/themes/Xfce-4.2/gtk-2.0/gtkrc"
+
+style "user-font"
+{
+  font_name="Sans 8"
+}
+widget_class "*" style "user-font"
+
+include "/home/debaser/.gtkrc-2.0.mine"
+
+# -- THEME AUTO-WRITTEN DO NOT EDIT

@@ -1,0 +1,183 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
+#export PATH
+CMDLINE="$(cat /proc/cmdline)"
+lname=dss
+
+### Utility Function(s)
+
+# Simple shell grep
+stringinfile(){
+    case "$(cat $2)" in *$1*) return 0;; esac
+    return 1
+}
+
+# same for strings
+stringinstring(){
+    case "$2" in *$1*) return 0;; esac
+    return 1
+}
+
+# Reread boot command line; echo last parameter's argument or return false.
+getbootparam(){
+    stringinstring " $1=" "$CMDLINE" || return 1
+    result="${CMDLINE##*$1=}"
+    result="${result%%[ 	]*}"
+    echo "$result"
+    return 0
+}
+
+# Check boot commandline for specified option
+checkbootparam(){
+    stringinstring " $1" "$CMDLINE"
+    return "$?"
+}
+
+
+fstype(){
+    case "$(file -s $1)" in
+	*[Ff][Aa][Tt]*|*[Xx]86*) echo "vfat"; return 0;;
+*[Rr][Ee][Ii][Ss][Ee][Rr]*)  echo "reiserfs"; return 0;;
+*[Xx][Ff][Ss]*)  echo "xfs"; return 0;;
+*[Ee][Xx][Tt]3*) echo "ext3"; return 0;;
+*[Ee][Xx][Tt]2*) echo "ext2"; return 0;;
+*data*)          echo "invalid"; return 0;;
+*) echo "auto"; return 0;;
+esac
+}
+
+findfile(){
+    FOUND=""
+# search all partitions for a file in the root directory
+    for i in /mnt/[sh]d[a-z] /mnt/[sh]d[a-z][1-9] /mnt/[sh]d[a-z][1-9]?*; do
+# See if it's already mounted
+	[ -f "$i/$1" ] &&  { echo "$i/$1"; return 0; }
+	if [ -d "$i" ] && mount -r "$i" 2>/dev/null; then
+	    [ -f "$i/$1" ] && FOUND="$i/$1"
+	    umount -l "$i" 2>/dev/null
+	    [ -n "$FOUND" ] && { echo "$FOUND"; return 0; }
+	fi
+    done
+    return 2
+}
+
+###
+#
+# create the home image
+# look for USB memory device first
+#
+###
+
+createfile(){
+FOUND=""
+# search all partitions for a file in the root directory
+for i in /mnt/sd[a-z] /mnt/sd[a-z][1-9] /mnt/hd[a-z][1-9] /mnt/hd[a-z] /mnt/[sh]d[a-z][1-9]?*; do
+  # See if it's already mount ant exist
+    [ -f "$i/$1" ] &&  { echo "$i/$1"; return 0; }
+    
+  # mountit and create
+    if [ -d "$i" ] && mount -o rw "$i" 2>/dev/null; 
+	then
+    # See if it's already exist
+	if [ -f "$i/$1" ];then
+	    FOUND="$i/$1"
+	    umount -l "$i" 2>/dev/null
+	    echo "$FOUND" 
+	    return 0
+	fi  
+	
+	MIN_HOME="51200"
+	MAX_HOME="102400"
+	fs=`mount | grep $i |while read  mdev mon mount mtype mfs mopt;do echo $mfs;done`;
+	case "$fs" in *[Nn][Tt][Ff][Ss]*)
+;;
+*)
+        DEVICE_SIZE=`LANG=C df -hk $i | tail -n1| cut -c 41-50`
+	if test -n "$DEVICE_SIZE" -a "$(expr $DEVICE_SIZE / 1)" -gt "$MAX_HOME"; then
+	    if dd if=/dev/zero of=$i/$1 bs=1K count=$MAX_HOME;then
+	        mke2fs -q -F $i/$1
+	        e2fsck -y $i/$1
+	        umount -l "$i" 2>/dev/null
+	        FOUND="$i/$1"
+	        echo "$FOUND" 
+	        return 0
+	    fi
+	fi
+
+	if test -n "$DEVICE_SIZE" -a "$(expr $DEVICE_SIZE / 1)" -gt "$MIN_HOME"; then
+	    if dd if=/dev/zero of=$i/$1 bs=1K count=$MIN_HOME;then
+	        mke2fs -q -F $i/$1
+	        e2fsck -y $i/$1
+	        umount -l "$i" 2>/dev/null
+	        FOUND="$i/$1"
+	        echo "$FOUND" 
+	        return 0
+	    else
+	        umount -l "$i" 2>/dev/null		
+	    fi
+	fi
+	;;
+	esac
+  fi
+  done
+return 2
+}
+
+# Try to mount this filesystem read-only, without or with encryption
+trymount(){
+# Apparently, mount-aes DOES autodetect AES loopback files.
+    [ -b "$1" ] && { mount -t auto -o ro "$1" "$2" 2>/dev/null; RC="$?"; }
+# We need to mount crypto-loop files with initial rw support
+    [ -f "$1" ] && { mount -t auto -o loop,rw "$1" "$2" 2>/dev/null; RC="$?"; }
+    [ "$RC" = "0" ] && return 0
+    echo ""
+    echo "${CYAN}Filesystem not autodetected, trying to mount $1 with AES256 encryption${NORMAL}"
+    a="y"
+    while [ "$a" != "n" -a "$a" != "N" ]; do
+# We need to mount crypto-loop files with initial rw support
+	mount -t auto -o loop,rw,encryption=AES256 "$1" "$2" && return 0
+	echo -n "${RED}Mount failed, retry? [Y/n] ${NORMAL}"
+	read a
+    done
+    return 1
+}
+
+# Install debian packages (deps not resolved)
+deb_dpkg_unionfs() {
+    USEDIR=$1
+
+# Deb-morph, install all debian packages in /deb on the cdrom
+
+    DEBS="$( ls $1/deb/*.deb 2>/dev/null | wc -l )"
+    if [ $DEBS -gt 0 ]; then
+		 dpkg -i --force-all $1/deb/*.deb
+    fi
+    
+# Copy-morph, copy all files in /copy of the iso to the filesystem
+
+    COPY="$(ls -l $1/copy/*  2>/dev/null | wc -l )"
+    if [ $COPY -gt 0 ]; then
+	cp -a $1/copy/* /
+	 chown -R $USERNAME.users /home/$USERNAME
+	 chmod -R u+w /home/$USERNAME
+    fi
+    
+# Exec-morph, execute scripts 
+    EXECS="$( ls $1/exec/* 2>/dev/null )"
+    EXECSCOUNT="$( ls $1/exec/*  2>/dev/null | wc -l )"
+    if [ $EXECSCOUNT -gt 0 ]; then
+	for file in $EXECS
+	  do
+	   sh -c ". $file"
+	done
+    fi
+}
+

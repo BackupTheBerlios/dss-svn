@@ -1,0 +1,9 @@
+table Icon
+ Type: Program
+ Caption: shell
+ Command: aterm
+ Icon: //home/debaser/.xtdesktop/console.png
+ X: 52
+ Y: 229
+ MenuCommand1: Root shell : aterm -e bash -c "su -"
+end

@@ -1,0 +1,112 @@
+prog "shell" "xterm" aterm -tr -sh 30 -sl 1500
+prog "firefox" "mozilla-firefox" firefox
+prog "xchat" "xchat" xchat
+prog "rox" "folder" rox
+prog "emelfm2" "emelfm2" emelfm2
+prog "xffm" "xfwm4" xffm
+separator
+menu "Editors" "editor" {
+    prog "gvim" "vim" gvim
+    prog "abiword" "abiword" abiword
+    prog "scite" "Sci48M" scite
+    prog "mousepad" "mousepad" mousepad
+}
+menu "Office" "office" {
+    prog "gnumeric" "gnome-gnumeric" gnumeric
+    prog "planner" "gnome-planner" planner
+}
+menu "Net" "browser" {
+    prog "monkey" "monkey.png" sudo monkey-gtk
+    prog "firefox" "mozilla-firefox" firefox www.google.it
+    prog "nvu" "/usr/share/nvu-1.0PR/icons/mozicon16.xpm" nvu
+    prog "links" "browser" links2 -g www.google.it
+    prog "xchat" "xchat" xchat
+    prog "lostirc" "lostirc" lostirc
+    prog "gaim" "/usr/share/pixmaps/gaim-menu.xpm" "gaim"
+    prog "gftp" "gftp" gftp
+    prog "amule" "/usr/share/pixmaps/amule.xpm" "amule"
+    prog "nicotine" "/usr/share/pixmaps/nicotine.xpm" "nicotine"
+}
+menu "Viewers" "viewers" {
+    prog "gpdf" "pdf" gpdf
+    prog "gqview" "gqview" gqview
+    prog "file-roller" "file-roller.png" file-roller
+}
+menu "Graphics" "graphics" {
+    prog "gimp" "gimp" gimp
+    prog "dia" "dia" dia
+    prog "inkscape" "inkscape" inkscape
+}
+menu "Multimedia" "multimedia" {
+    prog "xmms" "xmms" xmms
+    prog "xfmedia" "xfmedia" xfmedia
+    prog "mplayer" "mplayer" gmplayer
+}
+menu "Games" "games" {
+    prog "frozen-bubble" "frozen-bubble" frozen-bubble
+    menu "simple" "folder" {
+        prog "banner" "-" banner
+        prog "blackjack" "-" blackjack
+        prog "fortune" "-" fortune
+        prog "gataxx" "-" gataxx
+        prog "glines" "-" glines
+        prog "gnect" "-" gnect
+        prog "gnibbles" "-" gnibbles
+        prog "gnobots2" "-" gnobots2
+        prog "gnome-stones" "-" gnome-stones
+        prog "gnometris" "-" gnometris
+        prog "gnomine" "-" gnomine
+        prog "gnotravex" "-" gnotravex
+        prog "gnotski" "-" gnotski
+        prog "gtali" "-" gtali
+        prog "iagno" "-" iagno
+        prog "mahjongg" "-" mahjongg
+        prog "ppracer" "-" ppracer
+        prog "same-gnome" "-" same-gnome
+        prog "sol" "-" sol
+    }
+}
+menu "Utils" "/usr/share/icons/Rodent/48x48/apps/gnome-util.png" {
+    prog "find" "/usr/share/icons/Rodent/48x48/stock/stock_find.png" gnome-search-tool
+    prog "diff" "/usr/share/icons/hicolor/48x48/stock/generic/xfdiff.png" xfdiff4
+    prog "appfinder" "xfce4-appfinder" xfce4-appfinder
+    prog "mime-edit" "/usr/share/icons/hicolor/48x48/stock/generic/t-xfmime-edit.png" xfmime-edit
+    prog "gtk-themes" "windows" gtk-theme-switch2
+    prog "dictionary" "/usr/share/icons/Rodent/48x48/misc/news.png" gnome-dictionary
+    prog "mixer" "/usr/share/icons/Rodent/48x48/apps/gnome-audio.png" gamix
+    prog "gparted" "parted" sudo gparted
+    prog "gfloppy" "floppy.png" gfloppy
+    prog "gnomebaker" "cdrom" sudo gnomebaker
+}
+menu "Programming" "run" {
+    prog "anjuta" "/usr/share/pixmaps/anjuta.xpm" "anjuta"
+    prog "glade-tepache" "/usr/share/pixmaps/glade-2.png" "glade-2"
+    prog "Python (v2.4)" "/usr/share/pixmaps/python2.4-32.xpm" /bin/sh -c "x-terminal-emulator  -T \"Python (v2.4)\" -e sh -c \"/usr/bin/python2.4\""
+}
+menu "System" "system" {
+    menu "Window Managers" "folder" {
+        restart "icewm" "-" icewm
+        restart "icewm-gnome" "-" icewm-gnome
+        restart "icewm" "-" icewm-experimental
+        restart "icewm-lite" "-" icewm-lite
+        restart "wmaker" "-" wmaker
+        restart "enlightenment" "-" enlightenment
+        restart "blackbox" "-" blackbox
+        restart "sawfish" "-" sawfish
+        restart "sawfish2" "-" sawfish2
+        restart "metacity" "-" metacity
+        restart "fvwm2" "-" fvwm2
+        restart "fvwm" "-" fvwm
+    }
+    menu "Admin" "folder" {
+        prog "users" "users" users-admin
+        prog "network" "users" network-admin
+        prog "time" "users" time-admin
+        prog "boot" "users" boot-admin
+    }
+    prog "synaptic" "synaptic" sudo /usr/sbin/synaptic
+    prog "gksu" "/usr/share/pixmaps/gksuexec-debian.xpm" /bin/sh -c "/usr/bin/gksuexec"
+    prog "root-shell" "root_terminal.png" sudo /usr/bin/x-terminal-emulator
+    prog "task-manager" "procman.png" gnome-system-monitor
+    prog "system-log" "run" sudo gnome-system-log
+}

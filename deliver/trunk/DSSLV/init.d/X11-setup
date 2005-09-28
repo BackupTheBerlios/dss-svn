@@ -1,0 +1,21 @@
+#!/bin/bash
+# Prepare and start X11 
+# $Id$
+
+
+if [ -n "$WINDOWMANAGER" ]; then
+    echo "allowed_users=anybody" > /etc/X11/Xwrapper.config
+
+    if [ -n "$BGIMAGE" ]; then
+	echo "exec xsetbg -fullscreen $BGIMAGE &" >> /etc/X11/xinit/xinitrc
+    fi
+
+    echo "exec $WINDOWMANAGER" >> /etc/X11/xinit/xinitrc
+
+    if [ ! -e /home/$USER/.xinitrc ]; then
+	cp /etc/X11/xinit/xinitrc /home/$USER/.xinitrc 2>/dev/null
+    fi
+
+fi
+
+echo "Window manager is: $WINDOWMANAGER"

@@ -1,0 +1,63 @@
+# emelFM2 (v 0.1)
+
+# This is the emelFM2 cache file.
+# It will be overwritten each time the program is shut down!
+
+window-width=640
+window-height=480
+file-pane-ratio-last=0.54976303317535546
+file-pane-ratio=0.54976303317535546
+output-pane-ratio-last=0.84905660377358494
+output-pane-ratio=0.84905660377358494
+<columns-data
+0
+120
+1
+80
+2
+80
+3
+60
+4
+60
+5
+120
+6
+120
+7
+120
+0
+120
+1
+80
+2
+80
+3
+60
+4
+60
+5
+120
+6
+120
+7
+120
+>
+pane1-show-hidden=0
+pane2-show-hidden=0
+pane1=/
+<pane1-history
+/
+>
+<dir line
+/
+>
+pane2=/
+<pane2-history
+/
+>
+<dir line 2
+/
+>
+config-width=692
+config-height=547
