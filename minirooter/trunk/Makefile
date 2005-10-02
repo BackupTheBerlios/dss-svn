@@ -1,8 +1,10 @@
 DSDIR=$(DESTDIR)/etc/minirooter
 LIBDIR=$(DESTDIR)/usr/share/minirooter
 CONFIGDIR=$(LIBDIR)/confdir
+MINIFUN=$(DESTDIR)/usr/lib/minirooter/
 install:
 	mkdir -p $(DESTDIR)/usr/{share/man/man8,sbin}
+	mkdir -p $(MINIFUN)
 	mkdir -p $(DSDIR)
 	mkdir -p $(LIBDIR)/etc
 	mkdir -p $(LIBDIR)/bootsplash/{animations,config,images}
@@ -27,6 +29,7 @@ install:
 	install -o root -g root -m 0644 confdir/mkinitrd.conf $(CONFIGDIR)/
 	install -o root -g root -m 0644 confdir/modules $(CONFIGDIR)/
 	install -o root -g root -m 0755 confdir/scripts/* $(CONFIGDIR)/scripts/
+	install -o root -g root -m 0644 functions $(MINIFUN)/
 
 clean:
 	rm -f busybox  busybox.links config-busybox
