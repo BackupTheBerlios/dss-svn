@@ -1,5 +1,9 @@
-#!/bin/bash
+!/bin/bash
 cd $HOME/
 icewmbg-experimental &
 . /usr/share/xtdesktop/autostart.sh &
+
+if [ -x $(which backstep) ];then
+	backstep &
+fi
 exit 0
