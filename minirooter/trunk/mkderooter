@@ -192,8 +192,40 @@ echo "$ldmod" | awk '{ $1 = "modprobe -k "; print }'> $MINIDIR/addmodules
 # Copy all files
 
 gen_env  "$DESTDIR" "$MINIDIR" "exe.list"
-gen_env  "$DESTDIR" "$MINIDIR" "modules.list"
 gen_env  "$DESTDIR" "$MINIDIR" "libs.list"
+
+#find modules deps to don't receive Unknown Symbol errors
+:>$DESTDIR/modulesdeps.tmp 
+cat $DESTDIR/modules.list > $DESTDIR/modules.tmp
+while [ -f "$DESTDIR/modules.tmp"  ]
+do
+while read i
+do
+	if [ -n "$i" ];then
+	
+	linenum=$(cat -n /lib/modules/$KNAME/modules.dep| awk '{print $1 "  "  $2 }' | grep  "$i" | awk '{print $1}')
+	string=$( sed -n "$linenum{p;q;}" "/lib/modules/$KNAME/modules.dep" )
+	if [ -n "$( echo "$string" | awk '{print $2 }')" ];then
+	modules_to_add=$(echo "$string" | sed 's|^[^ ]* ||' )
+	fi
+		if [ -n "$modules_to_add" ];then
+			for a in $modules_to_add 
+			do
+			check=$(grep -wx $a $DESTDIR/modules*.* )
+			[ -z "$check" ] && echo  $a >> $DESTDIR/modulesdeps.tmp	
+			done
+		fi
+
+	fi
+done < $DESTDIR/modules.tmp
+
+[ -f "$DESTDIR/modulesdeps.tmp" ] && cat $DESTDIR/modulesdeps.tmp >> $DESTDIR/modules.list
+[  -f "$DESTDIR/modules.tmp"  ] && rm $DESTDIR/modules.tmp
+[ -f "$DESTDIR/modulesdeps.tmp" ] &&  mv $DESTDIR/modulesdeps.tmp  $DESTDIR/modules.tmp
+
+done
+gen_env  "$DESTDIR" "$MINIDIR" "modules.list"
+
 
 # Make links
 pnow=`pwd`
