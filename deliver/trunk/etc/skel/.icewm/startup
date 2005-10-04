@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 cd $HOME/
 icewmbg-experimental &
 . /usr/share/xtdesktop/autostart.sh &
