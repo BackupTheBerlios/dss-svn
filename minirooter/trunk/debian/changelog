@@ -1,3 +1,10 @@
+minirooter (0.01-4) unstable; urgency=low
+
+  * fixed Unknow Symbol error (all needed modules from modules.dep are
+    included) 
+
+ -- Daniele Favara <danjele@gmail.com>  Mon,  3 Oct 2005 22:18:10 +0200
+
 minirooter (0.01-3) unstable; urgency=low
 
   * removed files password and shadow files in etc 
