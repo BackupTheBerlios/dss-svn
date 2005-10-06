@@ -10,6 +10,6 @@ if [ -n "$WINDOWMANAGER" ]; then
      su -c "COLUMNS=80 /usr/bin/X11/startx -- -dpi 94 " - $USER & 
 fi
 else
-	login -f $USER	
+	echo Login as $USER	
 fi
 
