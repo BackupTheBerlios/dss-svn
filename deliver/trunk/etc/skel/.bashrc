@@ -68,4 +68,4 @@ alias aterm='aterm -sl 1500 -tr -sh 30'
 #if [ -f /etc/bash_completion ]; then
 #    . /etc/bash_completion
 #fi
-xrdb -merge $HOME/.Xdefault
+[ -n $(which xrdb) ] && xrdb -merge $HOME/.Xdefault
