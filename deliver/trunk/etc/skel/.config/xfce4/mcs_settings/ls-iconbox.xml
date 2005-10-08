@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mcs-option SYSTEM "mcs-option.dtd">
+
+<mcs-option>
+	<option name="Config/Read" type="int" value="1"/>
+	<option name="Config/Write" type="int" value="1"/>
+	<option name="Icon/Color/Use" type="int" value="0"/>
+	<option name="Icon/Show/OtherWS/Maximized" type="int" value="0"/>
+	<option name="Icon/Show/OtherWS/Minimized" type="int" value="0"/>
+	<option name="Icon/Show/OtherWS/SkipTaskbar" type="int" value="0"/>
+	<option name="Icon/Show/SameWS/Maximized" type="int" value="0"/>
+	<option name="Icon/Show/SameWS/Minimized" type="int" value="1"/>
+	<option name="Icon/Show/SameWS/SkipTaskbar" type="int" value="0"/>
+	<option name="Window/HideOnEmpty" type="int" value="1"/>
+	<option name="Window/Orientation" type="int" value="32"/>
+	<option name="Window/Position/Horizontal" type="int" value="8"/>
+	<option name="Window/Position/Vertical" type="int" value="2"/>
+</mcs-option>
