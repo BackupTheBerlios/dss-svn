@@ -1,8 +1,0 @@
-table Icon
- Type: Program
- Caption: control panel
- Command: dss-control-panel
- Icon: //home/debaser/.xtdesktop/control.png
- X: 55
- Y: 303
-end

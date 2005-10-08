@@ -1,4 +1,0 @@
-prog "shell" "xterm" aterm
-prog "gvim" "editor" /usr/bin/gvim -f
-prog "browser" "browser" links2 -g
-prog "run" "run" grun

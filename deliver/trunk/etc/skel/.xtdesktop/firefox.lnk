@@ -1,8 +1,0 @@
-table Icon
- Type: Program
- Caption: firefox
- Command: firefox www.google.com
- Icon: //home/debaser/.xtdesktop/firefox.png
- X: 58
- Y: 377
-end
