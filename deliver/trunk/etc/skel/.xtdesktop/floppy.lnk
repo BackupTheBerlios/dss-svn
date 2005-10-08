@@ -1,0 +1,10 @@
+table Icon
+ Type: Program
+ Caption: floppy
+ Command: /usr/share/xtdesktop/pmount.sh openfolder /media/floppy
+ Icon: /home/debaser/.xtdesktop/floppy.png
+ X: 379
+ Y: 230
+ MenuCommand1: Mount fd0 : /usr/share/xtdesktop/pmount.sh mount /media/floppy
+ MenuCommand2: Umount fd0 : /usr/share/xtdesktop/pmount.sh umount /media/floppy
+end

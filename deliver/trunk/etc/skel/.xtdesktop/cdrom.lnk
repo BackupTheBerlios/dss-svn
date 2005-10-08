@@ -1,0 +1,12 @@
+table Icon
+ Type: Program
+ Caption: cdrom
+ Command: /usr/share/xtdesktop/pmount.sh openfolder /dev/cdrom
+ Icon: /home/debaser/.xtdesktop/cdrom_mount.png
+ X: 299
+ Y: 230
+ MenuCommand1: Mount cdrom :  /usr/share/xtdesktop/pmount.sh mount /dev/cdrom
+ MenuCommand2: Umount cdrom : /usr/share/xtdesktop/pmount.sh umount /dev/cdrom
+ MenuCommand3: Eject cdrom : eject /dev/cdrom
+ MenuCommand4: XTerm to cdrom : xterm -e bash -c "cd /media/cdrom ; exec bash"
+end

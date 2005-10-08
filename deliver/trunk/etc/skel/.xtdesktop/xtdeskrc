@@ -1,0 +1,7 @@
+table Config
+  Fixed: false	
+  FontName: -schumacher-clean-medium-r-normal-*-*-120-*-*-c-*-koi8-r
+  FontColor: #d0d0d0
+  ShadowColor: #505050
+  ClickInterval: 500
+end

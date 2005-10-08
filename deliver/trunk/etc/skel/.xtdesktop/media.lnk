@@ -1,0 +1,8 @@
+table Icon
+ Type: Program
+ Caption: home
+ Command: rox $HOME
+ Icon: //home/debaser/.xtdesktop/home.png
+ X: 53
+ Y: 75
+end
