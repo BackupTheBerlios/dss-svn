@@ -1,0 +1,9 @@
+[Engine: balou]
+Theme=Default
+
+[Engine: simple]
+Font=Sans Bold 10
+BgColor=#000000
+FgColor=#ffffff
+Image=
+

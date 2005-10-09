@@ -1,0 +1,75 @@
+#!/bin/sh
+#
+# Copyright (c) 2004-2005 os-cillation
+#
+
+# set margins defaults
+if test ! -f $XFCE4HOME/mcs_settings/margins.xml; then
+	cat > $XFCE4HOME/mcs_settings/margins.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mcs-option SYSTEM "mcs-option.dtd">
+
+<mcs-option>
+	<option name="Xfwm/BottomMargin" type="int" value="0"/>
+	<option name="Xfwm/LeftMargin" type="int" value="0"/>
+	<option name="Xfwm/RightMargin" type="int" value="0"/>
+	<option name="Xfwm/TopMargin" type="int" value="0"/>
+</mcs-option>
+EOF
+fi
+
+# set workspace defaults
+if test ! -f $XFCE4HOME/mcs_settings/workspaces.xml; then
+	if echo "$LANG" | grep '^de' >/dev/null 2>&1; then
+		cat > $XFCE4HOME/mcs_settings/workspaces.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mcs-option SYSTEM "mcs-option.dtd">
+
+<mcs-option>
+	<option name="Xfwm/WorkspaceCount" type="int" value="4" />
+	<option name="names" type="string" value="Eins;Zwei;Drei;Vier" />
+</mcs-option>
+EOF
+	else
+		cat > $XFCE4HOME/mcs_settings/workspaces.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mcs-option SYSTEM "mcs-option.dtd">
+
+<mcs-option>
+	<option name="Xfwm/WorkspaceCount" type="int" value="4"/>
+	<option name="names" type="string" value="1;2;3;4"/>
+</mcs-option>
+EOF
+	fi
+fi
+
+# set xfwm4 defaults
+if test ! -f $XFCE4HOME/mcs_settings/xfwm4.xml; then
+	cat > $XFCE4HOME/mcs_settings/xfwm4.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mcs-option SYSTEM "mcs-option.dtd">
+
+<mcs-option>
+	<option name="Xfwm/BoxMove" type="int" value="0"/>
+	<option name="Xfwm/BoxResize" type="int" value="0"/>
+	<option name="Xfwm/ButtonLayout" type="string" value="OTS|HMC"/>
+	<option name="Xfwm/ClickToFocus" type="int" value="1"/>
+	<option name="Xfwm/DblClickAction" type="string" value="maximize"/>
+	<option name="Xfwm/FocusNewWindow" type="int" value="1"/>
+	<option name="Xfwm/FocusRaise" type="int" value="0"/>
+	<option name="Xfwm/RaiseDelay" type="int" value="250"/>
+	<option name="Xfwm/RaiseOnClick" type="int" value="1"/>
+	<option name="Xfwm/SnapToBorder" type="int" value="1"/>
+	<option name="Xfwm/SnapToWindows" type="int" value="0"/>
+	<option name="Xfwm/SnapWidth" type="int" value="10"/>
+	<option name="Xfwm/ThemeName" type="string" value="Clearlooks-DSS"/>
+	<option name="Xfwm/TitleAlign" type="string" value="left"/>
+	<option name="Xfwm/TitleFont" type="string" value="Dingbats 9"/>
+	<option name="Xfwm/WrapResistance" type="int" value="10"/>
+	<option name="Xfwm/WrapWindows" type="int" value="1"/>
+	<option name="Xfwm/WrapWorkspaces" type="int" value="0"/>
+</mcs-option>
+EOF
+fi
+
+

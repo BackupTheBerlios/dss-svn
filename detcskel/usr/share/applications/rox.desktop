@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=rox
+Comment=ROX file manager
+Exec=rox
+Icon=/usr/share/rox/.DirIcon
+Terminal=false
+Type=Application
+Categories=Application;FileManagers;System

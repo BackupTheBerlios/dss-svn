@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=xpdf
+Comment=View PDF files
+Exec=xpdf
+Icon=xpdf.xpm
+Terminal=false
+Type=Application
+MimeType=application/pdf;
+Categories=Application;Office;

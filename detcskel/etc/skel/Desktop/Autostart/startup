@@ -1,0 +1,5 @@
+#!/bin/bash
+#sh /usr/share/xtdesktop/autostart.sh &
+sudo banana start &
+xloadimage  -onroot -fullscreen -center -border black /etc/alternatives/desktop-background &
+

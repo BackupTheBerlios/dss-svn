@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<Xfce xmlversion="2">
+  <Panel orientation="0" size="1" popupposition="1" icontheme="Rodent">
+    <Position monitor="0" side="2" posstate="0" offset="0" x="0" y="0"/>
+  </Panel>
+  <Groups>
+    <Group>
+      <Control id="-1" filename="libdesktopmenu.so" menu_file="/home/debaser/.config/xfce4/desktop/menu.xml" icon_file="/usr/share/pixmaps/xfce4_xicon4.png" show_menu_icons="1"/>
+    </Group>
+    <Group>
+      <Control id="-2" popup="0">
+        <Command term="0" sn="1">xfterm4</Command>
+        <Tooltip>Terminal</Tooltip>
+        <Icon id="12"/>
+      </Control>
+    </Group>
+    <Group>
+      <Control id="-2" popup="0">
+        <Command term="0" sn="1">rox</Command>
+        <Tooltip>File manager</Tooltip>
+        <Icon id="2"/>
+      </Control>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libseparator.so"/>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libtaskbar.so">
+        <Taskbar size="100" group="0" includeAll="0" expand="1" showLabel="1"/>
+      </Control>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libseparator.so"/>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libpager.so" rows="2"/>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libseparator.so"/>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libsystembuttons.so" button1="0" button2="1" showtwo="1"/>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libseparator.so"/>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libclock.so">
+        <XfceClock Clock_type="1" Toggle_military="1" Toggle_am_pm="1" Toggle_secs="0"/>
+      </Control>
+    </Group>
+    <Group>
+      <Control id="-1" filename="libminicmd.so"/>
+    </Group>
+  </Groups>
+</Xfce>

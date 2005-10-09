@@ -1,0 +1,96 @@
+<!-- Automatically generated file. Do not edit (see /usr/share/doc/menu/html/index.html) -->
+   <menu name="Aiuto" visible="yes">
+      <app name="Info" cmd="info" term="yes" icon="" />
+      <app name="Xman" cmd="xman" icon=""/>
+   </menu>
+   <menu name="Applicazioni" visible="yes">
+      <menu name="Editor" visible="yes">
+         <app name="Nano" cmd="/bin/nano" term="yes" icon="/usr/share/nano/nano-menu.xpm" />
+         <app name="scite" cmd="/usr/bin/scite" icon="/usr/share/scite/Sci32M.xpm"/>
+         <app name="Xedit" cmd="xedit" icon=""/>
+      </menu>
+      <menu name="Grafica" visible="yes">
+         <app name="Bitmap" cmd="bitmap" icon=""/>
+      </menu>
+      <menu name="Matematica" visible="yes">
+         <app name="Xcalc" cmd="xcalc" icon=""/>
+      </menu>
+      <menu name="Programmazione" visible="yes">
+         <app name="Python (v2.4)" cmd="/usr/bin/python2.4" term="yes" icon="/usr/share/pixmaps/python2.4-32.xpm" />
+         <app name="Tclsh8.4" cmd="/usr/bin/tclsh8.4" term="yes" icon="" />
+      </menu>
+      <menu name="Rete" visible="yes">
+         <app name="gFTP" cmd="/usr/bin/gftp-gtk" icon="/usr/share/pixmaps/gftp.xpm"/>
+         <app name="Links2" cmd="/usr/bin/links2 -g" icon=""/>
+         <app name="Links2 (text)" cmd="/usr/bin/links2" term="yes" icon="" />
+         <app name="lostirc" cmd="/usr/bin/lostirc" icon="/usr/share/pixmaps/lostirc.xpm"/>
+         <app name="Mozilla Firefox" cmd="firefox" icon="/usr/share/pixmaps/mozilla-firefox.xpm"/>
+         <app name="Xbiff" cmd="xbiff" icon=""/>
+         <app name="X Chat" cmd="/usr/bin/xchat" icon="/usr/share/icons/xchat_mini.xpm"/>
+      </menu>
+      <menu name="Shell" visible="yes">
+         <app name="Bash" cmd="/bin/bash --login" term="yes" icon="" />
+         <app name="Sh" cmd="/bin/sh --login" term="yes" icon="" />
+      </menu>
+      <menu name="Sistema" visible="yes">
+         <menu name="Amministrazione" visible="yes">
+            <app name="alsaconf" cmd="/usr/sbin/su-to-root -p root -c /usr/sbin/alsaconf" term="yes" icon="" />
+         </menu>
+         <app name="DSL-PPPoE configuration tool" cmd="/usr/sbin/pppoeconf" term="yes" icon="/usr/share/pixmaps/pppoeconf.xpm" />
+         <app name="pstree" cmd="x-terminal-emulator -e /usr/bin/pstree.x11" icon="/usr/share/pixmaps/pstree16.xpm"/>
+         <app name="ROX Filer" cmd="/usr/bin/rox" icon=""/>
+         <app name="Run as different user (GKsu)" cmd="/usr/bin/gksuexec" icon="/usr/share/pixmaps/gksuexec-debian.xpm"/>
+         <app name="Synaptic Package Manager" cmd="/usr/sbin/su-to-root -X -c /usr/sbin/synaptic" icon="/usr/share/synaptic/pixmaps/synaptic_32x32.xpm"/>
+         <app name="Top" cmd="/usr/bin/top" term="yes" icon="" />
+         <app name="Xconsole" cmd="xconsole" icon=""/>
+         <app name="Xload" cmd="xload" icon=""/>
+         <app name="X-Terminal as root (GKsu)" cmd="/usr/bin/gksu -u root /usr/bin/x-terminal-emulator" icon="/usr/share/pixmaps/gksu-debian.xpm"/>
+         <app name="Xvidtune" cmd="xvidtune" icon=""/>
+      </menu>
+      <menu name="Strumenti" visible="yes">
+         <app name="Editres" cmd="editres" icon=""/>
+         <app name="emelFM2" cmd="/usr/X11R6/bin/emelfm2" icon="/usr/share/pixmaps/emelfm2/emelfm2_48.png"/>
+         <app name="Oclock" cmd="oclock" icon=""/>
+         <app name="XArchive" cmd="/usr/bin/xarchive" icon="/usr/share/icons/xarchive.xpm"/>
+         <app name="Xclipboard" cmd="xclipboard" icon=""/>
+         <app name="Xclock (analog)" cmd="xclock -analog" icon=""/>
+         <app name="Xclock (digital)" cmd="xclock -digital -update 1" icon=""/>
+         <app name="Xcutsel" cmd="xcutsel" icon=""/>
+         <app name="Xev" cmd="x-terminal-emulator -e xev" icon=""/>
+         <app name="Xfce-setting-show" cmd="xfce-setting-show" icon="/usr/share/pixmaps/xfce4-mcs-manager.xpm"/>
+         <app name="Xfontsel" cmd="xfontsel" icon=""/>
+         <app name="Xkill" cmd="xkill" icon=""/>
+         <app name="Xmag" cmd="xmag" icon=""/>
+         <app name="Xrefresh" cmd="xrefresh" icon=""/>
+         <app name="X Window Snapshot" cmd="xwd | xwud" icon=""/>
+      </menu>
+      <menu name="Suono" visible="yes">
+         <app name="aumix" cmd="/usr/bin/aumix" term="yes" icon="/usr/share/pixmaps/icon_aumix.xpm" />
+      </menu>
+      <menu name="Visualizzatori" visible="yes">
+         <app name="GQview" cmd="/usr/bin/gqview" icon="/usr/share/pixmaps/gqview.xpm"/>
+         <app name="ImageMagick" cmd="/usr/bin/display" icon=""/>
+         <app name="Xditview" cmd="xditview" icon=""/>
+         <app name="Xpdf" cmd="/usr/bin/xpdf" icon="/usr/share/pixmaps/xpdf.xpm"/>
+      </menu>
+   </menu>
+   <menu name="Giochi" visible="yes">
+      <menu name="Gingilli" visible="yes">
+         <app name="Xeyes" cmd="xeyes" icon=""/>
+         <app name="Xlogo" cmd="xlogo" icon=""/>
+      </menu>
+   </menu>
+   <menu name="Schermo" visible="yes">
+      <menu name="Salva schermo" visible="yes">
+         <app name="Beforelight" cmd="beforelight" icon=""/>
+      </menu>
+      <menu name="Sfondo" visible="yes">
+         <app name="Xsetroot" cmd="xsetroot" icon=""/>
+      </menu>
+   </menu>
+   <menu name="Terminali per X" visible="yes">
+      <app name="Aterm" cmd="/usr/bin/aterm" icon=""/>
+      <app name="Terminal" cmd="/usr/bin/Terminal" icon="/usr/share/pixmaps/terminal.xpm"/>
+      <app name="XTerm" cmd="xterm" icon=""/>
+      <app name="XTerm (Unicode)" cmd="uxterm" icon=""/>
+   </menu>

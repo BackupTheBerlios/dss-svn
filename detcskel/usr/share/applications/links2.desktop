@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=links2
+GenericName=links2
+Comment=Browser
+Exec=links2 -g http://localhost:2001 %u
+TryExec=links2 -g
+Icon=gnome-globe
+Terminal=0
+Type=Application
+Categories=Application;Network;

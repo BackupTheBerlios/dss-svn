@@ -1,0 +1,16 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Firefox Web Browser
+Name[fr]=Navigateur Web Firefox
+GenericName=Web Browser
+GenericName[fr]=Navigateur Web
+Comment=Browse the World Wide Web
+Comment[fr]=Navigue sur Internet
+Exec=firefox dss.berlios.de %u
+Terminal=false
+MultipleArgs=false
+Type=Application
+Icon=mozilla-firefox.png
+Categories=Application;Network
+MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/vnd.mozilla.xul+xml;application/rss+xml;application/rdf+xml;x-directory/webdav;x-directory/webdav-prefer-directory;image/gif;image/jpeg;image/png
+StartupWMClass=Firefox-bin

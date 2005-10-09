@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=emelFM2
+Comment=2-pane Gtk+2 file manager
+Exec=emelfm2
+Icon=/usr/share/pixmaps/emelfm2/emelfm2_1_48.png
+Terminal=false
+Type=Application
+Categories=Application;FileManagers;System
