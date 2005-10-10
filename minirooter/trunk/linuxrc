@@ -10,7 +10,7 @@
 # <http://dss.berlios.de>
 
 
-
+#set -x
 # We only need the builtin commands and /static at this point
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
@@ -600,7 +600,7 @@ echo "${WHITE}The Upstream Salmon Struct:${YELLOW}"
 /initrd/$ctl / --list
 echo "${NORMAL}"
 
-/etc/init.d/udev stop  > /dev/null 2>&1 
+#/etc/init.d/udev stop  > /dev/null 2>&1 
 $debuglive
 cp /initrd/etc/fstab /etc/fstab
 echo $(grep -w 'unionfs' /proc/mounts) >> /etc/fstab

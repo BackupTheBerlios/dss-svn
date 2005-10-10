@@ -1,5 +1,5 @@
 /proc       /proc       proc   defaults				0 0
 /sys 	    /sys	sysfs  noauto	        		0 0
-/dev/pts    /dev/pts    devpts mode=0622           		0 0
+#/dev/pts    /dev/pts    devpts mode=0622           		0 0
 /dev/fd0    /media/floppy auto   user,noauto,exec,umask=000    	0 0
 /dev/cdrom  /media/cdrom  auto   user,noauto,exec,ro 		0 0
