@@ -1,0 +1,5 @@
+Name: xserver-xorg/autodetect_keyboard
+Template: xserver-xorg/autodetect_keyboard
+Value: true
+Owners: xserver-xorg
+
