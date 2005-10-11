@@ -27,44 +27,13 @@ cat <<EOF
 locales       locales/default_environment_locale  select $LANG
 locales       locales/locales_to_be_generated select $LANG  $CHARSET
 xserver-xorg  xserver-xorg/config/inputdevice/keyboard/layout select $LANGUAGE
-xserver-xorg  xserver-xorg/multiple_possible_x-drivers select
-xserver-xorg  xserver-xorg/config/monitor/use_sync_ranges select
-xserver-xorg  xserver-xorg/config/inputdevice/mouse/port select
-xserver-xorg  xserver-xorg/config/monitor/lcd select 
-xserver-xorg  xserver-xorg/config/doublequote_in_string_error select
-xserver-xorg  xserver-xorg/config/monitor/screen-size select 
 xserver-xorg  shared/default-x-server select xserver-xorg
 xserver-xorg  xserver-xorg/autodetect_monitor select true
-xserver-xorg  xserver-xorg/config/inputdevice/mouse/protocol select 
-xserver-xorg  shared/no_known_x-server select
-xserver-xorg  xserver-xorg/config/display/default_depth select
-xserver-xorg  xserver-xorg/config/display/modes select 
-xserver-xorg  xserver-xorg/config/device/bus_id_error select
-xserver-xorg  xserver-xorg/config/inputdevice/keyboard/internal select
-xserver-xorg  xserver-xorg/config/monitor/vert-refresh select 
-xserver-xorg  xserver-xorg/config/inputdevice/keyboard/options select
 xserver-xorg  xserver-xorg/config/inputdevice/mouse/zaxismapping select true
-xserver-xorg  xserver-xorg/config/device/use_fbdev select 
-xserver-xorg  xserver-xorg/config/inputdevice/keyboard/variant select
-xserver-xorg  xserver-xorg/config/nonnumeric_string_error select
-xserver-xorg  xserver-xorg/config/modules select bitmap, dbe, ddc, dri, extmod, freetype, glx, int10, record, type1, vbe
-xserver-xorg  xserver-xorg/config/monitor/identifier select
 xserver-xorg  xserver-xorg/config/inputdevice/mouse/emulate3buttons select true
 xserver-xorg  xserver-xorg/autodetect_mouse select true
-xserver-xorg  xserver-xorg/config/monitor/horiz-sync select 
-xserver-xorg  xserver-xorg/config/device/video_ram select
-xserver-xorg  xserver-xorg/config/monitor/range_input_error select
-xserver-xorg  xserver-xorg/config/write_dri_section select true
-xserver-xorg  xserver-xorg/config/inputdevice/keyboard/model select
-xserver-xorg  xserver-xorg/config/device/driver select 
-xserver-xorg  xserver-xorg/config/device/identifier select
-xserver-xorg  xserver-xorg/config/monitor/selection-method select Medium
-xserver-xorg  xserver-xorg/config/null_string_error select
-xserver-xorg  shared/multiple_possible_x-servers select
-xserver-xorg  xserver-xorg/config/device/bus_id select 
 xserver-xorg  xserver-xorg/config/write_files_section select true
 xserver-xorg  xserver-xorg/autodetect_video_card select true
-xserver-xorg  xserver-xorg/config/monitor/mode-list select 
 xserver-xorg  xserver-xorg/config/inputdevice/keyboard/rules select xorg
 
 EOF
