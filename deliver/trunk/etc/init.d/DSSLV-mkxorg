@@ -8,6 +8,7 @@
 
 
 # cmdline: xconf=dialog|noninteractive(default)
+
 set -e
 #set -x
 PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
@@ -36,7 +37,9 @@ EOF
 }
 
 log_begin_msg "Generating xorg.conf..."
-DEBIAN_FRONTEND=$xfrontend dpkg-reconfigure xserver-xorg 2>/dev/null
+#DEBIAN_FRONTEND=$xfrontend dpkg-reconfigure xserver-xorg 2>/dev/null
+dpkg-reconfigure -f$xfrontend  xserver-xorg 2>/dev/null
+
 if [ "$xfrontend" = "noninteractive" ]
 then
 # to print > $2:
