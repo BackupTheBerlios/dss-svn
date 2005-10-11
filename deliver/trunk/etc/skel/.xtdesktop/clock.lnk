@@ -1,8 +1,0 @@
-table Icon
- Type: Plugin
- Library: /usr/share/xtdesktop/plugins/clock.so
- CaptionAlign: left
- X: 819
- Y: 92
- Fixed: no
-end

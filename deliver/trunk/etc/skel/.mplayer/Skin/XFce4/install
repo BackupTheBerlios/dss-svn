@@ -1,9 +1,0 @@
-Un-tar the file:
-tar -zxvf XFce4.tgz
-
-Move the XFce4 directory so that MPlayer can use the skin:
-mv XFce4/ ~/.mplayer/Skin/
-<or>
-su
-(password)
-mv  XFce4/ /usr/share/mplayer/Skin
