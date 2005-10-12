@@ -250,6 +250,7 @@ echo "IDEDISKS=\"$IDEDISKS\"" >> $FILECONF
 #[ -e /etc/sysconfig/sysconfig ] && cat /etc/sysconfig/sysconfig >> /etc/sysconfig/$lname
 # Re-enable signals
 trap 2 3 11
+rebuildfstab 2>/dev/null
 dpkg-genstatus -g -d /  1>/dev/null
 bkvar=$(date +%s)
 [ -f /var/lib/dpkg/status ] &&  cp /var/lib/dpkg/status /var/lib/dpkg/status.$bkvar  
