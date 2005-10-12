@@ -1,0 +1,11 @@
+table Icon
+ Type: Program
+ Caption: floppy
+ Command: mount
+ Icon: /home/daniele/.xtdesktop/floppy.png
+ X: 375
+ Y: 230
+ MenuCommand1: Mount /media/floppy : mount /media/floppy
+ MenuCommand2: Umount /media/floppy : umount /media/floppy
+ MenuCommand3: XTerm to /media/floppy : xterm -e bash -c "cd /media/floppy ; exec bash"
+end
