@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: make-mod,v 1.2 2005/09/19 09:46:40 sf-debaser Exp $
+# $Id$
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -14,6 +14,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-# Daniele Favara <sf.debaser@gmail.com> <http://debased.sourceforge.net>
+# Daniele Favara <danjele@gmail.com> <http://dss.berlios.de>
 
 mkisofs -iso-level 4 -R -U -V "DSSLV fs" -P "DSSLV" -cache-inodes -no-bak -pad $1 | nice -5 create_compressed_fs - 65536 > $2
