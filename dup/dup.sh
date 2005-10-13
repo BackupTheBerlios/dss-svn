@@ -9,6 +9,7 @@
 
 # check for new version of of dup.sh
 #echo "Checking dup.sh version"
+[ -f dup.md5sum ] && rm dup.md5sum
 wget -nv ftp://ftp.berlios.de/pub/dss/preA/dup.md5sum
 #set -x
 [ -f dup.md5sum ] && ver=$(cat dup.md5sum | awk '{print $1}' )
