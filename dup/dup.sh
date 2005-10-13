@@ -96,6 +96,7 @@ fi
 
 if [ -z $(which make-iso) ];then
 wget -nH  http://svn.berlios.de/viewcvs/*checkout*/dss/debaser/trunk/make-iso
+chmod +x make-iso
 fi
 
 usage() {
