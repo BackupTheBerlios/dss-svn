@@ -21,7 +21,7 @@ if [ "$ver" != "$md5dup" ];then
 	echo ""
 	exit 0
 else
-[ -f dup.sh ] && [ -f dup.md5sum ] && ]echo "[Ok]"
+[ -f dup.sh ] && [ -f dup.md5sum ] && echo "[Ok]"
 fi
 set +x
 MIRROR=ftp://ftp.berlios.de/pub/dss/preA/
