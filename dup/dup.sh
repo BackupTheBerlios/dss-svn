@@ -10,7 +10,7 @@
 # check for new version of of dup.sh
 #echo "Checking dup.sh version"
 wget -nv ftp://ftp.berlios.de/pub/dss/preA/dup.md5sum
-#set -x
+set -x
 [ -f dup.md5sum ] && ver=$(cat dup.md5sum | awk '{print $1}' )
 [ -f dup.sh ] && md5dup=$(md5sum dup.sh | awk '{print $1}')
 if [ "$ver" != "$md5sum" ];then
@@ -23,7 +23,7 @@ if [ "$ver" != "$md5sum" ];then
 else
 [ -f dup.sh ] && [ -f dup.md5sum ] && ]echo "[Ok]"
 fi
-#set +x
+set +x
 MIRROR=ftp://ftp.berlios.de/pub/dss/preA/
 MD5SUM=cdrom/md5sums
 md5sum `find -type f | cut -d/ -f2- `> md5sums.old
