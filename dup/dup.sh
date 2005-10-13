@@ -89,3 +89,29 @@ else
 	echo ----------------------------------	
 	echo
 fi
+
+if [ -z $(which make-iso) ];then
+wget -nH  http://svn.berlios.de/viewcvs/*checkout*/dss/debaser/trunk/make-iso
+fi
+
+usage() {
+
+         cat >&2 << EOF
+/---------------------------------------------------\
+|                                                   |
+|      DSS Live Testing                             |             
+|     http://dss.berlios.de                         |
+|                                                   | 
+|   type:                                           |
+|   #sudo ./make-iso cdrom DSS-Live-testing.iso     |
+|   to generate the iso file                        |
+|                                                   |
+|   maybe you want to test it using qemu:           |
+|   # qemu -cdrom DSS-Live-testing.iso              |
+|                                                   | 
+\---------------------------------------------------/
+
+EOF
+        exit 1
+}
+
