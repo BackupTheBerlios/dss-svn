@@ -13,7 +13,7 @@ wget -nv ftp://ftp.berlios.de/pub/dss/preA/dup.md5sum
 set -x
 [ -f dup.md5sum ] && ver=$(cat dup.md5sum | awk '{print $1}' )
 [ -f dup.sh ] && md5dup=$(md5sum dup.sh | awk '{print $1}')
-if [ "$ver" != "$md5sum" ];then
+if [ "$ver" != "$md5dup" ];then
 	echo ""
 	echo "I found a new version of dup.sh download it from:"
 	echo "ftp://ftp.berlios.de/pub/dss/preA/dup.sh"
