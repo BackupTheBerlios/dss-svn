@@ -114,4 +114,4 @@ usage() {
 EOF
         exit 1
 }
-
+usage
