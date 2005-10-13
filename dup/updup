@@ -3,5 +3,7 @@
 # $Id$
 
 md5sum dup.sh > dup.md5sum
-scp  dup.md5sum dup.sh yourusername@shell.berlios.de:/home/groups/ftp/dss/preA/
+scp  dup.sh nomed@shell.berlios.de:/home/groups/ftp/pub/dss/preA/
+scp  dup.md5sum nomed@shell.berlios.de:/home/groups/ftp/pub/dss/preA/
+
 svn commit
