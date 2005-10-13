@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# $Id$
+
+md5sum dup.sh > dup.md5sum
+scp  dup.md5sum dup.sh yourusername@shell.berlios.de:/home/groups/ftp/dss/preA/
+svn commit
