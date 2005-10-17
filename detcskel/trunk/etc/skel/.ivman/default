@@ -1,0 +1,28 @@
+set -x
+#define file manager
+if [ -n "$(which thunar)" ];then
+	FM=$(which thunar)
+elif [ -n "$(which rox)" ];then
+	FM=$(which rox)
+elif [ -n "$(which emelfm2)" ];then
+	FM=$(which emelfm2)
+fi
+
+#define audio cd player
+if [ -n "$(which grip)" ];then
+	AUDIOCD=$(which grip)
+elif [ -n "$(which goobox)" ];then
+	AUDIOCD=$(which goobox)
+elif [ -n "$(which xfreecd)" ];then
+	AUDIOCD=$(which xfreecd)
+fi
+
+#define cd burner
+if [ -n "$(which gnomebaker)" ];then
+	BURNER=$(which gnomebaker)
+elif [ -n "$(which graveman)" ];then
+	BURNER=$(which graveman)
+elif [ -n "$(which k3b)" ];then
+	BURNER=$(which k3b)
+fi
+

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivm:BaseConfig version="0.2" xmlns:ivm="http://www.eikke.com/ivm">
+
+    <!-- Whether or not to daemonize.  If you start Ivman automatically when
+         you log on, you should probably have this equal to false so that it
+         will close when you log off. -->
+    <ivm:Option name="fork" value="false" />
+
+    <!-- Whether or not to output debugging information.  Leave this as false
+         unless you have problems. -->
+    <ivm:Option name="debug" value="false" />
+
+</ivm:BaseConfig>

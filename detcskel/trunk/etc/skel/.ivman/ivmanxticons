@@ -1,0 +1,110 @@
+#!/bin/bash
+usage() {
+
+	 cat >&2 << EOF
+
+Usage: -g <block_device> <volume_uuid> <volume_mount_point> 
+       -r <volume_uuid> 	
+
+Options:
+  -g Generate  $HOME_ICONS/$volume_uuid.lnk 
+     volume_uuid: lshal | grep volume.uuid 
+  -r Remove lnk file of the unplugged device
+EOF
+	exit 1
+}
+
+print_lnk(){
+#usage: print_lnk </dev/block> <ID-NUM> </mount/point>
+block_device=$1
+volume_uuid=$2
+volume_mount_point=$3
+
+	cat > $HOME_ICONS/$volume_uuid.lnk << EOF
+	table Icon
+	Type: Program
+	Caption: $(basename $volume_mount_point)
+	Command: /usr/share/xtdesktop/pmount.sh openfolder $volume_mount_point
+	Icon: $HOME_ICONS/hd.png
+	X: $x
+	Y: $y
+	MenuCommand1: Mount $block_device : /usr/share/xtdesktop/pmount.sh pmount $block_device
+	MenuCommand2: Umount $block_device : /usr/share/xtdesktop/pmount.sh pumount $block_device	
+	end
+EOF
+}
+while getopts "g:r:" flag; do
+	case $flag in
+	g) 
+		GENERATE=yes
+		;;
+	r)
+		REMOVE=yes
+		;;
+
+
+	*)
+		usage
+		;;
+	esac
+done
+shift 1
+#shift $(($OPTIND - 1))
+#echo $1
+#echo $2
+#echo $3
+#exit 0
+mem="/tmp/.lasticon"
+HOME_ICONS=$HOME/.ivman/ivicons
+BIN=ivicons
+VAR_RUN=/tmp/.iviconsrun 
+if [ ! -e "/tmp/.lasticon" ];then
+	x=300
+	y=300
+	num=1
+	echo $x $y $num> $mem
+else
+	start=$(cat $mem)
+	x=$( echo $start | awk '{print $1}' )
+	y=$( echo $start | awk '{print $2}' )
+	num=$( echo $start | awk '{print $3}' )
+fi
+#pidxt=$(cat $VAR_RUN )
+#user=$( ps aux | grep $BIN | grep $pidxt | awk '{print $1}' | head -1 )
+#xdid=$(  ps ax | grep $BIN | awk '{print $1}' | head -1 )
+#if test -z  "$user" ; then 
+#	exit 0 
+#fi
+
+#if [ "$user" = "root" ];then
+#	HOME=/root
+#else
+#	HOME="/home/$user"
+#fi
+#sleep 1
+
+# GENERATE
+
+if [ "$GENERATE" = "yes" ];then
+	if [  ! -e "$HOME_ICONS/$2.lnk"  ];then
+	print_lnk $1 $2 $3
+	let x+=80
+	echo $x $y
+		if [ "$num" = "6" ];then
+			let y+=90
+			x=300
+			num=0
+		fi
+		let num+=1
+	fi
+#	chown $user\: $HOME_ICONS/*
+	echo $x $y $num> /tmp/.lasticon
+elif [ "$REMOVE" = "yes" ];then
+	rm   $HOME_ICONS/$1.lnk 
+fi
+killall ivicons
+ivicons
+#kill $pidxt
+#rm -f $VAR_RUN
+exit 0
+
