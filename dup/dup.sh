@@ -108,6 +108,28 @@ case $? in
 esac
 
 }
+usage() {
+print_noupgrade(){
+$DIALOG --title "$TITLE1"  --clear \
+        --msgbox "\
+	 DSS Live Testing         \       
+	http://dss.berlios.de      \                   
+
+   type:                            \               
+   #sudo ./make-iso cdrom DSS-Live.iso\     
+   to generate the iso file            \            
+                                                   
+   maybe you want to test it using qemu:\           
+   # qemu -cdrom DSS-Live-testing.iso  " 10 41
+
+case $? in
+  0)
+    ok="OK";;
+  255)
+    exit 0;;
+esac
+
+}
 
 
 print_help () {
@@ -409,7 +431,7 @@ if [ -e "make-iso" ];then
 	if [ "$makeiso" = "yes" ];then
 		select_isoname
 		if [ -n "$isoname" ];then
-		gen_iso $isoname		
+		gen_iso $isoname.iso		
 		fi
 	fi
 		
@@ -419,24 +441,4 @@ fi
 
 #fi
 
-usage() {
-
-         cat >&2 << EOF
-/---------------------------------------------------\
-|                                                   |
-|      DSS Live Testing                             |             
-|     http://dss.berlios.de                         |
-|                                                   | 
-|   type:                                           |
-|   #sudo ./make-iso cdrom DSS-Live-testing.iso     |
-|   to generate the iso file                        |
-|                                                   |
-|   maybe you want to test it using qemu:           |
-|   # qemu -cdrom DSS-Live-testing.iso              |
-|                                                   | 
-\---------------------------------------------------/
-
-EOF
-        exit 1
-}
 usage
