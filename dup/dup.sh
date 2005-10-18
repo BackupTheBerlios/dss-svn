@@ -109,18 +109,16 @@ esac
 
 }
 usage() {
-print_noupgrade(){
 $DIALOG --title "$TITLE1"  --clear \
-        --msgbox "\
-	 DSS Live Testing         \       
-	http://dss.berlios.de      \                   
+--msgbox "DSS Live Testing               
+	http://dss.berlios.de                         
 
-   type:                            \               
-   #sudo ./make-iso cdrom DSS-Live.iso\     
-   to generate the iso file            \            
+   type:                                          
+    - sudo sh make-iso cdrom DSS-Live.iso    
+   to generate the iso file                        
                                                    
-   maybe you want to test it using qemu:\           
-   # qemu -cdrom DSS-Live-testing.iso  " 10 41
+   maybe you want to test it using qemu           
+    - qemu -cdrom DSS-Live-testing.iso"   10 41
 
 case $? in
   0)
@@ -237,7 +235,7 @@ if [ ! -f "cdrom/README" ];then
 	echo 100
 	sleep 1
 	)|  $DIALOG --title "README" --gauge "Starting" 0 70 0
-
+#
 fi
 if [ ! -f "cdrom/COPYING" ];then
 		(
@@ -439,6 +437,7 @@ else
 	print_error
 fi
 
-#fi
+
 
 usage
+
