@@ -118,7 +118,7 @@ $DIALOG --title "$TITLE1"  --clear \
    to generate the iso file                        
                                                    
    maybe you want to test it using qemu           
-    - qemu -cdrom DSS-Live-testing.iso"   10 41
+    - qemu -cdrom DSS-Live-testing.iso"   0 0
 
 case $? in
   0)
