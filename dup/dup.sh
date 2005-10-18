@@ -257,7 +257,7 @@ fi
 
 print_help 
 
-if [ "test" = "" ];then
+#if [ "test" = "" ];then
 
 
 
@@ -323,7 +323,7 @@ else
 [ -f dup.sh ] && [ -f dup.md5sum ]  && rm dup.md5sum
 fi
 #test stop
-fi
+#fi
 #set +x
 
 
