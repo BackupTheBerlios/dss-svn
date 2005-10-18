@@ -1,0 +1,41 @@
+	      DSS Live
+
+	     web: http://dss.berlios.de
+	   ftp: ftp://ftp.berlios.de/pub/dss
+	 svn: http://svn.berlios.de/wsvn/dss/
+
+
+
+o /boot
+	contains the init ramdisk, grub menu and kernel
+
+o /deb
+	If .deb (debian packages) are placed in this directory, they will
+	be installed at boot time.
+
+CLOOP FILES
+
+o /base
+	contains base, a minimal console system compressed in a cloop image
+
+	* you can even specify a different base with base=? at boot cmd line
+
+o /mainmod
+	contains mainmodules, normally X server and applications, these
+	are also cloop images, comparable to the /base/base file. These
+	layers are unified to generate the root directory using the
+	Upstream Salmon Struct.
+
+o /deliver
+	contains the scripts that allow the pure debian/ubuntu system to
+	boot-up from cdrom
+
+o /kernel
+	contains the "/lib/modules/`uname -r`/" directory and the kernel
+	related utilities
+
+
+Daniele Favara <danjele@gmail.com>
+
+
+
