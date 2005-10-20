@@ -157,7 +157,7 @@ case "$CMDLINE" in *\ splash*) SPLASH="yes"; ;; esac
 # default 
 BASE=base
 KERNEL_VER=kernel
-DELIVER=deliver
+DELIVER=autoconf
 
 for i in $CMDLINE; do
 		case $i in

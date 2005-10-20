@@ -3,8 +3,12 @@
 
 esetroot -scale /etc/alternatives/desktop-background &
 
-
-USER=$( ps aux | grep $PPID | awk '{print $1}' | head -1 )
+if [ -f /etc/sysconfig/sysconfig ];then
+	source /etc/sysconfig/sysconfig
+	USER=$USERNAME 
+else
+	USER=$( ps aux | grep $PPID | awk '{print $1}' | head -1 )
+fi
 
 if [ "$USER" = "root" ];then
 	sed -i -e "s,/home/[^/]\+/.xtdesktop/,/root/.xtdesktop/,g" $HOME/.xtdesktop/*.lnk 

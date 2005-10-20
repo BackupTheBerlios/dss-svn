@@ -2,7 +2,6 @@
 
 DIR=$2 
 TRUNK=$1
-cd $TRUNK
-tar -v -c --exclude ".svn" . | tar x -C ../$DIR
-cd ..
+cd $TRUNK/trunk
+tar -v -c --exclude ".svn" . | tar x -C ../../$DIR
 exit 
