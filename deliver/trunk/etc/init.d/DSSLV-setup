@@ -259,7 +259,7 @@ bkvar=$(date +%s)
 }
 [ ! -n "$hw_verbose" ] && log_begin_msg "Configuring environment..." 
 
-run_rcs 2>/dev/null
+run_rcs &>/dev/null
 
 [ ! -n "$hw_verbose" ] && log_end_msg 0
 
