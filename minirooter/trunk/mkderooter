@@ -122,7 +122,7 @@ mknod $MINIDIR/dev/urandom c 1 9
 
 #--------------------------------------
 # Library and exe
-EXE="udevstart unionctl modprobe"
+EXE="udevstart unionctl unionimap uniondbg modprobe"
 
 #----------------------------------------------
 # source functions
