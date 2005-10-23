@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=gqmpeg
+Exec=gqmpeg
+TryExec=gqmpeg
+Icon=gnome-audio
+Terminal=false
+Categories=Application;AudioVideo;
+MimeType=audio/wav;audio/x-wav;audio/x-mod;audio/mp3;audio/x-mp3;application/ogg;application/x-ogg;audio/vorbis;audio/x-vorbis;audio/mpeg;audio/x-mpeg
+
