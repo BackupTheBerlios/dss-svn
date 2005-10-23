@@ -69,7 +69,13 @@
 	-->
 	<!-- <include type="file" src="menu2.xml"/> -->
 
-    <separator/><menu name="DSS" visible="yes" icon="logo"><app name="Update Packages Database" cmd="x-terminal-emulator -e  sudo apt-get update" icon="synaptic"/><<app name="Install synaptic" cmd="x-terminal-emulator -e  sudo apt-get install synaptic" icon="synaptic"/><app name="Install firefox" cmd="x-terminal-emulator -e  sudo apt-get install mozilla-firefox" icon="mozilla-firefox"/><app name="Install xchat" cmd="x-terminal-emulator -e  sudo apt-get install xchat" icon="xchat"/></menu>
+    <separator/>
+    <menu name="DSS" visible="yes" icon="logo">
+	<app name="Update Packages Database" cmd="x-terminal-emulator -e  sudo apt-get update" icon="synaptic"/>
+        <app name="Install synaptic" cmd="x-terminal-emulator -e  sudo apt-get install synaptic" icon="synaptic"/>        
+        <app name="Install firefox" cmd="x-terminal-emulator -e  sudo apt-get install mozilla-firefox" icon="mozilla-firefox"/>
+        <app name="Install xchat" cmd="x-terminal-emulator -e  sudo apt-get install xchat" icon="xchat"/>
+    </menu>
 
     <app name="Help" cmd="xfhelp4" tip="Display help about Xfce" icon="gnome-help"/>
     <app name="About..." cmd="xfce4-about" tip="Display information about Xfld and Xfce" icon="xfce-system-info"/>

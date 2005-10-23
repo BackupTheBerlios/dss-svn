@@ -7,5 +7,5 @@ Icon=/usr/share/gnomebaker/gnomebaker-48.png
 Terminal=false
 MultipleArgs=false
 Type=Application
-Categories=Application;Office;AudioVideo;DiscBurning;
+Categories=Application;DiscBurning;Utility;
 StartupNotify=true

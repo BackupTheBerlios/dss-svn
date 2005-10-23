@@ -1,0 +1,25 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Thunar File Manager
+Name[de]=Thunar Dateimanager
+Name[el]=Διαχειριστής Αρχείων Thunar
+Name[es]=Gestor de archivos Thunar
+Name[ja]=Thunar ファイルマネージャー
+Comment=Browse the filesystem with the file manager
+Comment[el]=Περιήγηση του συστήματος αρχείων με τον διαχειριστή αρχείων
+Comment[es]=Explorar el sistema de archivos con el navegador
+Comment[ja]=ファイルマネージャーでファイルシステムを閲覧します
+GenericName=File Manager
+GenericName[de]=Dateimanager
+GenericName[el]=Διαχειριστής Αρχείων
+GenericName[es]=Gestor de archivos
+GenericName[hu]=Fájlkezelő
+GenericName[ja]=ファイルマネージャー
+Exec=thunar
+Icon=thunar
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=Application;FileManagers;System
+
+# vi:set encoding=UTF-8:
