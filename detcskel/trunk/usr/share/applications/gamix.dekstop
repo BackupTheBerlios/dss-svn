@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Mixer Settings
+Exec=gamix
+Icon=xfce4-mixer
+Terminal=false
+Type=Application
+Categories=Settings;Application;AudioVideo;
+
