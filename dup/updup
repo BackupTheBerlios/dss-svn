@@ -1,10 +1,10 @@
 #!/bin/sh
-
+set -x
 # $Id$
-
+EDEVELOP=nomed@edevelop.org:/home/nomed/public_html/preA
 md5sum dup.sh > dup.md5sum
-scp  dup.sh nomed@shell.berlios.de:/home/groups/ftp/pub/dss/preA/
-scp  dup.md5sum nomed@shell.berlios.de:/home/groups/ftp/pub/dss/preA/
-scp COPYING nomed@shell.berlios.de:/home/groups/ftp/pub/dss/preA/cdrom
-scp README nomed@shell.berlios.de:/home/groups/ftp/pub/dss/preA/cdrom
+scp  dup.sh $EDEVELOP
+scp  dup.md5sum $EDEVELOP
+scp COPYING $EDEVELOP
+scp README $EDEVELOP
 svn commit

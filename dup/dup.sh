@@ -10,7 +10,7 @@
 # check for new version of of dup.sh
 #set -x
 # define vars
-MIRROR=ftp://ftp.berlios.de/pub/dss/preA
+MIRROR=http://edevelop.org/~nomed/preA
 MD5SUM=cdrom/md5sums
 # define dialog vars
 : ${DIALOG=dialog}
