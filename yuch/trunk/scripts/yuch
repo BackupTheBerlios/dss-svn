@@ -1,0 +1,113 @@
+# Live filesystem mounting			-*- shell-script -*-
+# 
+#set -x
+# ${ROOT}=/dev/ram0
+#
+# cheatcodes:
+# base=<base> [module name in cdrom/base]
+# kernel=<kernel> [module name in cdrom/kernel]
+# deliver=<deliver> [module name in cdrom/deliver]
+# toram(=custom) [copy media to RAM]
+# 
+# TODO:
+# - add xserver module selction
+# - add toram(=custom)
+# Parameter: Where to mount the filesystem
+mountroot ()
+{
+# default 
+set fb color mode
+export RESET="]R"
+# ANSI COLORS
+# Erase to end of line
+export CRE="[K"
+# Clear and reset Screen
+export CLEAR="c"
+# Normal color
+export NORMAL="[0;39m"
+# RED: Failure or error message
+export RED="[1;31m"
+# GREEN: Success message
+export GREEN="[1;32m"
+# YELLOW: Descriptions
+export YELLOW="[1;33m"
+# BLUE: System mesages
+export BLUE="[1;34m"
+# MAGENTA: Found devices or drivers
+export MAGENTA="[1;35m"
+# CYAN: Questions
+export CYAN="[1;36m"
+# BOLD WHITE: Hint
+export WHITE="[1;37m"
+
+export BASE="base"
+export KERNEL_VER="kernel"
+export DELIVER="autoconf"
+export COMPRESSEDFS="cloop"
+export LIVECD="/DSSCD"
+export LIVEDEV="$LIVECD/cdrom"
+export UNIONFS=${rootmnt}
+
+for x in $(cat /proc/cmdline); do
+	case $x in	
+		base=*)
+			BASE=${x#base=}
+			;;
+		toram*)
+			TORAM=${x#toram=}
+			;;
+		kernel=*)
+			KERNEL_VER=${x#kernel=}
+			;;
+		deliver=*)
+			DELIVER=${x#deliver=}
+			;;	
+	esac
+done
+
+echo ""
+# Be verbose
+echo "${WHITE}Welcome to ${GREEN}DSS${GREEN} ${WHITE}liveCD!${NORMAL}"
+echo ""
+echo ""
+
+	
+	# checkings
+	# live-top [actually empty]
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/deliver-top"
+	run_scripts /scripts/deliver-top
+	[ "$quiet" != "y" ] && log_end_msg
+
+	# Get the root filesystem type
+	if [ ! -e "${ROOT}" ]; then
+		panic "ALERT!  ${ROOT} does not exist.  Dropping to a shell!"
+	fi
+	# Find and mount the Image
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/deliver-premount"
+	run_scripts /scripts/deliver-premount
+        if [ ! -e "$LIVECD/$BASE/etc" ]; then
+                panic "Something wrong with the image mounting"
+                # Just in case
+                FS1='(initramfs) ' exec /bin/sh </dev/console >/dev/console 2>&1
+        fi
+	[ "$quiet" != "y" ] && log_end_msg
+
+	merge=$(cat /tmp/merge.dirs)
+	tomove=$(cat /tmp/move.dirs)
+	dirs=${UNIONFS}/initrd/
+	mount -t unionfs -o dirs=$merge unionfs ${UNIONFS} 
+	for i in $tomove; do
+		mkdir -p ${dirs}/$i
+		mount -o move $LIVECD/$i ${dirs}/$i
+	done
+	
+	if [ $? != 0 ]; then
+		panic "Something wrong with the unionfs mounting"
+		# Just in case
+		FS1='(initramfs) ' exec /bin/sh </dev/console >/dev/console 2>&1
+	fi
+
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/deliver-bottom"
+	run_scripts /scripts/deliver-bottom
+	[ "$quiet" != "y" ] && log_end_msg
+}

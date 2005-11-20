@@ -1,0 +1,103 @@
+#!/bin/sh
+# Get the image, putting in the rigth place and mount it
+PREREQ="findcd"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+# Just to be sure
+
+#modprobe -q unionfs >> /tmp/initramfs.debug 2>&1
+#modprobe -q squashfs >> /tmp/initramfs.debug 2>&1
+
+
+echo -n "${WHITE}Unifing: ${GREEN} "
+#BASE MODULE
+	mkdir -p /$LIVECD/$BASE/ >> /tmp/initramfs.debug 2>&1
+	mount -r -o loop -t squashfs $LIVEDEV/base/$BASE /$LIVECD/$BASE >> /tmp/initramfs.debug 2>&1 
+	tomove="$BASE"
+	merge="/$LIVECD/base/=ro"
+	echo -n "$BASE" ' '
+
+# KERNEL MODULE
+num=1 # cloop0 for base module
+if  test -f $LIVEDEV/kernel/$KERNEL_VER; then
+	mkdir -p /$LIVECD/$KERNEL_VER/ >> /tmp/initramfs.debug 2>&1
+	mount -r -o loop -t squashfs $LIVEDEV/kernel/$KERNEL_VER /$LIVECD/$KERNEL_VER/>> /tmp/initramfs.debug 2>&1
+	tomove="$tomove $KERNEL_VER"
+	merge="/$LIVECD/$KERNEL_VER/=ro:$merge"
+	echo -n "$KERNEL_VER" ' '
+	let num+=1
+else
+	echo
+	echo "${RED}(EE): unable to find $KERNEL_VER module!${NORMAL}"
+	exec /bin/sh </dev/console >/dev/console 2>&1
+	exit 0
+fi
+		
+# XSERVER  MODULES
+if test -d "$LIVEDEV/xserver/" -a -n "$(ls -A  $LIVEDEV/xserver/ )";then
+	all_mod=$(ls -1 $LIVEDEV/xserver/ | sort -n ) 
+fi
+for i in $all_mod; do
+	if test -f $LIVEDEV/xserver/$i; then
+		name_mod=$( echo $i | awk 'BEGIN { FS="[.]" }{ print $1 }' )
+		mkdir -p /$LIVECD/$name_mod >> /tmp/initramfs.debug 2>&1
+		tomove="$tomove $name_mod"
+		mount -r -o loop -t squashfs  $LIVEDEV/xserver/$i /$LIVECD/$name_mod >> /tmp/initramfs.debug 2>&1
+		merge="/$LIVECD/$name_mod=ro:$merge"
+		echo -n "$name_mod "
+	else
+		echo -n "${RED}"$name_mod '(failed)'" ${MAGENTA}"
+		
+	fi
+	
+
+	let num+=1
+done
+
+# DELIVER MODULE
+if test -n "$DELIVER" -a -d $LIVEDEV/deliver/ -a -n "$(ls -A  $LIVEDEV/deliver/ )" ;then	
+	if test -f $LIVEDEV/deliver/$DELIVER; then
+		mkdir -p /$LIVECD/$DELIVER/
+		tomove="$tomove $DELIVER"
+		mount -r -o loop -t squashfs $LIVEDEV/deliver/$DELIVER /$LIVECD/$DELIVER/ >> /tmp/initramfs.debug 2>&1
+		merge="/$LIVECD/$DELIVER/=ro:$merge"
+		echo -n "$DELIVER" ' '
+	else
+		echo
+		echo "${RED}(EE): unable to find $DELIVER module!${NORMAL}"
+		exec /bin/sh </dev/console >/dev/console 2>&1
+		exit 0
+	fi
+fi
+
+# OVERALL (rw dir)
+[ ! -d "/$LIVECD/overall" ] && mkdir /$LIVECD/overall >> /tmp/initramfs.debug 2>&1
+mount -t tmpfs -o "size=90%" tmpfs /$LIVECD/overall >> /tmp/initramfs.debug 2>&1
+tomove="$tomove overall"
+merge="/$LIVECD/overall=rw:$merge"
+echo  "overall ${NORMAL}"
+
+if [ $? = 0 ]; then
+	echo "PREUSS: image mounted"  >> /tmp/initramfs.debug 2>&1
+	exit 0
+else
+	echo "PREUSS: ERROR -> image non mounted"  >> /tmp/initramfs.debug 2>&1
+	exit 1
+fi	
+	
+
+
+echo $merge > /tmp/merge.dirs
+echo $tomove > /tmp/move.dirs

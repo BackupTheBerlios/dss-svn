@@ -1,0 +1,43 @@
+#!/bin/sh
+# 
+# most UNIX systems set their hardware clock to UTC.
+
+# default
+# clock=utc
+
+# cmd:
+# hwclock $CLOCK -s
+
+# cheatcodes:
+# clock=<utc|localtime>
+
+PREREQ="locales"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+. /conf/initramfs.conf
+. ${rootmnt}/$FUNCS
+. ${rootmnt}/$FILECONF
+
+myclock=$(getbootparam clock )
+if [ "${myclock}" = "localtime" ];then
+	mode=" "
+else
+	mode="-u"
+fi
+
+echo $CLOCK=\"${mode}\" >> ${rootmnt}/$FILECONF
+
+
+exit 0
