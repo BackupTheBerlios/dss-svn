@@ -87,6 +87,8 @@ fi
 mount -t tmpfs -o "size=90%" tmpfs /$LIVECD/overall >> /tmp/initramfs.debug 2>&1
 tomove="$tomove overall"
 merge="/$LIVECD/overall=rw:$merge"
+echo $merge > /tmp/merge.dirs
+echo $tomove > /tmp/move.dirs
 echo  "overall ${NORMAL}"
 
 if [ $? = 0 ]; then
@@ -99,5 +101,4 @@ fi
 	
 
 
-echo $merge > /tmp/merge.dirs
-echo $tomove > /tmp/move.dirs
+

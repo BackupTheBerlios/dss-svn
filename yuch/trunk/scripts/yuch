@@ -74,8 +74,8 @@ echo ""
 	
 	# checkings
 	# live-top [actually empty]
-	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/deliver-top"
-	run_scripts /scripts/deliver-top
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/yuch-top"
+	run_scripts /scripts/yuch-top
 	[ "$quiet" != "y" ] && log_end_msg
 
 	# Get the root filesystem type
@@ -83,18 +83,19 @@ echo ""
 		panic "ALERT!  ${ROOT} does not exist.  Dropping to a shell!"
 	fi
 	# Find and mount the Image
-	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/deliver-premount"
-	run_scripts /scripts/deliver-premount
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/yuch-premount"
+	run_scripts /scripts/yuch-premount
         if [ ! -e "$LIVECD/$BASE/etc" ]; then
                 panic "Something wrong with the image mounting"
                 # Just in case
                 FS1='(initramfs) ' exec /bin/sh </dev/console >/dev/console 2>&1
         fi
 	[ "$quiet" != "y" ] && log_end_msg
-
+    set -x
 	merge=$(cat /tmp/merge.dirs)
 	tomove=$(cat /tmp/move.dirs)
 	dirs=${UNIONFS}/initrd/
+    echo	mount -t unionfs -o dirs=$merge unionfs ${UNIONFS}  
 	mount -t unionfs -o dirs=$merge unionfs ${UNIONFS} 
 	for i in $tomove; do
 		mkdir -p ${dirs}/$i
@@ -106,8 +107,8 @@ echo ""
 		# Just in case
 		FS1='(initramfs) ' exec /bin/sh </dev/console >/dev/console 2>&1
 	fi
-
-	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/deliver-bottom"
-	run_scripts /scripts/deliver-bottom
+    set +x
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/yuch-bottom"
+	run_scripts /scripts/yuch-bottom
 	[ "$quiet" != "y" ] && log_end_msg
 }

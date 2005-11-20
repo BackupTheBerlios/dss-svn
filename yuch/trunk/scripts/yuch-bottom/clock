@@ -37,7 +37,7 @@ else
 	mode="-u"
 fi
 
-echo $CLOCK=\"${mode}\" >> ${rootmnt}/$FILECONF
+echo CLOCK=\"${mode}\" >> ${rootmnt}/$FILECONF
 
 
 exit 0

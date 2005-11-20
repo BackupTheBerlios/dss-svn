@@ -8,7 +8,7 @@ prereqs()
 }
 
 case $1 in
- get pre-requisites
+# get pre-requisites
 prereqs)
 	prereqs
 	exit 0

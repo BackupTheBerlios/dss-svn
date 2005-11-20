@@ -21,6 +21,6 @@ cp -a /tmp/initramfs.debug ${rootmnt}/var/log/
 ln -s ${rootmnt}/var/log/initramfs.debug /tmp/initramfs.debug
 
 # Clean up the 1th console
-clear > /dev/tty1
+#clear > /dev/tty1
 
 exit 0
