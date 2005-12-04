@@ -42,13 +42,14 @@ mkdir -p $LIVEDEV >> /tmp/initramfs.debug 2>&1
 
 found=n
 for disk in $disks; do
-	echo -n "${CRE}${WHITE}Looking for CDROM in: ${GREEN}$disk${NORMAL}   "
+	#echo -n "${CRE}${WHITE}Looking for CDROM in: ${GREEN}$disk${NORMAL}   "
 	mount -t auto -o ro /dev/$disk $LIVEDEV >> /tmp/initramfs.debug 2>&1
 	if [ -e $LIVEDEV/base/$BASE ]; then
 		found=y
-		echo -n "${CRE}${WHITE}Accessing  CDROM at ${GREEN}$i${GREEN}...${NORMAL}"	
+		#echo -n "${CRE}${WHITE}Accessing  CDROM at ${GREEN}$i${GREEN}...${NORMAL}"	
 		if [ "x$found" = xy ] ;then
-			if  test -n "$TORAM" -a ; then 
+			if  [ -n "$TORAM" ]; then 
+				echo TORAM $TORAM
 				umount $LIVEDEV  >> /tmp/initramfs.debug 2>&1
 				LIVEDEV=/mnt
 			fi
@@ -56,7 +57,7 @@ for disk in $disks; do
 
 		break
 	else
-		umount  >> /tmp/initramfs.debug 2>&1
+		umount /dev/$disk >> /tmp/initramfs.debug 2>&1
 	fi
 done
 if [ x${found} = xy ]; then

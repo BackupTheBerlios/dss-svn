@@ -15,15 +15,17 @@ prereqs)
 	;;
 esac
 
-# Just to be sure
-
-#modprobe -q unionfs >> /tmp/initramfs.debug 2>&1
-#modprobe -q squashfs >> /tmp/initramfs.debug 2>&1
+modprobe -q unionfs >> /tmp/initramfs.debug 2>&1
+modprobe -q squashfs >> /tmp/initramfs.debug 2>&1
+modprobe -q loop >> /tmp/initramfs.debug 2>&1
 
 
 echo -n "${WHITE}Unifing: ${GREEN} "
 #BASE MODULE
 	mkdir -p /$LIVECD/$BASE/ >> /tmp/initramfs.debug 2>&1
+    if [ ! -b /dev/loop0 ];then
+        mknod /dev/loop0b 7 0 >> /tmp/initramfs.debug 2>&1
+    fi
 	mount -r -o loop -t squashfs $LIVEDEV/base/$BASE /$LIVECD/$BASE >> /tmp/initramfs.debug 2>&1 
 	tomove="$BASE"
 	merge="/$LIVECD/base/=ro"
@@ -33,6 +35,9 @@ echo -n "${WHITE}Unifing: ${GREEN} "
 num=1 # cloop0 for base module
 if  test -f $LIVEDEV/kernel/$KERNEL_VER; then
 	mkdir -p /$LIVECD/$KERNEL_VER/ >> /tmp/initramfs.debug 2>&1
+    if [ ! -b /dev/loop$num ];then
+        mknod /dev/loop$num b 7 $num >> /tmp/initramfs.debug 2>&1
+    fi 
 	mount -r -o loop -t squashfs $LIVEDEV/kernel/$KERNEL_VER /$LIVECD/$KERNEL_VER/>> /tmp/initramfs.debug 2>&1
 	tomove="$tomove $KERNEL_VER"
 	merge="/$LIVECD/$KERNEL_VER/=ro:$merge"
@@ -51,8 +56,12 @@ if test -d "$LIVEDEV/xserver/" -a -n "$(ls -A  $LIVEDEV/xserver/ )";then
 fi
 for i in $all_mod; do
 	if test -f $LIVEDEV/xserver/$i; then
-		name_mod=$( echo $i | awk 'BEGIN { FS="[.]" }{ print $1 }' )
+		#name_mod=$( echo $i | awk 'BEGIN { FS="[.]" }{ print $1 }' )
+        name_mod=$i
 		mkdir -p /$LIVECD/$name_mod >> /tmp/initramfs.debug 2>&1
+        if [ ! -b /dev/loop$num ];then
+            mknod /dev/loop$num b 7 $num >> /tmp/initramfs.debug 2>&1
+        fi  
 		tomove="$tomove $name_mod"
 		mount -r -o loop -t squashfs  $LIVEDEV/xserver/$i /$LIVECD/$name_mod >> /tmp/initramfs.debug 2>&1
 		merge="/$LIVECD/$name_mod=ro:$merge"
@@ -64,13 +73,15 @@ for i in $all_mod; do
 	
 
 	let num+=1
-done
-
+done 
 # DELIVER MODULE
 if test -n "$DELIVER" -a -d $LIVEDEV/deliver/ -a -n "$(ls -A  $LIVEDEV/deliver/ )" ;then	
 	if test -f $LIVEDEV/deliver/$DELIVER; then
 		mkdir -p /$LIVECD/$DELIVER/
 		tomove="$tomove $DELIVER"
+        if [ ! -b /dev/loop$num ];then
+            mknod /dev/loop$num b 7 $num >> /tmp/initramfs.debug 2>&1
+        fi  
 		mount -r -o loop -t squashfs $LIVEDEV/deliver/$DELIVER /$LIVECD/$DELIVER/ >> /tmp/initramfs.debug 2>&1
 		merge="/$LIVECD/$DELIVER/=ro:$merge"
 		echo -n "$DELIVER" ' '

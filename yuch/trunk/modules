@@ -5,8 +5,13 @@
 #
 # This might be good choices:
 #
+ capability
+#vesafb
+ fbcon
+ unix
  raid1
  sd_mod
  unionfs
 # cloop
+ loop
  squashfs

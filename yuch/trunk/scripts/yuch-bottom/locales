@@ -77,7 +77,7 @@ if [ -n "${tz}" ];then
 	fi
 fi
 if [ -f "${rootmnt}/usr/share/zoneinfo/$TZ" ];then
-cp " ${rootmnt}/usr/share/zoneinfo/$TZ"  ${rootmnt}/etc/localtime
+cp "${rootmnt}/usr/share/zoneinfo/$TZ"  ${rootmnt}/etc/localtime
 fi
 
 langconf=$(getbootparam langconf 2>/dev/null)
@@ -89,7 +89,4 @@ fi
 echo "LCONF=\"$LCONF\"" >> ${rootmnt}/$FILECONF
 echo LANG="$LANG" > ${rootmnt}/etc/environment
 echo "$LANG  $CHARSET" > ${rootmnt}/etc/locale.gen
-
-
-
 exit 0
