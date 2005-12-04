@@ -1,10 +1,41 @@
+* Unionfs 1.1.0
+- Removed excess 2.4 code (Unionfs 1.1.0 is for 2.6 only)
+- Removed file locking code, as the VFS does a better job of it.
+- Fixed off by one errors when kmallocing names in inode.c.
+
+* Unionfs 1.0.14
+Features:
+- Dropped unmaintained setattr,diropaque,delete=first and mount flags
+- Updated unionfs.4 to reflect default mount modes
+- You can use the root of the Union to remove branches with unionctl
+- Use official Debian packaging files.
+- Linux 2.6.13 support.
+
+Bug fixes:
+- Fixed several dentry refcount bugs introduced by new deletion framework.
+- Fixed uninitialized fd_set in the query ioctl.
+- Branch reference counting now works across insertion and removal of branches.
+  This prevents the branch counts from getting "confused".
+- Handle "/" as a branch in unionctl.
+- Removed static buffer for debug prints in favor of vprintk.
+- NFS silly renames avoided during several cases.
+- Attempting a write lock causes a copyup, so that the underying flock will
+  work.
+- Cleaned up mount option parsing.
+- Improved link counting for directories.
+
 * Unionfs 1.0.13
+- Unionfs now handles deleting an open file (and several other deletion fixes).
+  Thanks to the Knoppix people and Tomas Matejicek for finding these bugs.
 - The NODEBUG flag has been renamed to UNIONFS_NDEBUG.
 - Instead of allocating all of the lower-level pointers in dentries, inodes
   and files, we have a fixed number of them preallocated and malloc only if
   we exceed that number.
-- Whiteouts are truncated after creation.
 - Fixed a dentry reference count bug with UNIONFS_NDEBUG.
+- Support for persistent inode numbers across mounts.
+- Added a "which-branch" ioctl and corresponding --query to unionctl, so that
+  it is possible to find out where a file or directory is coming from.
+- In 2.6.11 and onwards, don't take the BKL for ioctls.
 
 * Unionfs 1.0.12
 - Copy-up is delayed until a write operation occurs, so spurious copy-ups are

@@ -7,18 +7,12 @@
  *  -EIO that bad_inode.c does.
  */
 /*
- *  $Id: stale_inode.c,v 1.9 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: stale_inode.c,v 1.11 2005/09/18 04:42:10 jsipek Exp $
  */
 
 #include <linux/config.h>
 #include <linux/version.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#ifdef CONFIG_MODVERSIONS
-# define MODVERSIONS
-# include <linux/modversions.h>
-#endif				/* CONFIG_MODVERSIONS */
-#endif				/* KERNEL_VERSION < 2.6.0 */
 #include <linux/fs.h>
 #include <linux/stat.h>
 #include <linux/sched.h>
@@ -30,9 +24,18 @@ static struct address_space_operations unionfs_stale_aops;
  * so that a stale root inode can at least be unmounted. To do this
  * we must dput() the base and return the dentry with a dget().
  */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,13)
 static int stale_follow_link(struct dentry *dent, struct nameidata *nd)
+#else
+static void *stale_follow_link(struct dentry *dent, struct nameidata *nd)
+#endif
 {
-	return vfs_follow_link(nd, ERR_PTR(-ESTALE));
+	int err = vfs_follow_link(nd, ERR_PTR(-ESTALE));
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,13)
+	return err;
+#else
+	return ERR_PTR(err);
+#endif
 }
 
 static int return_ESTALE(void)
@@ -72,9 +75,6 @@ struct inode_operations stale_inode_ops = {
 	.follow_link = stale_follow_link,
 	.truncate = ESTALE_ERROR,
 	.permission = ESTALE_ERROR,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	.revalidate = ESTALE_ERROR,
-#endif
 };
 
 /*

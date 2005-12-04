@@ -1,3 +1,5 @@
+EXT2/3 Tests
+------------
 The current regression suite assumes that it can create branches in /n/lower,
 and then mount them on /mnt/unionfs (the latter can be changed in scaffold).
 To run the tests, first insert the unionfs module, then run one (or more) of
@@ -10,5 +12,14 @@ The tests normally produce no output except "OK", "[rw]", and "[ro]" if you see
 output, then there are problems.  The two most common type of outputs are
 error messages from commands, or output from diff, which indicates that Unionfs
 did some other lower-level operation than was expected.  The diff lines will
-contain a file type (e.g., "f" for files or "d" for directoreies), and then a
+contain a file type (e.g., "f" for files or "d" for directories), and then a
 lower-level name that shouldn't appear, or does appear.
+
+NFS Tests
+---------
+The procedure is similar to the above, except that the following variables are
+to be exported before running the tests:
+
+export NFS=1
+export LOWER_DIR=/dhcp/nfs # This an NFS directory to test Unionfs on
+

@@ -35,7 +35,8 @@ applications, such as snapshotting and sandboxing.
 
 This Unionfs release has been tested with recent 2.4 and 2.6 kernels.
 For the 2.4 kernels, the minimum requirement is 2.4.20.  For 2.6
-kernels, the minimum requirement is 2.6.9.
+kernels, the minimum requirement is 2.6.11.  You also need to have the
+development headers for e2fsprogs installed.
 
 Unionfs is released under the GPL (see the COPYING file in the
 distribution for details).

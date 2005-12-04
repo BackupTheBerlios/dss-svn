@@ -24,6 +24,8 @@
 # 7. Repeat this procedure until there are no memory leaks.
 #
 
+my $ret = 0;
+
 $debug = 0;
 $counter = 0;
 
@@ -35,12 +37,14 @@ while (($line = <>)) {
     if ($line =~ /KM:(\d+):\-?\d+:([^:]+):/) {
 	if ($counter + 1 != $1) {
 	    printf(STDERR "COUNTER ORDER: counter is %d: line is %s\n", $counter, $line);
+	    $ret++;
 	}
 	$counter = $1;
 	$addr = $2;
 	printf(STDERR "KM ADDR %s\n", $addr) if $debug;
 	if (defined($bufs{$addr})) {
 	    printf(STDOUT "double alloc: %sr\n", $line);
+	    $ret++;
 	} else {
 	    $bufs{$addr} = $line;
 	}
@@ -49,6 +53,7 @@ while (($line = <>)) {
     if ($line =~ /KF:(\d+):\-?\d+:([^:]+):/) {
 	if ($counter + 1 != $1) {
 	    printf(STDERR "COUNTER ORDER:%d:%s\n", $counter, $line);
+	    $ret++;
 	}
 	$counter = $1;
 	$addr = $2;
@@ -60,6 +65,7 @@ while (($line = <>)) {
 	    $bufs{$addr} = undef;
 	} else {
 	    printf(STDOUT "unallocated free: %s\n", $line);
+	    $ret++;
 	}
 	next;
     }
@@ -67,5 +73,8 @@ while (($line = <>)) {
 }
 foreach $buf (keys %bufs) {
     next unless defined($bufs{$buf});
-    printf(STDOUT "leaked: %s\n", $bufs{$buf})
+    printf(STDOUT "leaked: %s\n", $bufs{$buf});
+    $ret++;
 }
+
+exit($ret > 126 ? 126 : $ret);

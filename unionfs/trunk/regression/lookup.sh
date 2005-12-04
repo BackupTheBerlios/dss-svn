@@ -9,28 +9,28 @@ source scaffold
 
 function files {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-d /n/lower/b1
-d /n/lower/b2
+d $LOWER_DIR
+d $LOWER_DIR/b0
+d $LOWER_DIR/b1
+d $LOWER_DIR/b2
 
-f /n/lower/b0/a
-d /n/lower/b1/a
-f /n/lower/b2/a
+f $LOWER_DIR/b0/a
+d $LOWER_DIR/b1/a
+f $LOWER_DIR/b2/a
 
-d /n/lower/b0/b
-f /n/lower/b1/b
-d /n/lower/b2/b
+d $LOWER_DIR/b0/b
+f $LOWER_DIR/b1/b
+d $LOWER_DIR/b2/b
 
-f /n/lower/b1/.wh.c
-d /n/lower/b2/c
-f /n/lower/b2/c/d
+f $LOWER_DIR/b1/.wh.c
+d $LOWER_DIR/b2/c
+f $LOWER_DIR/b2/c/d
 FILES
 }
 
 files | create_hierarchy
 
-mount_union "" /n/lower/b?
+mount_union "" $LOWER_DIR/b?
 
 checktype $MOUNTPOINT/a 'f'
 checktype $MOUNTPOINT/b 'd'
@@ -41,7 +41,6 @@ checktype $MOUNTPOINT/c '-'
 
 unmount_union
 
-files | check_hierarchy /n/lower
+files | check_hierarchy $LOWER_DIR
 
-echo "OK"
-exit 0
+complete_test

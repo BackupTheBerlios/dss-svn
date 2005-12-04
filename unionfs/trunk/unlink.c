@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,46 +15,11 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: unlink.c,v 1.11 2005/07/18 19:13:17 arunmk Exp $
+ *  $Id: unlink.c,v 1.23 2005/09/18 04:42:10 jsipek Exp $
  */
 
 #include "fist.h"
 #include "unionfs.h"
-
-static int unionfs_unlink_first(struct inode *dir, struct dentry *dentry)
-{
-	int err;
-	struct dentry *hidden_dentry;
-	struct dentry *hidden_dir_dentry = NULL;
-
-	print_entry_location();
-
-	hidden_dentry = dtohd(dentry);
-	PASSERT(hidden_dentry);
-
-	hidden_dir_dentry = lock_parent(hidden_dentry);
-
-	/* avoid destroying the hidden inode if the file is in use */
-	dget(hidden_dentry);
-	if (!(err = is_robranch(dentry))) {
-		err = vfs_unlink(hidden_dir_dentry->d_inode, hidden_dentry);
-	}
-	dput(hidden_dentry);
-
-	if (!err) {		/* vfs_unlink does that */
-		d_delete(hidden_dentry);
-	}
-
-	fist_copy_attr_times(dir, hidden_dir_dentry->d_inode);
-	/* propagate number of hard-links */
-	dentry->d_inode->i_nlink = get_nlinks(dentry->d_inode);
-
-	if (hidden_dir_dentry) {
-		unlock_dir(hidden_dir_dentry);
-	}
-	print_exit_status(err);
-	return err;
-}
 
 static int unionfs_unlink_all(struct inode *dir, struct dentry *dentry)
 {
@@ -82,26 +49,21 @@ static int unionfs_unlink_all(struct inode *dir, struct dentry *dentry)
 		hidden_dir_dentry = lock_parent(hidden_dentry);
 
 		/* avoid destroying the hidden inode if the file is in use */
-		dget(hidden_dentry);
+		DGET(hidden_dentry);
 		if (!(err = is_robranch_super(dentry->d_sb, bindex))) {
 			err =
 			    vfs_unlink(hidden_dir_dentry->d_inode,
 				       hidden_dentry);
 		}
-		dput(hidden_dentry);
+		DPUT(hidden_dentry);
 		fist_copy_attr_times(dir, hidden_dir_dentry->d_inode);
 		if (err) {
-			if (IS_SET(dir->i_sb, GLOBAL_ERR_PASSUP)
-			    || !IS_COPYUP_ERR(err)) {
+			if (!IS_COPYUP_ERR(err)) {
 				/* passup the last error we got */
 				unlock_dir(hidden_dir_dentry);
 				goto out;
 			}
 			global_err = err;
-		} else {	/* since it was OK, we kill the hidden dentry. */
-			d_delete(hidden_dentry);
-
-			/* the hidden dentries will be dput when the last reference is removed */
 		}
 
 		unlock_dir(hidden_dir_dentry);
@@ -109,10 +71,9 @@ static int unionfs_unlink_all(struct inode *dir, struct dentry *dentry)
 
 	/* check if encountered error in the above loop */
 	if (global_err) {
-		/* If we failed in the leftmost branch, then err will be set and we should
-		 * move one over to create the whiteout.  Otherwise, we should try in the
-		 * leftmost branch.
-		 */
+		/* If we failed in the leftmost branch, then err will be set
+		 * and we should move one over to create the whiteout.
+		 * Otherwise, we should try in the leftmost branch. */
 		if (err) {
 			if (dbstart(dentry) == 0) {
 				goto out;
@@ -122,23 +83,19 @@ static int unionfs_unlink_all(struct inode *dir, struct dentry *dentry)
 			err = create_whiteout(dentry, dbstart(dentry));
 		}
 	} else if (dbopaque(dentry) != -1) {
-		/* this means that there is another file at a lower-priority
-		 * branch that has a dentry with the same name */
-		if (!(err = create_whiteout(dentry, dbopaque(dentry))))
-			set_dbstart(dentry, bstart);
+		/* There is a hidden lower-priority file with the same name. */
+		err = create_whiteout(dentry, dbopaque(dentry));
 	}
       out:
 	/* propagate number of hard-links */
 	if (dentry->d_inode->i_nlink != 0) {
 		dentry->d_inode->i_nlink = get_nlinks(dentry->d_inode);
-		if (!err && global_err) {
+		if (!err && global_err)
 			dentry->d_inode->i_nlink--;
-		}
 	}
-	if (!err && global_err) {
-		/* set the dbstart to help revalidate */
-		set_dbstart(dentry, bstart);
-	}
+	/* We don't want to leave negative leftover dentries for revalidate. */
+	if (!err && (global_err || dbopaque(dentry) != -1))
+		update_bstart(dentry);
 
 	print_exit_status(err);
 	return err;
@@ -160,7 +117,7 @@ static int unionfs_unlink_whiteout(struct inode *dir, struct dentry *dentry)
 	hidden_old_dentry = dtohd(dentry);
 
 	/* lookup .wh.foo first, MUST NOT EXIST */
-	name = KMALLOC(sizeof(char) * (dentry->d_name.len + 5), GFP_UNIONFS);
+	name = KMALLOC(dentry->d_name.len + sizeof(".wh."), GFP_UNIONFS);
 	if (!name) {
 		err = -ENOMEM;
 		goto out;
@@ -170,7 +127,7 @@ static int unionfs_unlink_whiteout(struct inode *dir, struct dentry *dentry)
 	name[4 + dentry->d_name.len] = '\0';
 
 	hidden_wh_dentry =
-	    lookup_one_len(name, hidden_old_dentry->d_parent,
+	    LOOKUP_ONE_LEN(name, hidden_old_dentry->d_parent,
 			   dentry->d_name.len + 4);
 	if (IS_ERR(hidden_wh_dentry)) {
 		err = PTR_ERR(hidden_wh_dentry);
@@ -178,25 +135,33 @@ static int unionfs_unlink_whiteout(struct inode *dir, struct dentry *dentry)
 	}
 	ASSERT(hidden_wh_dentry->d_inode == NULL);
 
-	dget(hidden_old_dentry);
+	DGET(hidden_old_dentry);
 
-	hidden_old_dir_dentry = get_parent(hidden_old_dentry);
-	hidden_new_dir_dentry = get_parent(hidden_wh_dentry);
+	hidden_old_dir_dentry = GET_PARENT(hidden_old_dentry);
+	hidden_new_dir_dentry = GET_PARENT(hidden_wh_dentry);
 	double_lock(hidden_old_dir_dentry, hidden_new_dir_dentry);
 
 	if (!(err = is_robranch(dentry))) {
-		err = vfs_rename(hidden_old_dir_dentry->d_inode,
-				 hidden_old_dentry,
-				 hidden_new_dir_dentry->d_inode,
-				 hidden_wh_dentry);
+		if (S_ISREG(hidden_old_dentry->d_inode->i_mode)) {
+			err = vfs_rename(hidden_old_dir_dentry->d_inode,
+					 hidden_old_dentry,
+					 hidden_new_dir_dentry->d_inode,
+					 hidden_wh_dentry);
+		} else {
+			err = vfs_unlink(hidden_old_dir_dentry->d_inode,
+					 hidden_old_dentry);
+			if (!err)
+				err = vfs_create(hidden_new_dir_dentry->d_inode,
+						 hidden_wh_dentry, 0666, NULL);
+		}
 	}
 
 	double_unlock(hidden_old_dir_dentry, hidden_new_dir_dentry);
-	dput(hidden_old_dentry);
-	dput(hidden_wh_dentry);
+	DPUT(hidden_old_dentry);
+	DPUT(hidden_wh_dentry);
 
 	if (!err) {
-		hidden_wh_dentry = lookup_one_len(name,
+		hidden_wh_dentry = LOOKUP_ONE_LEN(name,
 						  hidden_old_dentry->d_parent,
 						  dentry->d_name.len + 4);
 		if (IS_ERR(hidden_wh_dentry)) {
@@ -214,12 +179,11 @@ static int unionfs_unlink_whiteout(struct inode *dir, struct dentry *dentry)
 		 * even if we fail here. */
 		notify_change(hidden_wh_dentry, &newattrs);
 		up(&hidden_wh_dentry->d_inode->i_sem);
-		dput(hidden_wh_dentry);
+		DPUT(hidden_wh_dentry);
 	}
 
 	if (err) {
-		if (IS_SET(dir->i_sb, GLOBAL_ERR_PASSUP) ||
-		    (dbstart(dentry) == 0))
+		if (dbstart(dentry) == 0)
 			goto out;
 		/* exit if the error returned was NOT -EROFS */
 		if (!IS_COPYUP_ERR(err))
@@ -240,28 +204,19 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 	int err = 0;
 
 	print_entry_location();
+	lock_dentry(dentry);
 	fist_print_dentry("IN unionfs_unlink", dentry);
 
-	dget(dentry);
-
-	if (IS_SET(dir->i_sb, DELETE_WHITEOUT)) {
-		/* create whiteout */
+	if (IS_SET(dir->i_sb, DELETE_WHITEOUT))
 		err = unionfs_unlink_whiteout(dir, dentry);
-	} else if (IS_SET(dir->i_sb, DELETE_FIRST)) {
-		/* delete only first file */
-		err = unionfs_unlink_first(dir, dentry);
-		/* The VFS will kill this dentry now, and it will end up being recreated on lookup. */
-	} else {
-		/* delete all. */
+	else
 		err = unionfs_unlink_all(dir, dentry);
-	}
 
 	/* call d_drop so the system "forgets" about us */
-	if (!err) {
+	if (!err)
 		d_drop(dentry);
-	}
-	dput(dentry);
 
+	unlock_dentry(dentry);
 	print_exit_status(err);
 	return err;
 }
@@ -288,14 +243,11 @@ static int unionfs_rmdir_first(struct inode *dir, struct dentry *dentry,
 	hidden_dir_dentry = lock_parent(hidden_dentry);
 
 	/* avoid destroying the hidden inode if the file is in use */
-	dget(hidden_dentry);
+	DGET(hidden_dentry);
 	if (!(err = is_robranch(dentry))) {
 		err = vfs_rmdir(hidden_dir_dentry->d_inode, hidden_dentry);
 	}
-	dput(hidden_dentry);
-	if (!err) {		/* vfs_rmdir does that */
-		d_delete(hidden_dentry);
-	}
+	DPUT(hidden_dentry);
 
 	fist_copy_attr_times(dir, hidden_dir_dentry->d_inode);
 	/* propagate number of hard-links */
@@ -337,11 +289,15 @@ static int unionfs_rmdir_all(struct inode *dir, struct dentry *dentry,
 			continue;
 
 		hidden_dir_dentry = lock_parent(hidden_dentry);
-		delete_whiteouts(dentry, bindex, namelist);
-		if (!(err = is_robranch_super(dentry->d_sb, bindex))) {
-			err =
-			    vfs_rmdir(hidden_dir_dentry->d_inode,
-				      hidden_dentry);
+		if (S_ISDIR(hidden_dentry->d_inode->i_mode)) {
+			delete_whiteouts(dentry, bindex, namelist);
+			if (!(err = is_robranch_super(dentry->d_sb, bindex))) {
+				err =
+				    vfs_rmdir(hidden_dir_dentry->d_inode,
+					      hidden_dentry);
+			}
+		} else {
+			err = -EISDIR;
 		}
 
 		fist_copy_attr_times(dir, hidden_dir_dentry->d_inode);
@@ -354,17 +310,11 @@ static int unionfs_rmdir_all(struct inode *dir, struct dentry *dentry,
 				goto out;
 			}
 
-			/* passup the last error we got if GLOBAL_ERR_PASSUP is set
-			   or exit if error is (NOT -EROFS and NOT -ENOTEMPTY) */
-			if (IS_SET(dir->i_sb, GLOBAL_ERR_PASSUP) ||
-			    (!IS_COPYUP_ERR(err) && err != -ENOTEMPTY))
+			if (!IS_COPYUP_ERR(err) && err != -ENOTEMPTY
+			    && err != -EISDIR)
 				goto out;
 
 			global_err = err;
-		}
-
-		if (!err) {	/* since it was OK, we kill the hidden dentry. */
-			d_delete(hidden_dentry);
 		}
 	}
 
@@ -399,9 +349,8 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 	struct unionfs_dir_state *namelist = NULL;
 
 	print_entry_location();
+	lock_dentry(dentry);
 	fist_print_dentry("IN unionfs_rmdir: ", dentry);
-
-	dget(dentry);
 
 	/* check if this unionfs directory is empty or not */
 	err = check_empty(dentry, &namelist);
@@ -410,7 +359,7 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 	}
 
 	if (IS_SET(dir->i_sb, DELETE_WHITEOUT)) {
-		/* delete just like if we were doing DELETE_FIRST. */
+		/* Delete the first directory. */
 		err = unionfs_rmdir_first(dir, dentry, namelist);
 		/* create whiteout */
 		if (!err) {
@@ -418,23 +367,17 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 		} else {
 			int new_err;
 
-			if (IS_SET(dir->i_sb, GLOBAL_ERR_PASSUP)
-			    || (dbstart(dentry) == 0)) {
+			if (dbstart(dentry) == 0)
 				goto out;
-			}
+
 			/* exit if the error returned was NOT -EROFS */
-			if (!IS_COPYUP_ERR(err)) {
+			if (!IS_COPYUP_ERR(err))
 				goto out;
-			}
+
 			new_err = create_whiteout(dentry, dbstart(dentry) - 1);
-			if (new_err != -EEXIST) {
+			if (new_err != -EEXIST)
 				err = new_err;
-			}
 		}
-	} else if (IS_SET(dir->i_sb, DELETE_FIRST)) {
-		/* delete only first directory */
-		err = unionfs_rmdir_first(dir, dentry, namelist);
-		/* The VFS will kill this dentry now, and it will end up being recreated on lookup. */
 	} else {
 		/* delete all. */
 		err = unionfs_rmdir_all(dir, dentry, namelist);
@@ -442,15 +385,13 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 
       out:
 	/* call d_drop so the system "forgets" about us */
-	if (!err) {
+	if (!err)
 		d_drop(dentry);
-	}
-	dput(dentry);
 
-	if (namelist) {
+	if (namelist)
 		free_rdstate(namelist);
-	}
 
+	unlock_dentry(dentry);
 	print_exit_status(err);
 	return err;
 }

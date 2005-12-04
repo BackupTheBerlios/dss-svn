@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: unionfs_debugmacros.h,v 1.3 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: unionfs_debugmacros.h,v 1.10 2005/08/26 18:34:35 cwright Exp $
  */
 
 #ifndef __UNIONFS_H_
@@ -134,7 +136,7 @@ static inline struct super_block *__stohs(const struct super_block *sb,
 					  const char *function, int line)
 {
 	int branch;
-	ASSERT2(sbstart(sb) >= 0);
+	ASSERT2(sbstart(sb) == 0);
 	branch = sbstart(sb);
 	return __stohs_index(sb, branch, file, function, line);
 }
@@ -206,20 +208,30 @@ static inline int branch_count(struct super_block *sb, int index)
 static inline void branchget(struct super_block *sb, int index)
 {
 	ASSERT(index >= 0);
-	if (index < UNIONFS_INLINE_OBJECTS)
+	if (index < UNIONFS_INLINE_OBJECTS) {
 		atomic_inc(&stopd(sb)->usi_sbcount_i[index]);
-	else
+		ASSERT(atomic_read(&stopd(sb)->usi_sbcount_i[index]) >= 0);
+	} else {
 		atomic_inc(&stopd(sb)->
 			   usi_sbcount_p[index - UNIONFS_INLINE_OBJECTS]);
+		ASSERT(atomic_read(&stopd(sb)->
+				   usi_sbcount_p[index -
+						 UNIONFS_INLINE_OBJECTS]) >= 0);
+	}
 }
 static inline void branchput(struct super_block *sb, int index)
 {
 	ASSERT(index >= 0);
-	if (index < UNIONFS_INLINE_OBJECTS)
+	if (index < UNIONFS_INLINE_OBJECTS) {
 		atomic_dec(&stopd(sb)->usi_sbcount_i[index]);
-	else
+		ASSERT(atomic_read(&stopd(sb)->usi_sbcount_i[index]) >= 0);
+	} else {
 		atomic_dec(&stopd(sb)->
 			   usi_sbcount_p[index - UNIONFS_INLINE_OBJECTS]);
+		ASSERT(atomic_read(&stopd(sb)->
+				   usi_sbcount_p[index -
+						 UNIONFS_INLINE_OBJECTS]) >= 0);
+	}
 }
 
 /* Dentry to Hidden Dentry  */
@@ -255,10 +267,44 @@ static inline struct unionfs_dentry_info *__dtopd(const struct dentry *dent,
 #define dtopd_nocheck(dent) ((struct unionfs_dentry_info *)(dent)->d_fsdata)
 #define dtopd_lhs(dent) ((dent)->d_fsdata)
 
+/* Macros for locking a dentry. */
+static inline void lock_dentry(struct dentry *d)
+{
+	PASSERT(d);
+	PASSERT(dtopd(d));
+#ifdef TRACKLOCK
+	printk("LOCK:%p\n", d);
+#endif
+	down(&dtopd(d)->udi_sem);
+}
+static inline void unlock_dentry(struct dentry *d)
+{
+	PASSERT(d);
+	PASSERT(dtopd(d));
+#ifdef TRACKLOCK
+	printk("UNLOCK:%p\n", d);
+#endif
+	up(&dtopd(d)->udi_sem);
+}
+
+#define verify_locked2(dentry) __verify_locked((dentry), (file), (function), (line))
+#define verify_locked(dentry) __verify_locked((dentry), __FILE__, __FUNCTION__, __LINE__)
+static inline void __verify_locked(const struct dentry *d, const char *file,
+				   const char *function, int line)
+{
+	PASSERT2(d);
+	PASSERT2(dtopd(d));
+#ifdef TRACKLOCK
+	printk("MUST BE LOCKED:%p\n", d);
+#endif
+	ASSERT2(down_trylock(&dtopd(d)->udi_sem) != 0);
+}
+
 #define dbend(dentry) __dbend(dentry, __FILE__, __FUNCTION__, __LINE__)
 static inline int __dbend(const struct dentry *dentry, const char *file,
 			  const char *function, int line)
 {
+	verify_locked2(dentry);
 	return dtopd(dentry)->udi_bend;
 }
 
@@ -266,6 +312,7 @@ static inline int __dbend(const struct dentry *dentry, const char *file,
 static inline int __set_dbend(const struct dentry *dentry, int val,
 			      const char *file, const char *function, int line)
 {
+	verify_locked2(dentry);
 	if (val < 0) {
 		ASSERT2(val == -1);
 	}
@@ -279,6 +326,7 @@ static inline int __set_dbend(const struct dentry *dentry, int val,
 static inline int __dbstart(const struct dentry *dentry, const char *file,
 			    const char *function, int line)
 {
+	verify_locked2(dentry);
 	return dtopd(dentry)->udi_bstart;
 }
 
@@ -287,6 +335,7 @@ static inline int __set_dbstart(const struct dentry *dentry, int val,
 				const char *file, const char *function,
 				int line)
 {
+	verify_locked2(dentry);
 	if (val < 0) {
 		ASSERT2(val == -1);
 	}
@@ -300,6 +349,7 @@ static inline int __set_dbstart(const struct dentry *dentry, int val,
 static inline int __dbopaque(const struct dentry *dentry, const char *file,
 			     const char *function, int line)
 {
+	verify_locked2(dentry);
 	return dtopd(dentry)->udi_bopaque;
 }
 
@@ -308,6 +358,7 @@ static inline int __set_dbopaque(const struct dentry *dentry, int val,
 				 const char *file, const char *function,
 				 int line)
 {
+	verify_locked2(dentry);
 	if (val < 0) {
 		ASSERT2(val == -1);
 	}
@@ -332,9 +383,9 @@ static inline struct dentry *__dtohd_index(const struct dentry *dent, int index,
 	struct dentry *d;
 
 	PASSERT2(dent);
-	lock_dpd2(dent);
 	PASSERT2(dent->d_sb);
 	PASSERT2(dtopd(dent));
+	verify_locked2(dent);
 	if (index >= UNIONFS_INLINE_OBJECTS)
 		PASSERT2(dtopd(dent)->udi_dentry_p);
 	ASSERT2(index >= 0);
@@ -364,7 +415,6 @@ static inline struct dentry *__dtohd_index(const struct dentry *dent, int index,
 		PASSERT2(d);
 		ASSERT2((atomic_read(&d->d_count)) > 0);
 	}
-	unlock_dpd2(dent);
 	return d;
 }
 
@@ -376,11 +426,10 @@ static inline struct dentry *__dtohd(const struct dentry *dent,
 	struct dentry *d;
 	int index;
 
-	lock_dpd2(dent);
+	verify_locked2(dent);
 	ASSERT2(dbstart(dent) >= 0);
 	index = dbstart(dent);
 	d = __dtohd_index(dent, index, file, function, line, 1);
-	unlock_dpd2(dent);
 
 	return d;
 }
@@ -394,12 +443,15 @@ static inline struct dentry *__set_dtohd_index(struct dentry *dent, int index,
 					       const char *function, int line,
 					       int docheck)
 {
-	PASSERT2(dent);
+#ifdef FIST_MALLOC_DEBUG
+	struct dentry *old;
+#endif
 
-	lock_dpd2(dent);
+	PASSERT2(dent);
 
 	PASSERT2(dent->d_sb);
 	PASSERT2(dtopd(dent));
+	verify_locked2(dent);
 	if (index >= UNIONFS_INLINE_OBJECTS)
 		PASSERT2(dtopd(dent)->udi_dentry_p);
 	ASSERT2(index >= 0);
@@ -423,12 +475,18 @@ static inline struct dentry *__set_dtohd_index(struct dentry *dent, int index,
 	}
 	if (val)
 		PASSERT2(val);
+#ifdef FIST_MALLOC_DEBUG
+	if (index < UNIONFS_INLINE_OBJECTS)
+		old = dtopd(dent)->udi_dentry_i[index];
+	else
+		old = dtopd(dent)->udi_dentry_p[index - UNIONFS_INLINE_OBJECTS];
+	record_set(dent, index, val, old, line, file);
+#endif
 	if (index < UNIONFS_INLINE_OBJECTS)
 		dtopd(dent)->udi_dentry_i[index] = val;
 	else
 		dtopd(dent)->udi_dentry_p[index - UNIONFS_INLINE_OBJECTS] = val;
 
-	unlock_dpd2(dent);
 	return val;
 }
 

@@ -14,16 +14,16 @@ source scaffold
 # initial directories
 function directories {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-d /n/lower/b0/d1
-d /n/lower/b0/d6
-d /n/lower/b1
-d /n/lower/b1/d5
-d /n/lower/b1/d1
-d /n/lower/b1/d1/d2
-d /n/lower/b1/d1/d2/d3
-d /n/lower/b1/d1/d2/d3/d4
+d $LOWER_DIR
+d $LOWER_DIR/b0
+d $LOWER_DIR/b0/d1
+d $LOWER_DIR/b0/d6
+d $LOWER_DIR/b1
+d $LOWER_DIR/b1/d5
+d $LOWER_DIR/b1/d1
+d $LOWER_DIR/b1/d1/d2
+d $LOWER_DIR/b1/d1/d2/d3
+d $LOWER_DIR/b1/d1/d2/d3/d4
 
 FILES
 }
@@ -31,11 +31,11 @@ FILES
 # initial set of files
 function beforefiles {
 cat <<FILES
-f /n/lower/b0/a
+f $LOWER_DIR/b0/a
 
-f /n/lower/b0/b
+f $LOWER_DIR/b0/b
 
-f /n/lower/b1/d1/d2/d3/d4/.wh.c
+f $LOWER_DIR/b1/d1/d2/d3/d4/.wh.c
 
 FILES
 }
@@ -43,13 +43,13 @@ FILES
 
 function afterfiles_rw {
 cat <<FILES
-f /n/lower/b0/a
-l /n/lower/b0/d
+f $LOWER_DIR/b0/a
+l $LOWER_DIR/b0/d
 
-f /n/lower/b0/b
-l /n/lower/b1/d5/e
+f $LOWER_DIR/b0/b
+l $LOWER_DIR/b1/d5/e
 
-l /n/lower/b1/d1/d2/d3/d4/c
+l $LOWER_DIR/b1/d1/d2/d3/d4/c
 
 FILES
 }
@@ -59,18 +59,18 @@ FILES
 function afterfiles_ro {
 cat <<FILES
 
-f /n/lower/b0/a
-l /n/lower/b0/d
+f $LOWER_DIR/b0/a
+l $LOWER_DIR/b0/d
 
-f /n/lower/b0/b
-d /n/lower/b0/d5
-l /n/lower/b0/d5/e
+f $LOWER_DIR/b0/b
+d $LOWER_DIR/b0/d5
+l $LOWER_DIR/b0/d5/e
 
-f /n/lower/b1/d1/d2/d3/d4/.wh.c
-d /n/lower/b0/d1/d2
-d /n/lower/b0/d1/d2/d3
-d /n/lower/b0/d1/d2/d3/d4
-l /n/lower/b0/d1/d2/d3/d4/c
+f $LOWER_DIR/b1/d1/d2/d3/d4/.wh.c
+d $LOWER_DIR/b0/d1/d2
+d $LOWER_DIR/b0/d1/d2/d3
+d $LOWER_DIR/b0/d1/d2/d3/d4
+l $LOWER_DIR/b0/d1/d2/d3/d4/c
 
 FILES
 }
@@ -81,7 +81,7 @@ FILES
 ##### simple tests
 ( directories ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1
 
 function do_link {
 	SOURCE=$1
@@ -98,24 +98,23 @@ function do_link {
 }
 
 do_link $MOUNTPOINT/a $MOUNTPOINT/d
-do_link $MOUNTPOINT/b $MOUNTPOINT/d5/e 
-do_link $MOUNTPOINT/a $MOUNTPOINT/d1/d2/d3/d4/c 
+do_link $MOUNTPOINT/b $MOUNTPOINT/d5/e
+do_link $MOUNTPOINT/a $MOUNTPOINT/d1/d2/d3/d4/c
 
 unmount_union
-( directories ; afterfiles_rw )  | check_hierarchy /n/lower
+( directories ; afterfiles_rw )  | check_hierarchy $LOWER_DIR
 
 ( directories ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1=ro
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro
 
 
-ln --symbolic $MOUNTPOINT/a $MOUNTPOINT/d  
-ln --symbolic $MOUNTPOINT/b $MOUNTPOINT/d5/e 
-ln --symbolic $MOUNTPOINT/a $MOUNTPOINT/d1/d2/d3/d4/c 
+ln --symbolic $MOUNTPOINT/a $MOUNTPOINT/d
+ln --symbolic $MOUNTPOINT/b $MOUNTPOINT/d5/e
+ln --symbolic $MOUNTPOINT/a $MOUNTPOINT/d1/d2/d3/d4/c
 
 unmount_union
-( directories ; afterfiles_ro )  | check_hierarchy /n/lower
+( directories ; afterfiles_ro )  | check_hierarchy $LOWER_DIR
 
 
-echo "OK"
-exit 0
+complete_test

@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2003-2005 Erez Zadok
- * Copyright (c) 2003-2005 David P. Quigley
- * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Stony Brook University
- * Copyright (c) 2003-2005 The Research Foundation of State University of New York
+ * Copyright (c) 2005-2005 Erez Zadok
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2005-2005 Charles P. Wright
+ * Copyright (c) 2005-2005 Stony Brook University
+ * Copyright (c) 2005-2005 The Research Foundation of State University of New York
  *
  * For specific licensing information, see the COPYING file distributed with
  * this package.
@@ -11,23 +11,23 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: unionimap.c,v 1.12 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: unionimap.c,v 1.17 2005/09/15 20:50:05 ezk Exp $
  */
 
 #include "unionimap.h"
 
 /**
  *	print_usage()
- *	Function used to print out usage information 
+ *	Function used to print out usage information
  *	when an error is encountered
  */
 void print_usage()
 {
 	fprintf(stderr,
-		"unionimap version: $Id: unionimap.c,v 1.12 2005/07/18 15:03:18 cwright Exp $\n");
+		"unionimap version: $Id: unionimap.c,v 1.17 2005/09/15 20:50:05 ezk Exp $\n");
 	fprintf(stderr, "Distributed with Unionfs " UNIONFS_VERSION "\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage: unionfsimap [-c] [-a ARG:] filename path\n");
+	fprintf(stderr, "Usage: unionimap [-c] [-a ARG:] filename path\n");
 	fprintf(stderr, " flag -c: create forward map with name filename\n");
 	fprintf(stderr,
 		" flag -a ARG: create reverse map with name filename and path and add it to forwardmap ARG\n");
@@ -68,14 +68,14 @@ int create_forwardmap(char *filename)
 		err = -EIO;
 		goto out;
 	}
-	table = malloc(sizeof(uuid_t[256]));
+	table = malloc(sizeof(struct bmapent[256]));
 	if (!table) {
 		err = -ENOMEM;
 		goto out;
 	}
-	memset(table, 0, sizeof(uuid_t[256]));
-	byteswritten = write(fwrdmap, table, sizeof(uuid_t[256]));
-	if (byteswritten < sizeof(uuid_t[256])) {
+	memset(table, 0, sizeof(struct bmapent[256]));
+	byteswritten = write(fwrdmap, table, sizeof(struct bmapent[256]));
+	if (byteswritten < sizeof(struct bmapent[256])) {
 		perror("Failed writting table: ");
 		err = -EIO;
 		goto out;
@@ -90,43 +90,111 @@ int create_forwardmap(char *filename)
 
 	return err;
 }
+int open_forwardmap(struct fmaphdr *header, char *forwardmap)
+{
+	int fwrdmap = 0, bytesread = 0, err = 0;
+	fwrdmap = open(forwardmap, O_RDWR);
+	if (fwrdmap < 0) {
+		perror("Open on Forwardmap  Failed: ");
+		err = errno;
+		goto out_error;
+	}
+	bytesread = read(fwrdmap, (void *)header, sizeof(struct fmaphdr));
+	if (bytesread < 0 || bytesread < sizeof(struct fmaphdr)) {
+		err = -EINVAL;
+		goto out_error;
+	}
+	if (header->magic != FORWARDMAP_MAGIC
+	    || header->version != FORWARDMAP_VERSION) {
+		err = -EINVAL;
+		goto out_error;
+	}
+	if (header->usedbranches == 255) {
+		fprintf(stderr,
+			"Forwardmap already contains maximum number of reverse maps");
+		err = -EINVAL;
+		goto out_error;
+	}
+	err = fwrdmap;
+	goto out;
+      out_error:
+	if (fwrdmap)
+		close(fwrdmap);
+      out:
+	return err;
+}
+int check_if_entry_exists(int fwrdmap, struct statfs stat, char *path)
+{
+	int err = 0, bytesread = 0, i;
+	struct fmaphdr header;
+	struct bmapent btable[256];
+	fsid_t fsid;
 
+	if (fwrdmap < 0) {
+		err = -EINVAL;
+		goto out;
+	}
+	err = lseek(fwrdmap, 0L, SEEK_SET);
+	if (err) {
+		goto out;
+	}
+	bytesread = read(fwrdmap, (void *)&header, sizeof(struct fmaphdr));
+	if (bytesread != sizeof(struct fmaphdr)) {
+		err = -EIO;
+		goto out;
+	}
+	bytesread = read(fwrdmap, (void *)&btable, sizeof(struct bmapent[256]));
+	if (bytesread != sizeof(struct bmapent[256])) {
+		err = -EIO;
+		goto out;
+	}
+	if (((unsigned int *)&stat.f_fsid)[0]
+	    || ((unsigned int *)&stat.f_fsid)[1]) {
+		fsid = stat.f_fsid;
+	} else {
+		err = mkfsid(path, &fsid);
+		if (err) {
+			goto out;
+		}
+	}
+	for (i = 0; i < header.usedbranches; i++) {
+		if (!memcmp(&fsid, &btable[i].fsid, sizeof(fsid_t))) {
+			err = 1;
+			break;
+		}
+	}
+      out:
+	return err;
+}
 int create_reversemap(char *filename, char *path, char *forwardmap)
 {
-	int byteswritten = 0, bytesread = 0, err = 0, seekres = 0;
+	int byteswritten = 0, err = 0, seekres = 0;
 	off_t offset = 0;
 	int fwrdmap = 0, revmap = 0;
 	struct fmaphdr fwdheader;
 	struct rmaphdr revheader;
 	struct statfs stat;
+	struct bmapent ent;
 	uuid_t uuid;
 
-	fwrdmap = open(forwardmap, O_RDWR);
+	fwrdmap = open_forwardmap(&fwdheader, forwardmap);
 	if (fwrdmap < 0) {
-		perror("Open on Forwardmap  Failed: ");
-		err = -EINVAL;
-		goto out;
-	}
-	bytesread = read(fwrdmap, (void *)&fwdheader, sizeof(struct fmaphdr));
-	if (bytesread < sizeof(struct fmaphdr)) {
-		err = -EINVAL;
-		goto out;
-	}
-	if (fwdheader.magic != FORWARDMAP_MAGIC
-	    || fwdheader.version != FORWARDMAP_VERSION) {
-		err = -EINVAL;
-		goto out;
-	}
-	if (fwdheader.usedbranches == 255) {
-		fprintf(stderr,
-			"Forwardmap already contains maximum number of reverse maps");
-		err = -EINVAL;
+		err = fwrdmap;
 		goto out;
 	}
 	memset(&stat, 0, sizeof(struct statfs));
 	err = statfs(path, &stat);
 	if (err) {
 		perror("statfs failed on path: ");
+		goto out;
+	}
+	err = check_if_entry_exists(fwrdmap, stat, path);
+	if (err) {
+		if (err > 0) {
+			err = -EINVAL;
+			fprintf(stderr,
+				"Specified fs already exists in the forward map\n");
+		}
 		goto out;
 	}
 	revmap = open(filename, O_WRONLY | O_CREAT, S_IRWXU);
@@ -159,15 +227,18 @@ int create_reversemap(char *filename, char *path, char *forwardmap)
 	}
 
 	offset =
-	    sizeof(struct fmaphdr) + (fwdheader.usedbranches * sizeof(uuid_t));
+	    sizeof(struct fmaphdr) +
+	    (fwdheader.usedbranches * sizeof(struct bmapent));
 	seekres = lseek(fwrdmap, offset, SEEK_SET);
 	if (!(seekres == offset)) {
 		err = -EIO;
 		perror("Couldent seek to offset in uuid table: ");
 	}
 	errno = 0;
-	byteswritten = write(fwrdmap, &revheader.revuuid, sizeof(uuid_t));
-	if (byteswritten < sizeof(uuid_t)) {
+	memcpy(&ent.uuid, &uuid, UUID_LEN);
+	memcpy(&ent.fsid, &revheader.fsid, sizeof(fsid_t));
+	byteswritten = write(fwrdmap, &ent, sizeof(struct bmapent));
+	if (byteswritten < sizeof(struct bmapent)) {
 		perror("Forwardmap Write failed to write uuid to table: ");
 		err = -EIO;
 		goto out;
@@ -176,7 +247,7 @@ int create_reversemap(char *filename, char *path, char *forwardmap)
 	offset = (int)&(((struct fmaphdr *)(0))->usedbranches);
 	seekres = lseek(fwrdmap, offset, SEEK_SET);
 	if (!(seekres == offset)) {
-		perror("Couldent seek to offset in uuid table: ");
+		perror("Couldent seek to usedbranch offset: ");
 		err = -EIO;
 		goto out;
 	}
@@ -186,6 +257,7 @@ int create_reversemap(char *filename, char *path, char *forwardmap)
 		err = -EIO;
 		goto out;
 	}
+
       out:
 	if (fwrdmap) {
 		close(fwrdmap);
@@ -199,7 +271,7 @@ int print_forwardmap(int file, int debug_level)
 {
 	int err = 0, bytesread = 0, i;
 	struct fmaphdr header;
-	uuid_t btable[256];
+	struct bmapent btable[256];
 	char *uuid_unparsed;
 	struct fmapent entry;
 
@@ -228,14 +300,17 @@ int print_forwardmap(int file, int debug_level)
 	fprintf(stdout, "Used Branches: %d\n", header.usedbranches);
 	uuid_unparse(header.uuid, uuid_unparsed);
 	fprintf(stdout, "UUID: %s\n", uuid_unparsed);
-	bytesread = read(file, (void *)&btable, sizeof(uuid_t[256]));
-	if (bytesread != sizeof(uuid_t[256])) {
+	bytesread = read(file, (void *)&btable, sizeof(struct bmapent[256]));
+	if (bytesread != sizeof(struct bmapent[256])) {
 		err = -EIO;
 		goto out;
 	}
 	for (i = 0; i < header.usedbranches; i++) {
 		fprintf(stdout, "Branch at index : %d\n", i);
-		uuid_unparse(btable[i], uuid_unparsed);
+		fprintf(stdout, "fsid: %04x%04x\n",
+			((unsigned int *)&btable[i].fsid)[0],
+			((unsigned int *)&btable[i].fsid)[1]);
+		uuid_unparse(btable[i].uuid, uuid_unparsed);
 		fprintf(stdout, "uuid: %s\n", uuid_unparsed);
 	}
 	if (debug_level > 1) {
@@ -351,8 +426,7 @@ int main(int argc, char **argv)
 			break;
 		case 'a':
 			aflag = 1;
-			avalue =
-			    (char *)malloc(sizeof(char) * (strlen(optarg) + 1));
+			avalue = (char *)malloc(strlen(optarg) + 1);
 			strcpy(avalue, optarg);
 			break;
 		case 'd':

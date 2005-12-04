@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: print.c,v 1.59 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: print.c,v 1.67 2005/09/18 04:02:20 jsipek Exp $
  */
 
 /* Print debugging functions */
@@ -24,10 +26,6 @@
 #include "unionfs.h"
 
 static int fist_debug_var = 0;
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#define PageUptodate(page) Page_Uptodate(page)
-#endif
 
 /* get value of debugging variable */
 int fist_get_debug_value(void)
@@ -65,8 +63,6 @@ int fist_set_debug_value(int val)
  * ...
  */
 
-static char buf[4096];
-
 void fist_dprint_internal(const char *file, const char *function, int line,
 			  int level, char *str, ...)
 {
@@ -80,8 +76,7 @@ void fist_dprint_internal(const char *file, const char *function, int line,
 
 	if (var == level || (var > 10 && (var - 10) >= level)) {
 		va_start(ap, str);
-		vsnprintf(buf, 4096, str, ap);
-		printk("%s", buf);
+		vprintk(str, ap);
 		va_end(ap);
 	}
 	return;
@@ -110,33 +105,41 @@ char *del_indent(void)
 	return indent_buf;
 }
 
-void fist_print_generic_inode(const char *str, const struct inode *inode)
+void fist_print_generic_inode3(const char *str, const char *str2,
+			       const struct inode *inode)
 {
 	if (!inode) {
-		printk("PI:%s: NULL INODE PASSED!\n", str);
+		printk("PI:%s%s: NULL INODE PASSED!\n", str, str2);
 		return;
 	}
 	if (IS_ERR(inode)) {
-		printk("PI:%s: ERROR INODE PASSED: %ld\n", str, PTR_ERR(inode));
+		printk("PI:%s%s: ERROR INODE PASSED: %ld\n", str, str2,
+		       PTR_ERR(inode));
 		return;
 	}
 	PASSERT(inode);
-	fist_dprint(8, "PI:%s: %s=%lu\n", str, "i_ino", inode->i_ino);
-	fist_dprint(8, "PI:%s: %s=%u\n", str, "i_count",
+	fist_dprint(8, "PI:%s%s: %s=%lu\n", str, str2, "i_ino", inode->i_ino);
+	fist_dprint(8, "PI:%s%s: %s=%u\n", str, str2, "i_count",
 		    atomic_read(&inode->i_count));
-	fist_dprint(8, "PI:%s: %s=%u\n", str, "i_nlink", inode->i_nlink);
-	fist_dprint(8, "PI:%s: %s=%o\n", str, "i_mode", inode->i_mode);
-	fist_dprint(8, "PI:%s: %s=%llu\n", str, "i_size", inode->i_size);
-	fist_dprint(8, "PI:%s: %s=%p\n", str, "i_op", inode->i_op);
-	fist_dprint(8, "PI:%s: %s=%p (%s)\n", str, "i_sb",
+	fist_dprint(8, "PI:%s%s: %s=%u\n", str, str2, "i_nlink",
+		    inode->i_nlink);
+	fist_dprint(8, "PI:%s%s: %s=%o\n", str, str2, "i_mode", inode->i_mode);
+	fist_dprint(8, "PI:%s%s: %s=%llu\n", str, str2, "i_size",
+		    inode->i_size);
+	fist_dprint(8, "PI:%s%s: %s=%p\n", str, str2, "i_op", inode->i_op);
+	fist_dprint(8, "PI:%s%s: %s=%p (%s)\n", str, str2, "i_sb",
 		    inode->i_sb, (inode->i_sb ? sbt(inode->i_sb) : "NullTypeSB")
 	    );
+}
+
+void fist_print_generic_inode(const char *str, const struct inode *inode)
+{
+	fist_print_generic_inode3(str, "", inode);
 }
 
 void fist_print_inode(const char *str, const struct inode *inode)
 {
 	int bindex;
-	char *newstr;
 
 	if (!inode) {
 		printk("PI:%s: NULL INODE PASSED!\n", str);
@@ -163,19 +166,19 @@ void fist_print_inode(const char *str, const struct inode *inode)
 	fist_dprint(8, "PI:%s: ibstart=%d, ibend=%d\n", str,
 		    ibstart(inode), ibend(inode));
 
-	newstr = KMALLOC(strlen(str) + 20, GFP_UNIONFS);
-	PASSERT(newstr);
+	if (ibstart(inode) == -1)
+		return;
 
 	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
 		struct inode *hidden_inode = itohi_index(inode, bindex);
+		char newstr[10];
 		if (!hidden_inode) {
 			fist_dprint(8, "PI:%s: HI#%d: NULL\n", str, bindex);
 			continue;
 		}
-		sprintf(newstr, "%s: HI#%d", str, bindex);
-		fist_print_generic_inode(newstr, hidden_inode);
+		sprintf(newstr, ": HI%d", bindex);
+		fist_print_generic_inode3(str, newstr, hidden_inode);
 	}
-	KFREE(newstr);
 }
 
 void fist_print_pte_flags(char *str, const struct page *page)
@@ -187,6 +190,38 @@ void fist_print_pte_flags(char *str, const struct page *page)
 	fist_dprint(8, "PTE-FL:%s index=0x%lx\n", str, address);
 }
 
+void fist_print_generic_file3(const char *str, const char *str2,
+			      const struct file *file)
+{
+	fist_dprint(8, "PF:%s%s: %s=0x%p\n", str, str2, "f_dentry",
+		    file->f_dentry);
+	fist_dprint(8, "PF:%s%s: name=%s\n", str, str2,
+		    file->f_dentry->d_name.name);
+	if (file->f_dentry->d_inode) {
+		PASSERT(file->f_dentry->d_inode);
+		fist_dprint(8, "PF:%s%s: %s=%lu\n", str, str2,
+			    "f_dentry->d_inode->i_ino",
+			    file->f_dentry->d_inode->i_ino);
+		fist_dprint(8, "PF:%s%s: %s=%o\n", str, str2,
+			    "f_dentry->d_inode->i_mode",
+			    file->f_dentry->d_inode->i_mode);
+	}
+	fist_dprint(8, "PF:%s%s: %s=0x%p\n", str, str2, "f_op", file->f_op);
+	fist_dprint(8, "PF:%s%s: %s=0x%x\n", str, str2, "f_mode", file->f_mode);
+	fist_dprint(8, "PF:%s%s: %s=0x%llu\n", str, str2, "f_pos", file->f_pos);
+	fist_dprint(8, "PF:%s%s: %s=%u\n", str, str2, "f_count",
+		    atomic_read(&file->f_count));
+	fist_dprint(8, "PF:%s%s: %s=0x%x\n", str, str2, "f_flags",
+		    file->f_flags);
+	fist_dprint(8, "PF:%s%s: %s=%lu\n", str, str2, "f_version",
+		    file->f_version);
+}
+
+void fist_print_generic_file(const char *str, const struct file *file)
+{
+	fist_print_generic_file3(str, "", file);
+}
+
 void fist_print_file(const char *str, const struct file *file)
 {
 	struct file *hidden_file;
@@ -195,67 +230,33 @@ void fist_print_file(const char *str, const struct file *file)
 		fist_dprint(8, "PF:%s: NULL FILE PASSED!\n", str);
 		return;
 	}
-	fist_dprint(8, "PF:%s: %s=0x%p\n", str, "f_dentry", file->f_dentry);
-	fist_dprint(8, "PF:%s: file's dentry name=%s\n", str,
-		    file->f_dentry->d_name.name);
-	if (file->f_dentry->d_inode) {
-		PASSERT(file->f_dentry->d_inode);
-		fist_dprint(8, "PF:%s: %s=%lu\n", str,
-			    "f_dentry->d_inode->i_ino",
-			    file->f_dentry->d_inode->i_ino);
-		fist_dprint(8, "PF:%s: %s=%o\n", str,
-			    "f_dentry->d_inode->i_mode",
-			    file->f_dentry->d_inode->i_mode);
-	}
-	fist_dprint(8, "PF:%s: %s=0x%p\n", str, "f_op", file->f_op);
-	fist_dprint(8, "PF:%s: %s=0x%x\n", str, "f_mode", file->f_mode);
-	fist_dprint(8, "PF:%s: %s=0x%llu\n", str, "f_pos", file->f_pos);
-	fist_dprint(8, "PF:%s: %s=%u\n", str, "f_count",
-		    atomic_read(&file->f_count));
-	fist_dprint(8, "PF:%s: %s=0x%x\n", str, "f_flags", file->f_flags);
 
-	fist_dprint(8, "PF:%s: %s=%lu\n", str, "f_version", file->f_version);
-	if (ftopd(file)) {
-		fist_dprint(8, "PF:%s: fbstart=%d, fbend=%d\n", str,
-			    fbstart(file), fbend(file));
+	PASSERT(file->f_dentry);
+	if (strcmp("unionfs", sbt(file->f_dentry->d_sb))) {
+		char msg[100];
+		snprintf(msg, sizeof(msg), "Invalid file passed to"
+			 "fist_print_file: %s\n", sbt(file->f_dentry->d_sb));
+		FISTBUG(msg);
 	}
+
+	fist_print_generic_file(str, file);
+
 	if (ftopd(file)) {
 		int bindex;
-		for (bindex = fbstart(file); bindex <= fbend(file); bindex++) {
 
+		fist_dprint(8, "PF:%s: fbstart=%d, fbend=%d\n", str,
+			    fbstart(file), fbend(file));
+
+		for (bindex = fbstart(file); bindex <= fbend(file); bindex++) {
+			char newstr[10];
 			hidden_file = ftohf_index(file, bindex);
 			if (!hidden_file) {
 				fist_dprint(8, "PF:%s: HF#%d is NULL\n", str,
 					    bindex);
 				continue;
 			}
-
-			fist_dprint(8, "PF:%s: HF#%d %s=0x%p\n", str, bindex,
-				    "f_dentry", hidden_file->f_dentry);
-			if (hidden_file->f_dentry->d_inode) {
-				PASSERT(hidden_file->f_dentry->d_inode);
-				fist_dprint(8, "PF:%s: HF#%d: %s=%lu\n", str,
-					    bindex, "f_dentry->d_inode->i_ino",
-					    hidden_file->f_dentry->d_inode->
-					    i_ino);
-				fist_dprint(8, "PF:%s: HF#%d: %s=%o\n", str,
-					    bindex, "f_dentry->d_inode->i_mode",
-					    hidden_file->f_dentry->d_inode->
-					    i_mode);
-			}
-			fist_dprint(8, "PF:%s: HF#%d: %s=0x%p\n", str, bindex,
-				    "f_op", hidden_file->f_op);
-			fist_dprint(8, "PF:%s: HF#%d: %s=0x%x\n", str, bindex,
-				    "f_mode", hidden_file->f_mode);
-			fist_dprint(8, "PF:%s: HF#%d: %s=%llu\n", str, bindex,
-				    "f_pos", hidden_file->f_pos);
-			fist_dprint(8, "PF:%s: HF#%d: %s=%u\n", str, bindex,
-				    "f_count",
-				    atomic_read(&hidden_file->f_count));
-			fist_dprint(8, "PF:%s: HF#%d: %s=0x%x\n", str, bindex,
-				    "f_flags", hidden_file->f_flags);
-			fist_dprint(8, "PF:%s: HF#%d: %s=%lu\n", str, bindex,
-				    "f_version", hidden_file->f_version);
+			sprintf(newstr, ": HF%d", bindex);
+			fist_print_generic_file3(str, newstr, hidden_file);
 		}
 	}
 }
@@ -296,7 +297,7 @@ void __fist_print_dentry(const char *str, const struct dentry *dentry,
 		FISTBUG(msg);
 	}
 
-	__fist_print_generic_dentry(str, dentry, check);
+	__fist_print_generic_dentry(str, "", dentry, check);
 
 	if (!dtopd(dentry))
 		return;
@@ -305,12 +306,9 @@ void __fist_print_dentry(const char *str, const struct dentry *dentry,
 		    str, dbstart(dentry), dbend(dentry), dbopaque(dentry));
 	if (dbstart(dentry) != -1) {
 		int bindex;
-		char *newstr;
+		char newstr[10];
 		struct dentry *hidden_dentry;
 		PASSERT(dtopd(dentry));
-
-		newstr = KMALLOC(strlen(str) + 20, GFP_UNIONFS);
-		PASSERT(newstr);
 
 		for (bindex = dbstart(dentry); bindex <= dbend(dentry);
 		     bindex++) {
@@ -320,10 +318,9 @@ void __fist_print_dentry(const char *str, const struct dentry *dentry,
 					    bindex);
 				continue;
 			}
-			sprintf(newstr, "%s: HD#%d", str, bindex);
-			fist_print_generic_dentry(newstr, hidden_dentry);
+			sprintf(newstr, ": HD%d", bindex);
+			fist_print_generic_dentry3(str, newstr, hidden_dentry);
 		}
-		KFREE(newstr);
 	}
 }
 void fist_print_dentry(const char *str, const struct dentry *dentry)
@@ -331,66 +328,51 @@ void fist_print_dentry(const char *str, const struct dentry *dentry)
 	__fist_print_dentry(str, dentry, 1);
 }
 
-void __fist_print_generic_dentry(const char *str, const struct dentry *dentry,
-				 int check)
+void __fist_print_generic_dentry(const char *str, const char *str2, const
+				 struct dentry *dentry, int check)
 {
 	if (!dentry) {
-		fist_dprint(8, "PD:%s: NULL DENTRY PASSED!\n", str);
+		fist_dprint(8, "PD:%s%s: NULL DENTRY PASSED!\n", str, str2);
 		return;
 	}
 	if (IS_ERR(dentry)) {
-		fist_dprint(8, "PD:%s: ERROR DENTRY (%ld)!\n", str,
+		fist_dprint(8, "PD:%s%s: ERROR DENTRY (%ld)!\n", str, str2,
 			    PTR_ERR(dentry));
 		return;
 	}
 	PASSERT(dentry);
 
-	fist_dprint(8, "PD:%s: dentry = %p\n", str, dentry);
-	fist_dprint(8, "PD:%s: %s=%d\n", str, "d_count",
+	fist_dprint(8, "PD:%s%s: dentry = %p\n", str, str2, dentry);
+	fist_dprint(8, "PD:%s%s: %s=%d\n", str, str2, "d_count",
 		    atomic_read(&dentry->d_count));
-	fist_dprint(8, "PD:%s: %s=%x\n", str, "d_flags", (int)dentry->d_flags);
-	fist_dprint(8, "PD:%s: %s=%p (%s)\n", str, "d_inode",
-		    dentry->d_inode,
-		    (dentry->d_inode ? sbt(dentry->d_inode->i_sb) : "nil"));
-	fist_dprint(8, "PD:%s: %s=%p (%s)\n", str, "d_parent",
+	fist_dprint(8, "PD:%s%s: %s=%x\n", str, str2, "d_flags",
+		    (int)dentry->d_flags);
+	fist_dprint(8, "PD:%s%s: %s=\"%s\" (len = %d)\n", str, str2,
+		    "d_name.name", dentry->d_name.name, dentry->d_name.len);
+	fist_dprint(8, "PD:%s%s: %s=%p (%s)\n", str, str2, "d_sb", dentry->d_sb,
+		    sbt(dentry->d_sb));
+	fist_dprint(8, "PD:%s%s: %s=%p\n", str, str2, "d_inode",
+		    dentry->d_inode);
+	if (dentry->d_inode) {
+		fist_dprint(8, "PD:%s%s: %s=%ld (%s)\n", str, str2,
+			    "d_inode->i_ino", dentry->d_inode->i_ino,
+			    sbt(dentry->d_inode->i_sb));
+		fist_dprint(8, "PD:%s%s: dentry->d_inode->i_mode: %c%o\n", str,
+			    str2, mode_to_type(dentry->d_inode->i_mode),
+			    dentry->d_inode->i_mode);
+	}
+	fist_dprint(8, "PD:%s%s: %s=%p (%s)\n", str, str2, "d_parent",
 		    dentry->d_parent,
 		    (dentry->d_parent ? sbt(dentry->d_parent->d_sb) : "nil"));
-	fist_dprint(8, "PD:%s: %s=\"%s\"\n", str, "d_parent->d_name.name",
-		    dentry->d_parent->d_name.name);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_mounts", (int) dentry->d_mounts);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_covers", (int) dentry->d_covers);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_hash", (int) & dentry->d_hash);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_lru", (int) & dentry->d_lru);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_child", (int) & dentry->d_child);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_subdirs", (int) & dentry->d_subdirs);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_alias", (int) & dentry->d_alias);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_name", (int) & dentry->d_name);
-	//
-	fist_dprint(8, "PD:%s: %s=\"%s\"\n", str, "d_name.name",
-		    dentry->d_name.name);
-	fist_dprint(8, "PD:%s: %s=%d\n", str, "d_name.len",
-		    (int)dentry->d_name.len);
-	if (dentry->d_inode)
-		fist_dprint(8, "PD:%s: dentry->d_inode->i_mode: %c%o\n", str,
-			    mode_to_type(dentry->d_inode->i_mode),
-			    dentry->d_inode->i_mode);
-	//    fist_dprint(8, "PD:%s: %s=%x\n", str, "d_name.hash", (int) dentry->d_name.hash);
-	//    fist_dprint(8, "PD:%s: %s=%lu\n", str, "d_time", dentry->d_time);
-	fist_dprint(8, "PD:%s: %s=%p\n", str, "d_op", dentry->d_op);
-	fist_dprint(8, "PD:%s: %s=%p (%s)\n", str, "d_sb",
-		    dentry->d_sb, sbt(dentry->d_sb));
-	//    fist_dprint(8, "PD:%s: %s=%lu\n", str, "d_reftime", dentry->d_reftime);
-	fist_dprint(8, "PD:%s: %s=%p\n", str, "d_fsdata", dentry->d_fsdata);
-	// don't do this, it's not zero-terminated!!!
-	//    fist_dprint(8, "PD:%s: %s=\"%s\"\n", str, "d_iname", dentry->d_iname);
-	//    fist_dprint(8, "\n");
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	fist_dprint(8, "PD:%s:%s=%d\n", str, "list_empty(d_hash)",
-		    list_empty(&((struct dentry *)dentry)->d_hash));
-#else
-	fist_dprint(8, "PD:%s: %s=%d\n", str, "hlist_unhashed(d_hash)",
+	fist_dprint(8, "PD:%s%s: %s=\"%s\"\n", str, str2,
+		    "d_parent->d_name.name", dentry->d_parent->d_name.name);
+	fist_dprint(8, "PD:%s%s: %s=%d\n", str, str2, "d_parent->d_count",
+		    atomic_read(&dentry->d_parent->d_count));
+	fist_dprint(8, "PD:%s%s: %s=%p\n", str, str2, "d_op", dentry->d_op);
+	fist_dprint(8, "PD:%s%s: %s=%p\n", str, str2, "d_fsdata",
+		    dentry->d_fsdata);
+	fist_dprint(8, "PD:%s%s: %s=%d\n", str, str2, "hlist_unhashed(d_hash)",
 		    hlist_unhashed(&((struct dentry *)dentry)->d_hash));
-#endif
 	/* After we have printed it, we can assert something about it. */
 	if (check)
 		ASSERT(atomic_read(&dentry->d_count) > 0);
@@ -398,7 +380,12 @@ void __fist_print_generic_dentry(const char *str, const struct dentry *dentry,
 
 void fist_print_generic_dentry(const char *str, const struct dentry *dentry)
 {
-	__fist_print_generic_dentry(str, dentry, 1);
+	__fist_print_generic_dentry(str, "", dentry, 1);
+}
+void fist_print_generic_dentry3(const char *str, const char *str2,
+				const struct dentry *dentry)
+{
+	__fist_print_generic_dentry(str, str2, dentry, 1);
 }
 
 void fist_checkinode(const struct inode *inode, const char *msg)

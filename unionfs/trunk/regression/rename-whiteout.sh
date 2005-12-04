@@ -40,160 +40,160 @@ source scaffold
 
 function files {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-d /n/lower/b1
-d /n/lower/b2
+d $LOWER_DIR
+d $LOWER_DIR/b0
+d $LOWER_DIR/b1
+d $LOWER_DIR/b2
 FILES
 }
 
 function beforefiles {
 cat <<FILES
-s /n/lower/b2/rA.S
+s $LOWER_DIR/b2/rA.S
 
-s /n/lower/b1/rB.S
-s /n/lower/b2/rB.S
+s $LOWER_DIR/b1/rB.S
+s $LOWER_DIR/b2/rB.S
 
-s /n/lower/b0/rC.S
-s /n/lower/b1/rC.S
+s $LOWER_DIR/b0/rC.S
+s $LOWER_DIR/b1/rC.S
 
-s /n/lower/b0/rD.S
-s /n/lower/b1/rD.S
-f /n/lower/b2/rD.D
+s $LOWER_DIR/b0/rD.S
+s $LOWER_DIR/b1/rD.S
+f $LOWER_DIR/b2/rD.D
 
-s /n/lower/b1/rE.S
-s /n/lower/b2/rE.S
-f /n/lower/b2/rE.D
+s $LOWER_DIR/b1/rE.S
+s $LOWER_DIR/b2/rE.S
+f $LOWER_DIR/b2/rE.D
 
-s /n/lower/b2/rF.S
-f /n/lower/b1/rF.D
-f /n/lower/b2/rF.D
+s $LOWER_DIR/b2/rF.S
+f $LOWER_DIR/b1/rF.D
+f $LOWER_DIR/b2/rF.D
 
-s /n/lower/b2/rG.S
-f /n/lower/b0/rG.D
-f /n/lower/b2/rG.D
+s $LOWER_DIR/b2/rG.S
+f $LOWER_DIR/b0/rG.D
+f $LOWER_DIR/b2/rG.D
 
-s /n/lower/b0/rH.S
-s /n/lower/b1/rH.S
-s /n/lower/b2/rH.S
-f /n/lower/b0/rH.D
-f /n/lower/b1/rH.D
-f /n/lower/b2/rH.D
+s $LOWER_DIR/b0/rH.S
+s $LOWER_DIR/b1/rH.S
+s $LOWER_DIR/b2/rH.S
+f $LOWER_DIR/b0/rH.D
+f $LOWER_DIR/b1/rH.D
+f $LOWER_DIR/b2/rH.D
 
-fs /n/lower/b0/rI.S
-fsi /n/lower/b1/rI.S
-fs /n/lower/b2/rI.S
-f /n/lower/b0/rI.D
-f /n/lower/b1/rI.D
-f /n/lower/b2/rI.D
+fs $LOWER_DIR/b0/rI.S
+fsi $LOWER_DIR/b1/rI.S
+fs $LOWER_DIR/b2/rI.S
+f $LOWER_DIR/b0/rI.D
+f $LOWER_DIR/b1/rI.D
+f $LOWER_DIR/b2/rI.D
 FILES
 }
 
 function afterfiles_rw {
 cat <<FILES
-f /n/lower/b2/rA.D
+f $LOWER_DIR/b2/rA.D
 
-f /n/lower/b1/rB.D
-f /n/lower/b1/.wh.rB.S
-f /n/lower/b2/rB.S
+f $LOWER_DIR/b1/rB.D
+f $LOWER_DIR/b1/.wh.rB.S
+f $LOWER_DIR/b2/rB.S
 
-f /n/lower/b0/.wh.rC.S
-f /n/lower/b0/rC.D
-f /n/lower/b1/rC.S
+f $LOWER_DIR/b0/.wh.rC.S
+f $LOWER_DIR/b0/rC.D
+f $LOWER_DIR/b1/rC.S
 
-f /n/lower/b0/.wh.rD.S
-f /n/lower/b0/rD.D
-f /n/lower/b1/rD.S
-f /n/lower/b2/rD.D
+f $LOWER_DIR/b0/.wh.rD.S
+f $LOWER_DIR/b0/rD.D
+f $LOWER_DIR/b1/rD.S
+f $LOWER_DIR/b2/rD.D
 
-f /n/lower/b1/rE.D
-f /n/lower/b1/.wh.rE.S
-f /n/lower/b2/rE.S
-f /n/lower/b2/rE.D
+f $LOWER_DIR/b1/rE.D
+f $LOWER_DIR/b1/.wh.rE.S
+f $LOWER_DIR/b2/rE.S
+f $LOWER_DIR/b2/rE.D
 
-f /n/lower/b2/rF.D
+f $LOWER_DIR/b2/rF.D
 
-f /n/lower/b2/rG.D
+f $LOWER_DIR/b2/rG.D
 
-f /n/lower/b0/.wh.rH.S
-f /n/lower/b1/rH.S
-f /n/lower/b2/rH.S
-f /n/lower/b0/rH.D
-f /n/lower/b1/rH.D
-f /n/lower/b2/rH.D
+f $LOWER_DIR/b0/.wh.rH.S
+f $LOWER_DIR/b1/rH.S
+f $LOWER_DIR/b2/rH.S
+f $LOWER_DIR/b0/rH.D
+f $LOWER_DIR/b1/rH.D
+f $LOWER_DIR/b2/rH.D
 
-f /n/lower/b0/.wh.rI.S
-f /n/lower/b1/rI.S
-f /n/lower/b2/rI.S
-f /n/lower/b0/rI.D
-f /n/lower/b1/rI.D
-f /n/lower/b2/rI.D
+f $LOWER_DIR/b0/.wh.rI.S
+f $LOWER_DIR/b1/rI.S
+f $LOWER_DIR/b2/rI.S
+f $LOWER_DIR/b0/rI.D
+f $LOWER_DIR/b1/rI.D
+f $LOWER_DIR/b2/rI.D
 FILES
 }
 
 function afterfiles_ro {
 cat <<FILES
-f /n/lower/b0/.wh.rA.S
-f /n/lower/b0/rA.D
-f /n/lower/b2/rA.S
+f $LOWER_DIR/b0/.wh.rA.S
+f $LOWER_DIR/b0/rA.D
+f $LOWER_DIR/b2/rA.S
 
-f /n/lower/b0/.wh.rB.S
-f /n/lower/b0/rB.D
-f /n/lower/b1/rB.S
-f /n/lower/b2/rB.S
+f $LOWER_DIR/b0/.wh.rB.S
+f $LOWER_DIR/b0/rB.D
+f $LOWER_DIR/b1/rB.S
+f $LOWER_DIR/b2/rB.S
 
-f /n/lower/b0/rC.D
-f /n/lower/b0/.wh.rC.S
-f /n/lower/b1/rC.S
+f $LOWER_DIR/b0/rC.D
+f $LOWER_DIR/b0/.wh.rC.S
+f $LOWER_DIR/b1/rC.S
 
-f /n/lower/b0/rD.D
-f /n/lower/b0/.wh.rD.S
-f /n/lower/b1/rD.S
-f /n/lower/b2/rD.D
+f $LOWER_DIR/b0/rD.D
+f $LOWER_DIR/b0/.wh.rD.S
+f $LOWER_DIR/b1/rD.S
+f $LOWER_DIR/b2/rD.D
 
-f /n/lower/b0/rE.D
-f /n/lower/b0/.wh.rE.S
-f /n/lower/b1/rE.S
-f /n/lower/b2/rE.S
-f /n/lower/b2/rE.D
+f $LOWER_DIR/b0/rE.D
+f $LOWER_DIR/b0/.wh.rE.S
+f $LOWER_DIR/b1/rE.S
+f $LOWER_DIR/b2/rE.S
+f $LOWER_DIR/b2/rE.D
 
-f /n/lower/b0/.wh.rF.S
-f /n/lower/b0/rF.D
-f /n/lower/b2/rF.S
-f /n/lower/b1/rF.D
-f /n/lower/b2/rF.D
+f $LOWER_DIR/b0/.wh.rF.S
+f $LOWER_DIR/b0/rF.D
+f $LOWER_DIR/b2/rF.S
+f $LOWER_DIR/b1/rF.D
+f $LOWER_DIR/b2/rF.D
 
-f /n/lower/b0/.wh.rG.S
-f /n/lower/b2/rG.S
-f /n/lower/b0/rG.D
-f /n/lower/b2/rG.D
+f $LOWER_DIR/b0/.wh.rG.S
+f $LOWER_DIR/b2/rG.S
+f $LOWER_DIR/b0/rG.D
+f $LOWER_DIR/b2/rG.D
 
-f /n/lower/b0/.wh.rH.S
-f /n/lower/b1/rH.S
-f /n/lower/b2/rH.S
-f /n/lower/b0/rH.D
-f /n/lower/b1/rH.D
-f /n/lower/b2/rH.D
+f $LOWER_DIR/b0/.wh.rH.S
+f $LOWER_DIR/b1/rH.S
+f $LOWER_DIR/b2/rH.S
+f $LOWER_DIR/b0/rH.D
+f $LOWER_DIR/b1/rH.D
+f $LOWER_DIR/b2/rH.D
 
-f /n/lower/b0/.wh.rI.S
-f /n/lower/b1/rI.S
-f /n/lower/b2/rI.S
-f /n/lower/b0/rI.D
-f /n/lower/b1/rI.D
-f /n/lower/b2/rI.D
+f $LOWER_DIR/b0/.wh.rI.S
+f $LOWER_DIR/b1/rI.S
+f $LOWER_DIR/b2/rI.S
+f $LOWER_DIR/b0/rI.D
+f $LOWER_DIR/b1/rI.D
+f $LOWER_DIR/b2/rI.D
 FILES
 }
 
 function beforefiles_fail {
 cat <<FILES
-fi /n/lower/b2/rJ.S
+fi $LOWER_DIR/b2/rJ.S
 FILES
 }
 
- 
+
 function afterfiles_fail {
 cat <<FILES
-f /n/lower/b2/rJ.S
+f $LOWER_DIR/b2/rJ.S
 FILES
 }
 
@@ -201,7 +201,7 @@ FILES
 for STATE in rw ro
 do
 	( files ; beforefiles) | create_hierarchy
-	mount_union "delete=whiteout" /n/lower/b0 /n/lower/b1=$STATE /n/lower/b2=$STATE
+	mount_union "delete=whiteout" $LOWER_DIR/b0 $LOWER_DIR/b1=$STATE $LOWER_DIR/b2=$STATE
 	for X in A B C D E F G H I
 	do
 		mv -f "$MOUNTPOINT/r$X.S" "$MOUNTPOINT/r$X.D"
@@ -211,24 +211,24 @@ do
 	done
 	unmount_union
 
-	( files ; afterfiles_$STATE )  | check_hierarchy /n/lower
-	
+	( files ; afterfiles_$STATE )  | check_hierarchy $LOWER_DIR
+
 
 	echo -n "[$STATE] "
 
 done
 
-( files ; beforefiles_fail) | create_hierarchy
-mount_union "delete=whiteout" /n/lower/b? 
-for X in J
-do
-	shouldfail mv -f "$MOUNTPOINT/r$X.S" "$MOUNTPOINT/r$X.D" 
-	checktype "$MOUNTPOINT/r$X.S" 'f'
-	checktype "$MOUNTPOINT/r$X.D" '-'
-done
-unmount_union
-( files ; afterfiles_fail )  | check_hierarchy /n/lower
+if havechattr $LOWER_DIR ; then
+	( files ; beforefiles_fail) | create_hierarchy
+	mount_union "delete=whiteout" $LOWER_DIR/b?
+	for X in J
+	do
+		shouldfail mv -f "$MOUNTPOINT/r$X.S" "$MOUNTPOINT/r$X.D"
+		checktype "$MOUNTPOINT/r$X.S" 'f'
+		checktype "$MOUNTPOINT/r$X.D" '-'
+	done
+	unmount_union
+	( files ; afterfiles_fail )  | check_hierarchy $LOWER_DIR
+fi
 
-
-echo "OK"
-exit 0
+complete_test

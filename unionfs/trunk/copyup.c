@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,16 +15,16 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: copyup.c,v 1.32 2005/07/18 15:03:17 cwright Exp $
+ *  $Id: copyup.c,v 1.46 2005/09/18 04:59:46 dquigley Exp $
  */
 
 #include "fist.h"
 #include "unionfs.h"
 
-#if defined(UNIONFS_XATTR) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,20))
+#if defined(UNIONFS_XATTR)
 /*Not Working Yet*/
-static int unionfs_copyup_xattrs(struct dentry *old_hidden_dentry,
-				 struct dentry *new_hidden_dentry)
+static int copyup_xattrs(struct dentry *old_hidden_dentry,
+			 struct dentry *new_hidden_dentry)
 {
 	int err = 0;
 	ssize_t list_size = -1;
@@ -71,12 +73,10 @@ static int unionfs_copyup_xattrs(struct dentry *old_hidden_dentry,
 	while (*name_list) {
 		ssize_t size;
 		down(&old_hidden_dentry->d_inode->i_sem);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 		err = security_inode_getxattr(old_hidden_dentry, name_list);
 		if (err)
 			size = err;
 		else
-#endif
 			size =
 			    old_hidden_dentry->d_inode->i_op->
 			    getxattr(old_hidden_dentry, name_list, attr_value,
@@ -94,25 +94,21 @@ static int unionfs_copyup_xattrs(struct dentry *old_hidden_dentry,
 
 		down(&new_hidden_dentry->d_inode->i_sem);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 		err =
 		    security_inode_setxattr(old_hidden_dentry, name_list,
 					    attr_value, size, 0);
 
 		if (!err) {
-#endif
 			err =
 			    new_hidden_dentry->d_inode->i_op->
 			    setxattr(new_hidden_dentry, name_list, attr_value,
 				     size, 0);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 			if (!err)
 				security_inode_post_setxattr(old_hidden_dentry,
 							     name_list,
 							     attr_value, size,
 							     0);
 		}
-#endif
 		up(&new_hidden_dentry->d_inode->i_sem);
 
 		if (err < 0)
@@ -134,9 +130,9 @@ static int unionfs_copyup_xattrs(struct dentry *old_hidden_dentry,
 #endif
 
 /* Determine the mode based on the copyup flags, and the existing dentry. */
-static int unionfs_copyup_permissions(struct super_block *sb,
-				      struct dentry *old_hidden_dentry,
-				      struct dentry *new_hidden_dentry)
+static int copyup_permissions(struct super_block *sb,
+			      struct dentry *old_hidden_dentry,
+			      struct dentry *new_hidden_dentry)
 {
 	struct iattr newattrs;
 	int err;
@@ -181,20 +177,18 @@ static int unionfs_copyup_permissions(struct super_block *sb,
 	return err;
 }
 
-int unionfs_copyup_dentry_len(struct inode *dir, struct dentry *dentry,
-			      int bstart, int new_bindex,
-			      struct file **copyup_file, int len)
+int copyup_dentry(struct inode *dir, struct dentry *dentry,
+		  int bstart, int new_bindex,
+		  struct file **copyup_file, int len)
 {
-	return unionfs_copyup_named_dentry_len(dir, dentry, bstart, new_bindex,
-					       (char *)dentry->d_name.name,
-					       dentry->d_name.len, copyup_file,
-					       len);
+	return copyup_named_dentry(dir, dentry, bstart, new_bindex,
+				   (char *)dentry->d_name.name,
+				   dentry->d_name.len, copyup_file, len);
 }
 
-int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
-				    int bstart, int new_bindex, char *name,
-				    int namelen, struct file **copyup_file,
-				    int len)
+int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
+			int bstart, int new_bindex, char *name,
+			int namelen, struct file **copyup_file, int len)
 {
 	struct dentry *new_hidden_dentry;
 	struct dentry *old_hidden_dentry = NULL;
@@ -218,10 +212,9 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 	gid_t saved_gid = current->fsgid;
 
 	print_entry_location();
+	verify_locked(dentry);
+	fist_print_dentry("IN: copyup_named_dentry", dentry);
 
-	fist_print_dentry("IN: unionfs_copyup_dentry_len: ", dentry);
-
-	dget(dentry);
 	old_bindex = bstart;
 	old_bstart = dbstart(dentry);
 	old_bend = dbend(dentry);
@@ -237,21 +230,22 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 		goto out;
 
 	/* Create the directory structure above this dentry. */
-	new_hidden_dentry =
-	    unionfs_create_named_dirs(dir, dentry, name, namelen, new_bindex);
+	new_hidden_dentry = create_parents_named(dir, dentry, name, new_bindex);
 	PASSERT(new_hidden_dentry);
 	if (IS_ERR(new_hidden_dentry)) {
 		err = PTR_ERR(new_hidden_dentry);
 		goto out;
 	}
 
+	fist_print_generic_dentry("Copyup Object", new_hidden_dentry);
+
 	/* Now we actually create the object. */
 	old_hidden_dentry = dtohd_index(dentry, old_bindex);
 	PASSERT(old_hidden_dentry);
 	PASSERT(old_hidden_dentry->d_inode);
-	dget(old_hidden_dentry);
+	DGET(old_hidden_dentry);
 
-	/* For symlinks only, we have to read the link before we lock the directory. */
+	/* For symlinks, we must read the link before we lock the directory. */
 	if (S_ISLNK(old_hidden_dentry->d_inode->i_mode)) {
 		PASSERT(old_hidden_dentry->d_inode->i_op);
 		PASSERT(old_hidden_dentry->d_inode->i_op->readlink);
@@ -268,9 +262,8 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 		    old_hidden_dentry->d_inode->i_op->
 		    readlink(old_hidden_dentry, symbuf, PATH_MAX);
 		set_fs(oldfs);
-		if (err < 0) {
+		if (err < 0)
 			goto copyup_readlink_err;
-		}
 		symbuf[err] = '\0';
 	}
 
@@ -279,47 +272,22 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 	current->fsuid = new_hidden_parent_dentry->d_inode->i_uid;
 	current->fsgid = new_hidden_parent_dentry->d_inode->i_gid;
 	if (S_ISDIR(old_hidden_dentry->d_inode->i_mode)) {
-		err =
-		    vfs_mkdir(new_hidden_parent_dentry->d_inode,
-			      new_hidden_dentry, S_IRWXU);
+		err = vfs_mkdir(new_hidden_parent_dentry->d_inode,
+				new_hidden_dentry, S_IRWXU);
 	} else if (S_ISLNK(old_hidden_dentry->d_inode->i_mode)) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-		err =
-		    vfs_symlink(new_hidden_parent_dentry->d_inode,
-				new_hidden_dentry, symbuf);
-#else
-		err =
-		    vfs_symlink(new_hidden_parent_dentry->d_inode,
-				new_hidden_dentry, symbuf, S_IRWXU);
-#endif
+		err = vfs_symlink(new_hidden_parent_dentry->d_inode,
+				  new_hidden_dentry, symbuf, S_IRWXU);
 	} else if (S_ISBLK(old_hidden_dentry->d_inode->i_mode)
 		   || S_ISCHR(old_hidden_dentry->d_inode->i_mode)
 		   || S_ISFIFO(old_hidden_dentry->d_inode->i_mode)
 		   || S_ISSOCK(old_hidden_dentry->d_inode->i_mode)) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-		err =
-		    vfs_mknod(new_hidden_parent_dentry->d_inode,
-			      new_hidden_dentry,
-			      old_hidden_dentry->d_inode->i_mode,
-			      kdev_t_to_nr(old_hidden_dentry->d_inode->i_rdev));
-#else
-		err =
-		    vfs_mknod(new_hidden_parent_dentry->d_inode,
-			      new_hidden_dentry,
-			      old_hidden_dentry->d_inode->i_mode,
-			      old_hidden_dentry->d_inode->i_rdev);
-#endif
+		err = vfs_mknod(new_hidden_parent_dentry->d_inode,
+				new_hidden_dentry,
+				old_hidden_dentry->d_inode->i_mode,
+				old_hidden_dentry->d_inode->i_rdev);
 	} else if (S_ISREG(old_hidden_dentry->d_inode->i_mode)) {
-		//DQ: number of params changes in 2.6
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-		err =
-		    vfs_create(new_hidden_parent_dentry->d_inode,
-			       new_hidden_dentry, S_IRWXU);
-#else
-		err =
-		    vfs_create(new_hidden_parent_dentry->d_inode,
-			       new_hidden_dentry, S_IRWXU, NULL);
-#endif
+		err = vfs_create(new_hidden_parent_dentry->d_inode,
+				 new_hidden_dentry, S_IRWXU, NULL);
 	} else {
 		char diemsg[100];
 		snprintf(diemsg, sizeof(diemsg), "Unknown inode type %d\n",
@@ -330,12 +298,10 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 	current->fsgid = saved_gid;
 	unlock_dir(new_hidden_parent_dentry);
       copyup_readlink_err:
-	if (symbuf) {
-		KFREE(symbuf);
-	}
+	KFREE(symbuf);
 	if (err) {
 		/* get rid of the hidden dentry and all its traces */
-		dput(new_hidden_dentry);
+		DPUT(new_hidden_dentry);
 		set_dtohd_index(dentry, new_bindex, NULL);
 		set_dbstart(dentry, old_bstart);
 		set_dbend(dentry, old_bend);
@@ -348,7 +314,7 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 		branchget(sb, old_bindex);
 		got_branch_input = old_bindex;
 		input_file =
-		    dentry_open(old_hidden_dentry,
+		    DENTRY_OPEN(old_hidden_dentry,
 				stohiddenmnt_index(sb, old_bindex), O_RDONLY);
 		if (IS_ERR(input_file)) {
 			err = PTR_ERR(input_file);
@@ -360,12 +326,12 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 		}
 
 		/* copy the new file */
-		dget(new_hidden_dentry);
+		DGET(new_hidden_dentry);
 		mntget(stohiddenmnt_index(sb, new_bindex));
 		branchget(sb, new_bindex);
 		got_branch_output = new_bindex;
 		output_file =
-		    dentry_open(new_hidden_dentry,
+		    DENTRY_OPEN(new_hidden_dentry,
 				stohiddenmnt_index(sb, new_bindex), O_WRONLY);
 		if (IS_ERR(output_file)) {
 			err = PTR_ERR(output_file);
@@ -391,11 +357,10 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 
 		set_fs(KERNEL_DS);
 		do {
-			if (len >= PAGE_SIZE) {
+			if (len >= PAGE_SIZE)
 				size = PAGE_SIZE;
-			} else if ((len < PAGE_SIZE) && (len > 0)) {
+			else if ((len < PAGE_SIZE) && (len > 0))
 				size = len;
-			}
 
 			len -= PAGE_SIZE;
 
@@ -422,19 +387,16 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 
 	/* Set permissions. */
 	if ((err =
-	     unionfs_copyup_permissions(sb, old_hidden_dentry,
-					new_hidden_dentry))) {
+	     copyup_permissions(sb, old_hidden_dentry, new_hidden_dentry)))
 		goto out;
-	}
 	/* Selinux uses extended attributes for permissions. */
-#if defined(UNIONFS_XATTR) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,20))
-	if ((err = unionfs_copyup_xattrs(old_hidden_dentry, new_hidden_dentry))) {
+#if defined(UNIONFS_XATTR)
+	if ((err = copyup_xattrs(old_hidden_dentry, new_hidden_dentry)))
 		goto out;
-	}
 #endif
 
 	/* do not allow files getting deleted to be reinterposed */
-	if (!d_unhashed(dentry))
+	if (!d_deleted(dentry))
 		unionfs_reinterpose(dentry);
 
       out:
@@ -444,15 +406,12 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 		/* since input file was not opened, we need to explicitly
 		 * dput the old_hidden_dentry
 		 */
-		if (old_hidden_dentry) {
-			dput(old_hidden_dentry);
-		}
+		DPUT(old_hidden_dentry);
 	}
 
 	/* in any case, we have to branchput */
-	if (got_branch_input >= 0) {
+	if (got_branch_input >= 0)
 		branchput(sb, got_branch_input);
-	}
 
 	if (output_file) {
 		if (copyup_file && !err) {
@@ -463,30 +422,27 @@ int unionfs_copyup_named_dentry_len(struct inode *dir, struct dentry *dentry,
 		}
 	}
 
-	dput(dentry);
-	fist_print_dentry("OUT: unionfs_copyup_dentry_len: ", dentry);
-	fist_print_inode("OUT: unionfs_copyup_dentry_len: ", dentry->d_inode);
+	fist_print_dentry("OUT: copyup_dentry", dentry);
+	fist_print_inode("OUT: copyup_dentry", dentry->d_inode);
 
 	print_exit_status(err);
 	return err;
 }
 
 /* This function creates a copy of a file represented by 'file' which currently
- * resides in branch 'bstart' to branch 'new_bindex. The copy will be named "name".
- */
-int unionfs_copyup_named_file(struct inode *dir, struct file *file, char *name,
-			      int namelen, int bstart, int new_bindex, int len)
+ * resides in branch 'bstart' to branch 'new_bindex.  The copy will be named
+ * "name".  */
+int copyup_named_file(struct inode *dir, struct file *file, char *name,
+		      int bstart, int new_bindex, int len)
 {
-
 	int err = 0;
 	struct file *output_file = NULL;
 
 	print_entry_location();
 
-	err =
-	    unionfs_copyup_named_dentry_len(dir, file->f_dentry, bstart,
-					    new_bindex, name, namelen,
-					    &output_file, len);
+	err = copyup_named_dentry(dir, file->f_dentry, bstart,
+				  new_bindex, name, strlen(name), &output_file,
+				  len);
 	if (!err) {
 		fbstart(file) = new_bindex;
 		set_ftohf_index(file, new_bindex, output_file);
@@ -499,17 +455,16 @@ int unionfs_copyup_named_file(struct inode *dir, struct file *file, char *name,
 /* This function creates a copy of a file represented by 'file' which currently
  * resides in branch 'bstart' to branch 'new_bindex.
  */
-int unionfs_copyup_file(struct inode *dir, struct file *file, int bstart,
-			int new_bindex, int len)
+int copyup_file(struct inode *dir, struct file *file, int bstart,
+		int new_bindex, int len)
 {
 	int err = 0;
 	struct file *output_file = NULL;
 
 	print_entry_location();
 
-	err =
-	    unionfs_copyup_dentry_len(dir, file->f_dentry, bstart, new_bindex,
-				      &output_file, len);
+	err = copyup_dentry(dir, file->f_dentry, bstart, new_bindex,
+			    &output_file, len);
 	if (!err) {
 		fbstart(file) = new_bindex;
 		set_ftohf_index(file, new_bindex, output_file);
@@ -523,27 +478,23 @@ int unionfs_copyup_file(struct inode *dir, struct file *file, int bstart,
  * in the bindex branch. Can create directory structure recursively to the right
  * also.
  */
-struct dentry *unionfs_create_dirs(struct inode *dir, struct dentry *dentry,
-				   int bindex)
+struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
+			      int bindex)
 {
 	struct dentry *hidden_dentry;
 
 	print_entry_location();
 	hidden_dentry =
-	    unionfs_create_named_dirs(dir, dentry, (char *)dentry->d_name.name,
-				      dentry->d_name.len, bindex);
+	    create_parents_named(dir, dentry, dentry->d_name.name, bindex);
 	print_exit_location();
 
 	return (hidden_dentry);
 }
 
 /* This function replicates the directory structure upto given dentry
- * in the bindex branch. Can create directory structure recursively to the right
- * also.
- */
-struct dentry *unionfs_create_named_dirs(struct inode *dir,
-					 struct dentry *dentry, char *name,
-					 int namelen, int bindex)
+ * in the bindex branch.  */
+struct dentry *create_parents_named(struct inode *dir, struct dentry *dentry,
+				    const char *name, int bindex)
 {
 	int err;
 	struct dentry *child_dentry;
@@ -560,17 +511,15 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 
 	int old_bstart;
 	int old_bend;
-	struct dentry **path;
+	struct dentry **path = NULL;
 	struct dentry **tmp_path;
 
 	print_entry_location();
 
+	verify_locked(dentry);
+
 	/* There is no sense allocating any less than the minimum. */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 	kmalloc_size = malloc_sizes[0].cs_size;
-#else
-	kmalloc_size = 32;
-#endif
 	num_dentry = kmalloc_size / sizeof(struct dentry *);
 
 	if ((err = is_robranch_super(dir->i_sb, bindex))) {
@@ -578,26 +527,33 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 		goto out;
 	}
 
-	fist_print_dentry("IN: unionfs_create_named_dirs: ", dentry);
+	fist_print_dentry("IN: create_parents_named", dentry);
+	fist_dprint(8, "name = %s\n", name);
 
 	old_bstart = dbstart(dentry);
 	old_bend = dbend(dentry);
 
-	path = (struct dentry **)kmalloc(kmalloc_size, GFP_KERNEL);
+	path = (struct dentry **)KMALLOC(kmalloc_size, GFP_KERNEL);
 	memset(path, 0, kmalloc_size);
 
 	/* assume the negative dentry of unionfs as the parent dentry */
 	parent_dentry = dentry;
 
 	count = 0;
-	/* find out in the current branch the parent directory from
-	 * where we need to start building a new directory structure
+	/* This loop finds the first parent that exists in the given branch.
+	 * We start building the directory structure from there.  At the end
+	 * of the loop, the following should hold:
+	 *      child_dentry is the first nonexistent child
+	 *      parent_dentry is the first existent parent
+	 *      path[0] is the = deepest child
+	 *      path[count] is the first child to create
 	 */
 	do {
 		child_dentry = parent_dentry;
 
 		/* find the parent directory dentry in unionfs */
 		parent_dentry = child_dentry->d_parent;
+		lock_dentry(parent_dentry);
 
 		/* find out the hidden_parent_dentry in the given branch */
 		hidden_parent_dentry = dtohd_index(parent_dentry, bindex);
@@ -610,14 +566,14 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 			num_dentry = kmalloc_size / sizeof(struct dentry *);
 
 			tmp_path =
-			    (struct dentry **)kmalloc(kmalloc_size, GFP_KERNEL);
+			    (struct dentry **)KMALLOC(kmalloc_size, GFP_KERNEL);
 			if (!tmp_path) {
-				err = -ENOMEM;
+				hidden_dentry = ERR_PTR(-ENOMEM);
 				goto out;
 			}
 			memset(tmp_path, 0, kmalloc_size);
 			memcpy(tmp_path, path, old_kmalloc_size);
-			kfree(path);
+			KFREE(path);
 			path = tmp_path;
 			tmp_path = NULL;
 		}
@@ -625,6 +581,8 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 	} while (!hidden_parent_dentry);
 	count--;
 
+	/* This is basically while(child_dentry != dentry).  This loop is
+	 * horrible to follow and should be replaced with cleaner code. */
 	while (1) {
 		PASSERT(child_dentry);
 		PASSERT(parent_dentry);
@@ -632,6 +590,7 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 
 		// get hidden parent dir in the current branch
 		hidden_parent_dentry = dtohd_index(parent_dentry, bindex);
+		unlock_dentry(parent_dentry);
 		PASSERT(hidden_parent_dentry);
 		PASSERT(hidden_parent_dentry->d_inode);
 
@@ -639,16 +598,14 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 		childname = child_dentry->d_name.name;
 		childnamelen = child_dentry->d_name.len;
 
-		// lookup child in the underlying file system
-		hidden_dentry =
-		    lookup_one_len(childname, hidden_parent_dentry,
-				   childnamelen);
-		if (!hidden_dentry || IS_ERR(hidden_dentry)) {
-			printk("ERR from hidden_dentry!!!\n");
-			goto out;
-		}
-
-		if (child_dentry == dentry) {
+		if (child_dentry != dentry) {
+			// lookup child in the underlying file system
+			hidden_dentry =
+			    LOOKUP_ONE_LEN(childname, hidden_parent_dentry,
+					   childnamelen);
+			if (IS_ERR(hidden_dentry))
+				goto out;
+		} else {
 			int loop_start;
 			int loop_end;
 			int new_bstart = -1;
@@ -656,19 +613,15 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 			int i;
 
 			/* is the name a whiteout of the childname ? */
-			if (!strncmp(name, ".wh.", 4)
-			    && !strncmp(name + 4, childname, strlen(childname))) {
-				//lookup the whiteout child in the underlying file system
-				hidden_dentry =
-				    lookup_one_len(name, hidden_parent_dentry,
-						   namelen);
-				if (!hidden_dentry || IS_ERR(hidden_dentry)) {
-					printk("ERR from hidden_dentry!!!\n");
-					goto out;
-				}
-			}
+			//lookup the whiteout child in the underlying file system
+			hidden_dentry =
+			    LOOKUP_ONE_LEN(name, hidden_parent_dentry,
+					   strlen(name));
+			if (IS_ERR(hidden_dentry))
+				goto out;
 
-			/* initialize the new dentry */
+			/* Replace the current dentry (if any) with the new one. */
+			DPUT(dtohd_index(dentry, bindex));
 			set_dtohd_index(dentry, bindex, hidden_dentry);
 
 			loop_start =
@@ -681,36 +634,30 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 			 * bindex (the newly looked dentry
 			 */
 			for (i = loop_start; i <= loop_end; i++) {
-
-				if (!dtohd_index(dentry, i)) {
+				if (!dtohd_index(dentry, i))
 					continue;
-				}
 
 				if (i == bindex) {
 					new_bend = i;
-					if (new_bstart < 0) {
+					if (new_bstart < 0)
 						new_bstart = i;
-					}
 					continue;
 				}
 
 				if (!dtohd_index(dentry, i)->d_inode) {
-					dput(dtohd_index(dentry, i));
+					DPUT(dtohd_index(dentry, i));
 					set_dtohd_index(dentry, i, NULL);
 				} else {
-					if (new_bstart < 0) {
+					if (new_bstart < 0)
 						new_bstart = i;
-					}
 					new_bend = i;
 				}
 			}
 
-			if (new_bstart < 0) {
+			if (new_bstart < 0)
 				new_bstart = bindex;
-			}
-			if (new_bend < 0) {
+			if (new_bend < 0)
 				new_bend = bindex;
-			}
 			set_dbstart(dentry, new_bstart);
 			set_dbend(dentry, new_bend);
 			break;
@@ -718,9 +665,8 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 
 		if (hidden_dentry->d_inode) {
 			/* since this already exists we dput to avoid
-			 * multiple references on the same dentry
-			 */
-			dput(hidden_dentry);
+			 * multiple references on the same dentry */
+			DPUT(hidden_dentry);
 		} else {
 			uid_t saved_uid = current->fsuid;
 			gid_t saved_gid = current->fsgid;
@@ -729,43 +675,44 @@ struct dentry *unionfs_create_named_dirs(struct inode *dir,
 			hidden_parent_dentry = lock_parent(hidden_dentry);
 			current->fsuid = hidden_parent_dentry->d_inode->i_uid;
 			current->fsgid = hidden_parent_dentry->d_inode->i_gid;
-			err =
-			    vfs_mkdir(hidden_parent_dentry->d_inode,
-				      hidden_dentry, S_IRWXUGO);
+			err = vfs_mkdir(hidden_parent_dentry->d_inode,
+					hidden_dentry, S_IRWXUGO);
 			current->fsuid = saved_uid;
 			current->fsgid = saved_gid;
 			unlock_dir(hidden_parent_dentry);
 			if (err || !hidden_dentry->d_inode) {
-				dput(hidden_dentry);
+				DPUT(hidden_dentry);
 				hidden_dentry = ERR_PTR(err);
 				goto out;
 			}
 			err =
-			    unionfs_copyup_permissions(dir->i_sb, child_dentry,
-						       hidden_dentry);
+			    copyup_permissions(dir->i_sb, child_dentry,
+					       hidden_dentry);
+			if (err) {
+				DPUT(hidden_dentry);
+				hidden_dentry = ERR_PTR(err);
+				goto out;
+			}
 			set_itohi_index(child_dentry->d_inode, bindex,
 					igrab(hidden_dentry->d_inode));
-			if (ibstart(child_dentry->d_inode) > bindex) {
+			if (ibstart(child_dentry->d_inode) > bindex)
 				ibstart(child_dentry->d_inode) = bindex;
-			}
-			if (ibend(child_dentry->d_inode) < bindex) {
+			if (ibend(child_dentry->d_inode) < bindex)
 				ibend(child_dentry->d_inode) = bindex;
-			}
 
 			set_dtohd_index(child_dentry, bindex, hidden_dentry);
-			if (dbstart(child_dentry) > bindex) {
+			if (dbstart(child_dentry) > bindex)
 				set_dbstart(child_dentry, bindex);
-			}
-			if (dbend(child_dentry) < bindex) {
+			if (dbend(child_dentry) < bindex)
 				set_dbend(child_dentry, bindex);
-			}
 		}
 
 		parent_dentry = child_dentry;
 		child_dentry = path[--count];
 	}
       out:
-	fist_print_dentry("OUT: unionfs_create_dirs: ", dentry);
+	KFREE(path);
+	fist_print_dentry("OUT: create_parents_named", dentry);
 	print_exit_pointer(hidden_dentry);
 	return hidden_dentry;
 }

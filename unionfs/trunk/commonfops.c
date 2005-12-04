@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,23 +15,53 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: commonfops.c,v 1.8 2005/07/18 15:47:05 cwright Exp $
+ *  $Id: commonfops.c,v 1.35 2005/09/18 03:51:41 dquigley Exp $
  */
 
 #include "fist.h"
 #include "unionfs.h"
 
-char *get_random_name(int size)
+/* We only need this function here, but it could get promoted to unionfs.h, if
+ * other things need a generation specific branch putting function. */
+static inline void branchput_gen(int generation, struct super_block *sb,
+				 int index)
+{
+	struct putmap *putmap;
+
+	if (generation == atomic_read(&stopd(sb)->usi_generation)) {
+		branchput(sb, index);
+		return;
+	}
+
+	ASSERT(stopd(sb)->usi_firstputmap <= generation);
+	ASSERT(stopd(sb)->usi_lastputmap >= generation);
+
+	putmap =
+	    stopd(sb)->usi_putmaps[generation - stopd(sb)->usi_firstputmap];
+	PASSERT(putmap);
+	ASSERT(index >= 0);
+	ASSERT(index <= putmap->bend);
+	ASSERT(putmap->map[index] >= 0);
+	branchput(sb, putmap->map[index]);
+	if (atomic_dec_and_test(&putmap->count)) {
+		stopd(sb)->usi_putmaps[generation - stopd(sb)->usi_firstputmap]
+		    = NULL;
+		fist_dprint(8, "Freeing putmap %d.\n", generation);
+		KFREE(putmap);
+	}
+}
+
+char *get_random_name(int size, unsigned char *name)
 {
 	int i;
 	int j;
-	unsigned char *name = NULL;
 	unsigned char *tmpbuf = NULL;
 
 	if (size <= 4)
 		return NULL;
 
-	name = KMALLOC(size + 1, GFP_UNIONFS);
+	if (!name)
+		name = KMALLOC(size + 1, GFP_UNIONFS);
 	if (!name) {
 		name = ERR_PTR(-ENOMEM);
 		goto out;
@@ -38,6 +70,7 @@ char *get_random_name(int size)
 
 	tmpbuf = KMALLOC(size, GFP_UNIONFS);
 	if (!tmpbuf) {
+		KFREE(name);
 		tmpbuf = ERR_PTR(-ENOMEM);
 		goto out;
 	}
@@ -74,69 +107,50 @@ char *get_random_name(int size)
 int copyup_deleted_file(struct file *file, struct dentry *dentry, int bstart,
 			int bindex)
 {
-	int attempts;
-	int err = 0;
+	int attempts = 0;
+	int err;
+	int exists = 1;
 	char *name = NULL;
 	struct dentry *tmp_dentry = NULL;
 	struct dentry *hidden_dentry = NULL;
 	struct dentry *hidden_dir_dentry = NULL;
 
-	/* try five times to get a unique file name, fail
-	 * after that
-	 */
-	attempts = 0;
-	while (attempts < 5) {
-		name = get_random_name(UNIONFS_TMPNAM_LEN);
-		if (IS_ERR(name))
+	print_entry_location();
+
+	/* Try five times to get a unique file name, fail after that.  Five is
+	 * simply a magic number, because we shouldn't try forever.  */
+	while (exists) {
+		/* The first call allocates, the subsequent ones reuse. */
+		name = get_random_name(UNIONFS_TMPNAM_LEN, name);
+		err = -ENOMEM;
+		if (!name)
 			goto out;
 
 		hidden_dentry = dtohd_index(dentry, bstart);
-		tmp_dentry =
-		    lookup_one_len(name, hidden_dentry->d_parent,
-				   UNIONFS_TMPNAM_LEN);
-		printk("lookup for [%s] in [%s] returned [%d]\n", name,
-		       hidden_dentry->d_parent->d_name.name,
-		       (int)PTR_ERR(tmp_dentry));
-		if (!tmp_dentry || IS_ERR(tmp_dentry)) {
-			err = PTR_ERR(tmp_dentry);
-			goto out;
-		}
-		if (tmp_dentry->d_inode) {
-			attempts++;
-			continue;
-		} else
-			break;
-	}
-	if (!tmp_dentry || IS_ERR(tmp_dentry)) {
+
+		tmp_dentry = LOOKUP_ONE_LEN(name, hidden_dentry->d_parent,
+					    UNIONFS_TMPNAM_LEN);
 		err = PTR_ERR(tmp_dentry);
-		goto out;
-	}
-	if (tmp_dentry->d_inode) {
-		/* unable to get a tmpnam that doesn't exist */
+		if (IS_ERR(tmp_dentry))
+			goto out;
+		exists = tmp_dentry->d_inode ? 1 : 0;
+		DPUT(tmp_dentry);
+
 		err = -EEXIST;
-		goto out;
+		if (++attempts > 5)
+			goto out;
 	}
-	err =
-	    unionfs_copyup_named_file(dentry->d_parent->d_inode, file, name,
-				      UNIONFS_TMPNAM_LEN, bstart, bindex,
-				      file->f_dentry->d_inode->i_size);
+
+	err = copyup_named_file(dentry->d_parent->d_inode, file, name, bstart,
+				bindex, file->f_dentry->d_inode->i_size);
 	if (err)
 		goto out;
 
 	/* bring it to the same state as an unlinked file */
 	hidden_dentry = dtohd_index(dentry, dbstart(dentry));
 	hidden_dir_dentry = lock_parent(hidden_dentry);
-
-	dget(hidden_dentry);
 	err = vfs_unlink(hidden_dir_dentry->d_inode, hidden_dentry);
-	dput(hidden_dentry);
-
 	unlock_dir(hidden_dir_dentry);
-
-	if (err)
-		goto out;
-
-	d_delete(hidden_dentry);
 
       out:
 	KFREE(name);
@@ -161,10 +175,9 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	PASSERT(ftopd(file));
 
 	dentry = file->f_dentry;
+	lock_dentry(dentry);
 	PASSERT(dentry);
-	PASSERT(dentry->d_op);
-	PASSERT(dentry->d_op->d_revalidate);
-	if (!(dentry->d_op->d_revalidate(dentry, 0))) {
+	if (!unionfs_d_revalidate(dentry, 0) && !d_deleted(dentry)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -178,17 +191,18 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	if (sbgen > dgen) {
 		FISTBUG("The dentry is not up to date!\n");
 	}
-	/* There are two cases we are interested in.  The first is if the generation 
-	 * is lower than the super-block.  The second is if someone has copied up
-	 * this file from underneath us, we also need to refresh things.
-	 */
-	if ((sbgen > fgen) || (dbstart(dentry) != fbstart(file))) {
+	/* There are two cases we are interested in.  The first is if the
+	 * generation is lower than the super-block.  The second is if someone
+	 * has copied up this file from underneath us, we also need to refresh
+	 * things. */
+	if (!d_deleted(dentry) &&
+	    ((sbgen > fgen) || (dbstart(dentry) != fbstart(file)))) {
 		/* First we throw out the existing files. */
 		bstart = fbstart(file);
 		bend = fbend(file);
 		for (bindex = bstart; bindex <= bend; bindex++) {
 			if (ftohf_index(file, bindex)) {
-				branchput(dentry->d_sb, bindex);
+				branchput_gen(fgen, dentry->d_sb, bindex);
 				fput(ftohf_index(file, bindex));
 			}
 		}
@@ -219,16 +233,15 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 			/* We need to open all the files. */
 			for (bindex = bstart; bindex <= bend; bindex++) {
 				hidden_dentry = dtohd_index(dentry, bindex);
-				if (!hidden_dentry) {
+				if (!hidden_dentry)
 					continue;
-				}
 
-				dget(hidden_dentry);
+				DGET(hidden_dentry);
 				mntget(stohiddenmnt_index(sb, bindex));
 				branchget(sb, bindex);
 
 				hidden_file =
-				    dentry_open(hidden_dentry,
+				    DENTRY_OPEN(hidden_dentry,
 						stohiddenmnt_index(sb, bindex),
 						file->f_flags);
 				if (IS_ERR(hidden_file)) {
@@ -248,29 +261,15 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 			    && is_robranch(dentry)) {
 				for (bindex = bstart - 1; bindex >= 0; bindex--) {
 
-					if (!d_unhashed(file->f_dentry)) {
-						err =
-						    unionfs_copyup_file(dentry->
-									d_parent->
-									d_inode,
-									file,
-									bstart,
-									bindex,
-									file->
-									f_dentry->
-									d_inode->
-									i_size);
-						if (!err)
-							break;
-						else
-							continue;
-					}
-
-					/* file in the process of deletion */
-
-					err =
-					    copyup_deleted_file(file, dentry,
-								bstart, bindex);
+					err = copyup_file(dentry->
+							  d_parent->
+							  d_inode,
+							  file,
+							  bstart,
+							  bindex,
+							  file->
+							  f_dentry->
+							  d_inode->i_size);
 
 					if (!err)
 						break;
@@ -281,11 +280,11 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 				goto out;
 			}
 
-			dget(hidden_dentry);
+			DGET(hidden_dentry);
 			mntget(stohiddenmnt_index(sb, bstart));
 			branchget(sb, bstart);
 			hidden_file =
-			    dentry_open(hidden_dentry,
+			    DENTRY_OPEN(hidden_dentry,
 					stohiddenmnt_index(sb, bstart),
 					file->f_flags);
 			if (IS_ERR(hidden_file)) {
@@ -296,28 +295,15 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 			/* Fix up the position. */
 			hidden_file->f_pos = file->f_pos;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-			/* update readahead information, all the time, because the old file
-			 * could have read-ahead information that doesn't match.
-			 */
-			if (file->f_reada) {
-				hidden_file->f_reada = file->f_reada;
-				hidden_file->f_ramax = file->f_ramax;
-				hidden_file->f_raend = file->f_raend;
-				hidden_file->f_ralen = file->f_ralen;
-				hidden_file->f_rawin = file->f_rawin;
-			}
-#else
 			memcpy(&(hidden_file->f_ra), &(file->f_ra),
 			       sizeof(struct file_ra_state));
-#endif
 		}
 		atomic_set(&ftopd(file)->ufi_generation,
 			   atomic_read(&itopd(dentry->d_inode)->
 				       uii_generation));
 	}
 
-	/* If we are going to write, and no one has copied up, yet we need to do it. */
+	/* Copyup on the first write to a file on a readonly branch. */
 	if (willwrite && IS_WRITE_FLAG(file->f_flags)
 	    && !IS_WRITE_FLAG(ftohf(file)->f_flags) && is_robranch(dentry)) {
 		fist_dprint(3,
@@ -332,23 +318,19 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 		ASSERT(S_ISREG(file->f_dentry->d_inode->i_mode));
 
 		for (bindex = bstart - 1; bindex >= 0; bindex--) {
-
-			if (!d_unhashed(file->f_dentry)) {
+			if (!d_deleted(file->f_dentry)) {
 				err =
-				    unionfs_copyup_file(dentry->d_parent->
-							d_inode, file, bstart,
-							bindex,
-							file->f_dentry->
-							d_inode->i_size);
-				if (!err)
-					break;
-				else
-					continue;
+				    copyup_file(dentry->d_parent->
+						d_inode, file, bstart,
+						bindex,
+						file->f_dentry->
+						d_inode->i_size);
+			} else {
+				err =
+				    copyup_deleted_file(file, dentry, bstart,
+							bindex);
 			}
 
-			/* file in the process of deletion */
-
-			err = copyup_deleted_file(file, dentry, bstart, bindex);
 			if (!err)
 				break;
 			else
@@ -365,12 +347,12 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 				}
 			}
 			fbend(file) = bend;
-
 		}
 	}
 
       out:
 	fist_print_dentry("file revalidate out", dentry);
+	unlock_dentry(dentry);
 	print_exit_status(err);
 	return err;
 }
@@ -383,6 +365,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 	struct dentry *hidden_dentry = NULL;
 	struct dentry *dentry = NULL;
 	int bindex = 0, bstart = 0, bend = 0;
+	int locked = 0;
 
 	print_entry_location();
 
@@ -415,6 +398,8 @@ int unionfs_open(struct inode *inode, struct file *file)
 
 	dentry = file->f_dentry;
 	PASSERT(dentry);
+	lock_dentry(dentry);
+	locked = 1;
 
 	bstart = fbstart(file) = dbstart(dentry);
 	bend = fbend(file) = dbend(dentry);
@@ -422,29 +407,19 @@ int unionfs_open(struct inode *inode, struct file *file)
 	/* increment to show the kind of open, so that we can
 	 * flush appropriately
 	 */
-	if (IS_WRITE_FLAG(file->f_flags))
-		atomic_inc(&itopd(dentry->d_inode)->uii_writeopens);
-
 	atomic_inc(&itopd(dentry->d_inode)->uii_totalopens);
 
 	/* open all directories and make the unionfs file struct point to these hidden file structs */
 	if (S_ISDIR(inode->i_mode)) {
 		for (bindex = bstart; bindex <= bend; bindex++) {
-
 			hidden_dentry = dtohd_index(dentry, bindex);
-			if (!hidden_dentry) {
+			if (!hidden_dentry)
 				continue;
-			}
 
-			dget(hidden_dentry);
-			/*
-			 * dentry_open will decrement mnt refcnt if err.
-			 * otherwise fput() will do an mntput() for us upon file close.
-			 */
+			DGET(hidden_dentry);
 			mntget(stohiddenmnt_index(inode->i_sb, bindex));
-			branchget(inode->i_sb, bindex);
 			hidden_file =
-			    dentry_open(hidden_dentry,
+			    DENTRY_OPEN(hidden_dentry,
 					stohiddenmnt_index(inode->i_sb, bindex),
 					hidden_flags);
 			if (IS_ERR(hidden_file)) {
@@ -453,6 +428,9 @@ int unionfs_open(struct inode *inode, struct file *file)
 			}
 
 			set_ftohf_index(file, bindex, hidden_file);
+			/* The branchget goes after the open, because otherwise
+			 * we would miss the reference on release. */
+			branchget(inode->i_sb, bindex);
 		}
 	} else {
 		/* open a file */
@@ -471,11 +449,10 @@ int unionfs_open(struct inode *inode, struct file *file)
 				/* copyup the file */
 				for (bindex = bstart - 1; bindex >= 0; bindex--) {
 					err =
-					    unionfs_copyup_file(dentry->
-								d_parent->
-								d_inode, file,
-								bstart, bindex,
-								size);
+					    copyup_file(dentry->
+							d_parent->
+							d_inode, file,
+							bstart, bindex, size);
 					if (!err) {
 						break;
 					}
@@ -486,21 +463,21 @@ int unionfs_open(struct inode *inode, struct file *file)
 			}
 		}
 
-		dget(hidden_dentry);
+		DGET(hidden_dentry);
 		/* dentry_open will decrement mnt refcnt if err.
 		 * otherwise fput() will do an mntput() for us upon file close.
 		 */
 		mntget(stohiddenmnt_index(inode->i_sb, bstart));
-		branchget(inode->i_sb, bstart);
-		hidden_file =
-		    dentry_open(hidden_dentry,
-				stohiddenmnt_index(inode->i_sb, bstart),
-				hidden_flags);
+		hidden_file = DENTRY_OPEN(hidden_dentry,
+					  stohiddenmnt_index(inode->i_sb,
+							     bstart),
+					  hidden_flags);
 		if (IS_ERR(hidden_file)) {
 			err = PTR_ERR(hidden_file);
 			goto out;
 		} else {
 			set_ftohf(file, hidden_file);
+			branchget(inode->i_sb, bstart);
 		}
 	}
 
@@ -515,13 +492,14 @@ int unionfs_open(struct inode *inode, struct file *file)
 				fput(hidden_file);
 			}
 		}
-		if (ftohf_ptr(file)) {
-			KFREE(ftohf_ptr(file));
-		}
+		KFREE(ftohf_ptr(file));
 		KFREE(ftopd(file));
 	}
 
 	fist_print_file("OUT: unionfs_open", file);
+
+	if (locked)
+		unlock_dentry(dentry);
 	print_exit_status(err);
 	return err;
 }
@@ -531,12 +509,14 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	int err = 0;
 	struct file *hidden_file = NULL;
 	int bindex, bstart, bend;
+	int fgen;
 
 	print_entry_location();
 
 	fist_checkinode(inode, "unionfs_release");
 
 	/* fput all the hidden files */
+	fgen = atomic_read(&ftopd(file)->ufi_generation);
 	bstart = fbstart(file);
 	bend = fbend(file);
 
@@ -544,18 +524,14 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 		hidden_file = ftohf_index(file, bindex);
 
 		if (hidden_file) {
-			/*
-			 * will decrement file refcount, and if 0, destroy the file,
-			 * which will call the lower file system's file release function.
-			 */
 			fput(hidden_file);
+			branchput_gen(fgen, inode->i_sb, bindex);
 		}
-
-		branchput(inode->i_sb, bindex);
 	}
 	KFREE(ftohf_ptr(file));
 
 	if (ftopd(file)->rdstate) {
+		ftopd(file)->rdstate->uds_access = jiffies;
 		fist_dprint(1, "Saving rdstate with cookie %u [%d.%lld]\n",
 			    ftopd(file)->rdstate->uds_cookie,
 			    ftopd(file)->rdstate->uds_bindex,
@@ -584,9 +560,8 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	print_entry_location();
 
-	if ((err = unionfs_file_revalidate(file, 1))) {
+	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
-	}
 
 	/* check if asked for local commands */
 	switch (cmd) {
@@ -630,7 +605,7 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			err = -EACCES;
 			goto out;
 		}
-		err = unionfs_ioctl_branchcount(file, cmd, arg);
+		err = unionfs_ioctl_incgen(file, cmd, arg);
 		break;
 
 	case UNIONFS_IOCTL_ADDBRANCH:
@@ -638,15 +613,8 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			err = -EACCES;
 			goto out;
 		}
-		err = unionfs_ioctl_addbranch(file->f_dentry->d_inode, cmd, arg);
-		break;
-
-	case UNIONFS_IOCTL_DELBRANCH:
-		if (!capable(CAP_SYS_ADMIN)) {
-			err = -EACCES;
-			goto out;
-		}
-		err = unionfs_ioctl_delbranch(file->f_dentry->d_inode, cmd, arg);
+		err =
+		    unionfs_ioctl_addbranch(file->f_dentry->d_inode, cmd, arg);
 		break;
 
 	case UNIONFS_IOCTL_RDWRBRANCH:
@@ -654,38 +622,40 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			err = -EACCES;
 			goto out;
 		}
-		err = unionfs_ioctl_rdwrbranch(file->f_dentry->d_inode, cmd, arg);
+		err =
+		    unionfs_ioctl_rdwrbranch(file->f_dentry->d_inode, cmd, arg);
 		break;
 
 	case UNIONFS_IOCTL_QUERYFILE:
 		/* XXX: This should take the file. */
-		err = unionfs_ioctl_queryfile(file->f_dentry->d_inode, cmd, arg);
+		err = unionfs_ioctl_queryfile(file, cmd, arg);
 		break;
 
 	default:
 		hidden_file = ftohf(file);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 		err = security_file_ioctl(hidden_file, cmd, arg);
 		if (err)
 			goto out;
-#endif
-
 		err = -ENOTTY;
-		if (!hidden_file || !hidden_file->f_op) 
+		if (!hidden_file || !hidden_file->f_op)
 			goto out;
 		if (hidden_file->f_op->unlocked_ioctl) {
-			err = hidden_file->f_op->unlocked_ioctl(hidden_file, cmd, arg);
+			err =
+			    hidden_file->f_op->unlocked_ioctl(hidden_file, cmd,
+							      arg);
 		} else if (hidden_file->f_op->ioctl) {
 			lock_kernel();
-			err = hidden_file->f_op->ioctl(hidden_file->f_dentry->d_inode,
-							hidden_file, cmd, arg);
+			err =
+			    hidden_file->f_op->ioctl(hidden_file->f_dentry->
+						     d_inode, hidden_file, cmd,
+						     arg);
 			unlock_kernel();
 		}
 	}			/* end of outer switch statement */
 
       out:
-	print_exit_status((int) err);
+	print_exit_status((int)err);
 	return err;
 }
 
@@ -697,17 +667,13 @@ int unionfs_flush(struct file *file)
 
 	print_entry_location();
 
-	if ((err = unionfs_file_revalidate(file, 1))) {
+	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
-	}
-
-	if (IS_WRITE_FLAG(file->f_flags))
-		atomic_dec(&itopd(file->f_dentry->d_inode)->uii_writeopens);
-	atomic_dec(&itopd(file->f_dentry->d_inode)->uii_totalopens);
-
-	if (atomic_read(&itopd(file->f_dentry->d_inode)->uii_totalopens) > 0) {
+	if (!atomic_dec_and_test
+	    (&itopd(file->f_dentry->d_inode)->uii_totalopens))
 		goto out;
-	}
+
+	lock_dentry(file->f_dentry);
 
 	bstart = fbstart(file);
 	bend = fbend(file);
@@ -717,19 +683,20 @@ int unionfs_flush(struct file *file)
 		if (hidden_file && hidden_file->f_op
 		    && hidden_file->f_op->flush) {
 			err = hidden_file->f_op->flush(hidden_file);
-			if (err) {
-				goto out;
-			}
+			if (err)
+				goto out_lock;
 			/* This was earlier done in the unlink_all function in unlink.c */
 			/* if there are no more references to the dentry, dput it */
-			if (!d_unhashed(file->f_dentry)) {
-				dput(hidden_file->f_dentry);
+			if (d_deleted(file->f_dentry)) {
+				DPUT(dtohd_index(file->f_dentry, bindex));
 				set_dtohd_index(file->f_dentry, bindex, NULL);
 			}
 		}
 
 	}
 
+      out_lock:
+	unlock_dentry(file->f_dentry);
       out:
 	print_exit_status(err);
 	return err;

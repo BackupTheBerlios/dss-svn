@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,15 +15,114 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: branchman.c,v 1.33 2005/07/18 15:47:05 cwright Exp $
+ *  $Id: branchman.c,v 1.48 2005/09/18 03:51:41 dquigley Exp $
  */
 
 #include "fist.h"
 #include "unionfs.h"
-#include <linux/dcache.h>
-#include <linux/poll.h>
 
-int unionfs_ioctl_branchcount(struct file *file, unsigned int cmd, unsigned long arg)
+static void fixputmaps(struct super_block *sb)
+{
+	struct unionfs_sb_info *spd;
+	struct putmap *cur;
+	int gen;
+	int i;
+
+	print_entry_location();
+
+	spd = stopd(sb);
+	cur = spd->usi_putmaps[spd->usi_lastputmap - spd->usi_firstputmap];
+
+	for (gen = 0; gen < spd->usi_lastputmap - spd->usi_firstputmap; gen++) {
+		if (!spd->usi_putmaps[gen])
+			continue;
+		for (i = 0; i <= spd->usi_putmaps[gen]->bend; i++)
+			spd->usi_putmaps[gen]->map[i] =
+			    cur->map[spd->usi_putmaps[gen]->map[i]];
+	}
+
+	print_exit_location();
+}
+
+static int newputmap(struct super_block *sb)
+{
+	struct unionfs_sb_info *spd;
+	struct putmap *newmap;
+	int count = 0;
+	int i;
+
+	print_entry_location();
+
+	spd = stopd(sb);
+
+	i = sizeof(int) * (sbend(sb) + 1);
+	newmap = KMALLOC(sizeof(struct putmap) + i, GFP_UNIONFS);
+	if (!newmap) {
+		print_exit_status(-ENOMEM);
+		return -ENOMEM;
+	}
+
+	if (!spd->usi_firstputmap) {
+		spd->usi_firstputmap = 1;
+		spd->usi_lastputmap = 1;
+
+		spd->usi_putmaps =
+		    KMALLOC(sizeof(struct putmap *), GFP_UNIONFS);
+		if (!spd->usi_putmaps) {
+			KFREE(newmap);
+			print_exit_status(-ENOMEM);
+			return -ENOMEM;
+		}
+	} else {
+		struct putmap **newlist;
+		int newfirst = spd->usi_firstputmap;
+
+		while (!spd->usi_putmaps[newfirst - spd->usi_firstputmap] &&
+		       newfirst <= spd->usi_lastputmap) {
+			newfirst++;
+		}
+
+		newlist =
+		    KMALLOC(sizeof(struct putmap *) *
+			    (1 + spd->usi_lastputmap - newfirst), GFP_UNIONFS);
+		if (!newlist) {
+			KFREE(newmap);
+			print_exit_status(-ENOMEM);
+			return -ENOMEM;
+		}
+
+		for (i = newfirst; i <= spd->usi_lastputmap; i++) {
+			newlist[i - newfirst] =
+			    spd->usi_putmaps[i - spd->usi_firstputmap];
+		}
+
+		KFREE(spd->usi_putmaps);
+		spd->usi_putmaps = newlist;
+		spd->usi_firstputmap = newfirst;
+		spd->usi_lastputmap++;
+	}
+
+	newmap->bend = sbend(sb);
+	for (i = 0; i <= sbend(sb); i++) {
+		count += branch_count(sb, i);
+		newmap->map[i] = i;
+	}
+	for (i = spd->usi_firstputmap; i < spd->usi_lastputmap; i++) {
+		struct putmap *cur;
+		cur = spd->usi_putmaps[i - spd->usi_firstputmap];
+		if (!cur)
+			continue;
+		count -= atomic_read(&cur->count);
+	}
+	atomic_set(&newmap->count, count);
+	spd->usi_putmaps[spd->usi_lastputmap - spd->usi_firstputmap] = newmap;
+
+	print_exit_status(0);
+	return 0;
+}
+
+int unionfs_ioctl_branchcount(struct file *file, unsigned int cmd,
+			      unsigned long arg)
 {
 	int err = 0;
 	int bstart, bend;
@@ -34,9 +135,8 @@ int unionfs_ioctl_branchcount(struct file *file, unsigned int cmd, unsigned long
 	bend = sbend(sb);
 
 	err = bend + 1;
-	if (!arg) {
+	if (!arg)
 		goto out;
-	}
 
 	for (i = bstart; i <= bend; i++) {
 		if (put_user(branch_count(sb, i), ((int *)arg) + i)) {
@@ -60,6 +160,8 @@ int unionfs_ioctl_incgen(struct file *file, unsigned int cmd, unsigned long arg)
 	sb = file->f_dentry->d_sb;
 
 	lock_super(sb);
+	if ((err = newputmap(sb)))
+		goto out;
 
 	atomic_inc(&stopd(sb)->usi_generation);
 	err = atomic_read(&stopd(sb)->usi_generation);
@@ -67,16 +169,17 @@ int unionfs_ioctl_incgen(struct file *file, unsigned int cmd, unsigned long arg)
 	atomic_set(&dtopd(sb->s_root)->udi_generation, err);
 	atomic_set(&itopd(sb->s_root->d_inode)->uii_generation, err);
 
-	unlock_super(sb);
-
 	print_exit_status(err);
 
+      out:
+	unlock_super(sb);
 	return err;
 }
 
-int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long arg)
+int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd,
+			    unsigned long arg)
 {
-	int err = 0;
+	int err;
 	struct unionfs_addbranch_args *addargs = NULL;
 	struct nameidata nd;
 	char *path = NULL;
@@ -95,65 +198,51 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 
 	print_entry_location();
 
-	lock_super(inode->i_sb);
-
+	err = -ENOMEM;
 	addargs = KMALLOC(sizeof(struct unionfs_addbranch_args), GFP_UNIONFS);
-	if (!addargs) {
-		err = -ENOMEM;
+	if (!addargs)
 		goto out;
-	}
 
+	err = -EFAULT;
 	if (copy_from_user
-	    (addargs, (void *)arg, sizeof(struct unionfs_addbranch_args))) {
-		err = -EFAULT;
+	    (addargs, (void *)arg, sizeof(struct unionfs_addbranch_args)))
 		goto out;
-	}
 
-	if (addargs->ab_perms & ~(MAY_READ | MAY_WRITE)) {
-		err = -EINVAL;
+	err = -EINVAL;
+	if (addargs->ab_perms & ~(MAY_READ | MAY_WRITE))
 		goto out;
-	}
-	if (!(addargs->ab_perms & MAY_READ)) {
-		err = -EINVAL;
+	if (!(addargs->ab_perms & MAY_READ))
 		goto out;
-	}
 
-	if (addargs->ab_branch < 0
-	    || (addargs->ab_branch > (sbend(inode->i_sb) + 1))) {
-		err = -EINVAL;
+	err = -E2BIG;
+	if (sbend(inode->i_sb) > FD_SETSIZE)
 		goto out;
-	}
 
-	if (sbend(inode->i_sb) > FD_SETSIZE) {
-		err = -E2BIG;
+	err = -ENOMEM;
+	if (!(path = getname(addargs->ab_path)))
 		goto out;
-	}
 
-	path = getname(addargs->ab_path);
-	if (!path) {
-		err = -ENOMEM;
-		goto out;
-	}
-//DQ: 2.6 has a different way of doing this
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	/* Look it up */
-	if (path_init(path, LOOKUP_FOLLOW, &nd))
-		err = path_walk(path, &nd);
-#else
 	err = path_lookup(path, LOOKUP_FOLLOW, &nd);
-#endif
+
+	RECORD_PATH_LOOKUP(&nd);
 	if (err)
 		goto out;
-	if (!nd.dentry->d_inode) {
+	if ((err = check_branch(&nd))) {
 		path_release(&nd);
-		err = -ENOENT;
+		RECORD_PATH_RELEASE(&nd);
 		goto out;
 	}
-	if (!S_ISDIR(nd.dentry->d_inode->i_mode)) {
-		path_release(&nd);
-		err = -ENOTDIR;
+
+	lock_super(inode->i_sb);
+	lock_dentry(inode->i_sb->s_root);
+
+	err = -EINVAL;
+	if (addargs->ab_branch < 0
+	    || (addargs->ab_branch > (sbend(inode->i_sb) + 1)))
 		goto out;
-	}
+
+	if ((err = newputmap(inode->i_sb)))
+		goto out;
 
 	stopd(inode->i_sb)->b_end++;
 	dtopd(inode->i_sb->s_root)->udi_bcount++;
@@ -167,8 +256,7 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 	if (pobjects > 0) {
 		/* Reallocate the dynamic structures. */
 		new_hidden_mnt =
-		    KMALLOC(sizeof(struct hidden_mnt *) * pobjects,
-			    GFP_UNIONFS);
+		    KMALLOC(sizeof(struct vfsmount *) * pobjects, GFP_UNIONFS);
 		new_udi_dentry =
 		    KMALLOC(sizeof(struct dentry *) * pobjects, GFP_UNIONFS);
 		new_uii_inode =
@@ -183,6 +271,11 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 			err = -ENOMEM;
 			goto out;
 		}
+		memset(new_hidden_mnt, 0, sizeof(struct vfsmount *) * pobjects);
+		memset(new_udi_dentry, 0, sizeof(struct dentry *) * pobjects);
+		memset(new_uii_inode, 0, sizeof(struct inode *) * pobjects);
+		memset(new_usi_sb, 0, sizeof(struct super_block *) * pobjects);
+		memset(new_branchperms, 0, sizeof(int) * pobjects);
 	}
 
 	/* Copy the in-place values to our new structure. */
@@ -208,6 +301,7 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 		struct super_block *hs;
 		struct dentry *hd;
 		struct inode *hi;
+		int pmindex;
 
 		count = branch_count(inode->i_sb, i);
 		perms = branchperms(inode->i_sb, i);
@@ -215,6 +309,11 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 		hs = stohs_index(inode->i_sb, i);
 		hd = dtohd_index(inode->i_sb->s_root, i);
 		hi = itohi_index(inode->i_sb->s_root->d_inode, i);
+
+		/* Update the newest putmap, so it is correct for later. */
+		pmindex = stopd(inode->i_sb)->usi_lastputmap;
+		pmindex -= stopd(inode->i_sb)->usi_firstputmap;
+		stopd(inode->i_sb)->usi_putmaps[pmindex]->map[i] = j;
 
 		if (j >= UNIONFS_INLINE_OBJECTS) {
 			j -= UNIONFS_INLINE_OBJECTS;
@@ -239,6 +338,7 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 	KFREE(itopd(inode->i_sb->s_root->d_inode)->uii_inode_p);
 	KFREE(stopd(inode->i_sb)->usi_hidden_mnt_p);
 	KFREE(stopd(inode->i_sb)->usi_sb_p);
+	KFREE(stopd(inode->i_sb)->usi_sbcount_p);
 	KFREE(stopd(inode->i_sb)->usi_branchperms_p);
 
 	/* Update the real pointers. */
@@ -269,7 +369,10 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 	atomic_set(&dtopd(inode->i_sb->s_root)->udi_generation, gen);
 	atomic_set(&itopd(inode->i_sb->s_root->d_inode)->uii_generation, gen);
 
+	fixputmaps(inode->i_sb);
+
       out:
+	unlock_dentry(inode->i_sb->s_root);
 	unlock_super(inode->i_sb);
 
 	KFREE(new_hidden_mnt);
@@ -287,7 +390,8 @@ int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long
 	return err;
 }
 
-int unionfs_ioctl_delbranch(struct inode *inode, unsigned int cmd, unsigned long arg)
+/* This must be called with the super block already locked. */
+int unionfs_ioctl_delbranch(struct super_block *sb, unsigned long arg)
 {
 	struct dentry *hidden_dentry;
 	struct inode *hidden_inode;
@@ -296,62 +400,59 @@ int unionfs_ioctl_delbranch(struct inode *inode, unsigned int cmd, unsigned long
 	struct dentry *root_dentry;
 	struct inode *root_inode;
 	int err = 0;
-	int i;
-	int gen;
+	int pmindex, i, gen;
 
-	print_entry("branch = %lu ", arg);	/* Delete a branch. */
+	print_entry("branch = %lu ", arg);
+	lock_dentry(sb->s_root);
 
-	lock_super(inode->i_sb);
-
-	if (sbmax(inode->i_sb) == 1) {
-		err = -EBUSY;
+	err = -EBUSY;
+	if (sbmax(sb) == 1)
 		goto out;
-	}
-	if (arg < 0 || arg > stopd(inode->i_sb)->b_end) {
-		err = -EINVAL;
+	err = -EINVAL;
+	if (arg < 0 || arg > stopd(sb)->b_end)
 		goto out;
-	}
-	if (branch_count(inode->i_sb, arg)) {
-		err = -EBUSY;
+	err = -EBUSY;
+	if (branch_count(sb, arg))
 		goto out;
-	}
 
-	atomic_inc(&stopd(inode->i_sb)->usi_generation);
-	gen = atomic_read(&stopd(inode->i_sb)->usi_generation);
+	if ((err = newputmap(sb)))
+		goto out;
 
-	root_dentry = inode->i_sb->s_root;
-	root_inode = inode->i_sb->s_root->d_inode;
+	pmindex = stopd(sb)->usi_lastputmap;
+	pmindex -= stopd(sb)->usi_firstputmap;
+
+	atomic_inc(&stopd(sb)->usi_generation);
+	gen = atomic_read(&stopd(sb)->usi_generation);
+
+	root_dentry = sb->s_root;
+	root_inode = sb->s_root->d_inode;
 
 	hidden_dentry = dtohd_index(root_dentry, arg);
-	hidden_mnt = stohiddenmnt_index(inode->i_sb, arg);
+	hidden_mnt = stohiddenmnt_index(sb, arg);
 	hidden_inode = itohi_index(root_inode, arg);
-	hidden_sb = stohs_index(inode->i_sb, arg);
+	hidden_sb = stohs_index(sb, arg);
 
-	dput(hidden_dentry);
+	DPUT(hidden_dentry);
 	iput(hidden_inode);
 	mntput(hidden_mnt);
-	//XXX: Leak! put_super(hidden_sb);
 
-	for (i = arg; i <= (sbend(inode->i_sb) - 1); i++) {
-		set_branch_count(inode->i_sb, i,
-				 branch_count(inode->i_sb, i + 1));
-		set_stohiddenmnt_index(inode->i_sb, i,
-				       stohiddenmnt_index(inode->i_sb, i + 1));
-		set_stohs_index(inode->i_sb, i,
-				stohs_index(inode->i_sb, i + 1));
-		set_branchperms(inode->i_sb, i,
-				branchperms(inode->i_sb, i + 1));
+	for (i = arg; i <= (sbend(sb) - 1); i++) {
+		set_branch_count(sb, i, branch_count(sb, i + 1));
+		set_stohiddenmnt_index(sb, i, stohiddenmnt_index(sb, i + 1));
+		set_stohs_index(sb, i, stohs_index(sb, i + 1));
+		set_branchperms(sb, i, branchperms(sb, i + 1));
 		set_dtohd_index(root_dentry, i,
 				dtohd_index(root_dentry, i + 1));
 		set_itohi_index(root_inode, i, itohi_index(root_inode, i + 1));
+		stopd(sb)->usi_putmaps[pmindex]->map[i + 1] = i;
 	}
 
-	set_dtohd_index(root_dentry, sbend(inode->i_sb), NULL);
-	set_itohi_index(root_inode, sbend(inode->i_sb), NULL);
-	set_stohiddenmnt_index(inode->i_sb, sbend(inode->i_sb), NULL);
-	set_stohs_index(inode->i_sb, sbend(inode->i_sb), NULL);
+	set_dtohd_index(root_dentry, sbend(sb), NULL);
+	set_itohi_index(root_inode, sbend(sb), NULL);
+	set_stohiddenmnt_index(sb, sbend(sb), NULL);
+	set_stohs_index(sb, sbend(sb), NULL);
 
-	stopd(inode->i_sb)->b_end--;
+	stopd(sb)->b_end--;
 	set_dbend(root_dentry, dbend(root_dentry) - 1);
 	dtopd(root_dentry)->udi_bcount--;
 	itopd(root_inode)->b_end--;
@@ -359,50 +460,54 @@ int unionfs_ioctl_delbranch(struct inode *inode, unsigned int cmd, unsigned long
 	atomic_set(&dtopd(root_dentry)->udi_generation, gen);
 	atomic_set(&itopd(root_inode)->uii_generation, gen);
 
-      out:
-	unlock_super(inode->i_sb);
+	fixputmaps(sb);
 
+	/* This doesn't open a file, so we might have to free the map here. */
+	if (atomic_read(&stopd(sb)->usi_putmaps[pmindex]->count) == 0) {
+		KFREE(stopd(sb)->usi_putmaps[pmindex]);
+		stopd(sb)->usi_putmaps[pmindex] = NULL;
+	}
+
+      out:
+	unlock_dentry(sb->s_root);
 	print_exit_status(err);
 
 	return err;
 }
 
-int unionfs_ioctl_rdwrbranch(struct inode *inode, unsigned int cmd, unsigned long arg)
+int unionfs_ioctl_rdwrbranch(struct inode *inode, unsigned int cmd,
+			     unsigned long arg)
 {
-	int err = 0;
+	int err;
 	struct unionfs_rdwrbranch_args *rdwrargs = NULL;
 	int gen;
 
 	print_entry_location();
 
 	lock_super(inode->i_sb);
+	lock_dentry(inode->i_sb->s_root);
 
+	if ((err = newputmap(inode->i_sb)))
+		goto out;
+
+	err = -ENOMEM;
 	rdwrargs = KMALLOC(sizeof(struct unionfs_rdwrbranch_args), GFP_UNIONFS);
-	if (!rdwrargs) {
-		err = -ENOMEM;
+	if (!rdwrargs)
 		goto out;
-	}
 
+	err = -EFAULT;
 	if (copy_from_user
-	    (rdwrargs, (void *)arg, sizeof(struct unionfs_rdwrbranch_args))) {
-		err = -EFAULT;
+	    (rdwrargs, (void *)arg, sizeof(struct unionfs_rdwrbranch_args)))
 		goto out;
-	}
 
+	err = -EINVAL;
 	if (rdwrargs->rwb_branch < 0
-	    || (rdwrargs->rwb_branch > (sbend(inode->i_sb) + 1))) {
-		err = -EINVAL;
+	    || (rdwrargs->rwb_branch > (sbend(inode->i_sb) + 1)))
 		goto out;
-	}
-
-	if (rdwrargs->rwb_perms & ~(MAY_READ | MAY_WRITE)) {
-		err = -EINVAL;
+	if (rdwrargs->rwb_perms & ~(MAY_READ | MAY_WRITE))
 		goto out;
-	}
-	if (!(rdwrargs->rwb_perms & MAY_READ)) {
-		err = -EINVAL;
+	if (!(rdwrargs->rwb_perms & MAY_READ))
 		goto out;
-	}
 
 	set_branchperms(inode->i_sb, rdwrargs->rwb_branch, rdwrargs->rwb_perms);
 
@@ -411,145 +516,54 @@ int unionfs_ioctl_rdwrbranch(struct inode *inode, unsigned int cmd, unsigned lon
 	atomic_set(&dtopd(inode->i_sb->s_root)->udi_generation, gen);
 	atomic_set(&itopd(inode->i_sb->s_root->d_inode)->uii_generation, gen);
 
+	err = 0;
+
       out:
 	unlock_super(inode->i_sb);
-	if (rdwrargs) {
-		KFREE(rdwrargs);
-	}
+	unlock_dentry(inode->i_sb->s_root);
+	KFREE(rdwrargs);
 
 	print_exit_status(err);
 
 	return err;
 }
 
-/* This is a horribly broken interface! */
-int unionfs_ioctl_queryfile(struct inode *inode, unsigned int cmd, unsigned long arg)
+int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
+			    unsigned long arg)
 {
 	int err = 0;
-	struct unionfs_queryfile_args queryargs;
-	int len = 0;
-	char *filename = NULL;
-	unsigned long k = 0;
-	int size = 0;
+	fd_set branchlist;
 
 	int bstart = 0, bend = 0, bindex = 0;
 	struct dentry *dentry, *hidden_dentry;
-	struct dentry *parent_dentry, *hidden_parent_dentry;
-
-	unsigned long *fdout = NULL;
-	char *bits = NULL;
-
-	struct nameidata nd;
 
 	print_entry_location();
 
-	if (copy_from_user
-	    (&queryargs, (void *)arg, sizeof(struct unionfs_queryfile_args))) {
-		err = -EFAULT;
+	dentry = file->f_dentry;
+	lock_dentry(dentry);
+	if ((err = unionfs_partial_lookup(dentry)))
 		goto out;
-	}
+	bstart = dbstart(dentry);
+	bend = dbend(dentry);
 
-	if (!queryargs.filename) {
-		err = -EFAULT;
-		goto out;
-	}
+	FD_ZERO(&branchlist);
 
-	len = strlen_user(queryargs.filename);
-	if (!len) {
-		err = -EFAULT;
-		goto out;
-	}
-
-	filename = KMALLOC(len + 1, GFP_UNIONFS);
-	if (!filename) {
-		err = -ENOMEM;
-		goto out;
-	}
-
-	err = strncpy_from_user(filename, queryargs.filename, len);
-	if (err < 0)
-		goto out;
-
-	size = FDS_BYTES(sbend(inode->i_sb) + 1);
-	bits = KMALLOC(size, GFP_UNIONFS);
-	if (!bits) {
-		err = -ENOMEM;
-		goto out;
-	}
-
-	if (err ==
-	    get_fd_set(len + 1, &queryargs.branchlist, (unsigned long *)bits))
-		goto out;
-
-	lock_super(inode->i_sb);
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	/* Look it up */
-	if (path_init(filename, LOOKUP_FOLLOW, &nd))
-		err = path_walk(filename, &nd);
-#else
-	err = path_lookup(filename, LOOKUP_FOLLOW, &nd);
-#endif
-	if (err)
-		goto out;
-
-	dentry = nd.dentry;
-	parent_dentry = dentry->d_parent;
-	bstart = dbstart(parent_dentry);
-	bend = dbend(parent_dentry);
-
-	fdout = (unsigned long *)bits;
-	k = 0x00000001;
-	*fdout = 0x00;
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_parent_dentry = dtohd_index(parent_dentry, bindex);
-		if (!hidden_parent_dentry || IS_ERR(hidden_parent_dentry)) {
-			err = PTR_ERR(hidden_parent_dentry);
-			goto out;
-		}
-		if (!hidden_parent_dentry->d_inode)
+		hidden_dentry = dtohd_index(dentry, bindex);
+		if (!hidden_dentry)
 			continue;
-
-		hidden_dentry =
-		    lookup_one_len(dentry->d_name.name, hidden_parent_dentry,
-				   dentry->d_name.len);
-		if (!hidden_dentry || IS_ERR(hidden_dentry)) {
-			err = PTR_ERR(hidden_dentry);
-			goto out;
-		}
-		if (!hidden_dentry->d_inode) {
-			k = k << 1;
-			dput(hidden_dentry);
-			continue;
-		}
-
-		if (k == 0) {
-			k = 0x00000001;
-			fdout++;
-			*fdout = 0x00;
-		}
-		*fdout |= k;
-		k = k << 1;
-		dput(hidden_dentry);
-
+		if (hidden_dentry->d_inode)
+			FD_SET(bindex, &branchlist);
 	}
 
-	dput(nd.dentry);
-	mntput(nd.mnt);
-
-	err =
-	    copy_to_user(&((struct unionfs_queryfile_args *)arg)->branchlist,
-			 bits, size);
+	err = copy_to_user((void *)arg, &branchlist, sizeof(fd_set));
 	if (err) {
 		err = -EFAULT;
 		goto out;
 	}
 
       out:
-	unlock_super(inode->i_sb);
-	KFREE(filename);
-	KFREE(bits);
-
+	unlock_dentry(dentry);
 	err = err < 0 ? err : bend;
 	print_exit_status(err);
 	return (err);

@@ -1,46 +1,33 @@
 #!/bin/sh
 
-# TEST: Branches b0,b1 and b0,b1=ro
-# TEST: mkdir A
-# TEST:  Where A is in the same branch
-# TEST:  Where A already exists as a whiteout on the same branch
-# TEST:  Where A already exists as a whiteout on the same branch and there are 
-#        pre-existing directories to the right (should create whiteouts inside A)
-#
-# TEST:  Where A is on a RO branch
-# TEST:  Where A exists as a whiteout on a RO branch
-# TEST:  Where A already exists as a whiteout on a RO branch and there are 
-#        pre-existing directories to the right (should create whiteouts inside A)
-
-
 source scaffold
 
 # initial directories
 function directories {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-d /n/lower/b0/d1
-d /n/lower/b0/d1/d2
-d /n/lower/b0/d6
-d /n/lower/b1
-d /n/lower/b1/d5
-d /n/lower/b1/d1
-d /n/lower/b1/d1/d2
-d /n/lower/b1/d1/d2/d3
-f /n/lower/b1/d1/d2/d3/a
-f /n/lower/b1/d1/d2/d3/b
-f /n/lower/b1/d1/d2/d3/c
-d /n/lower/b1/d1/d2/d3/d4
-d /n/lower/b2
-d /n/lower/b2/d5
-d /n/lower/b2/d1
-d /n/lower/b2/d1/d2
-d /n/lower/b2/d1/d2/d3
-f /n/lower/b2/d1/d2/d3/d
-f /n/lower/b2/d1/d2/d3/e
-f /n/lower/b2/d1/d2/d3/f
-d /n/lower/b2/d1/d2/d3/d4
+d $LOWER_DIR
+d $LOWER_DIR/b0
+d $LOWER_DIR/b0/d1
+d $LOWER_DIR/b0/d1/d2
+d $LOWER_DIR/b0/d6
+d $LOWER_DIR/b1
+d $LOWER_DIR/b1/d5
+d $LOWER_DIR/b1/d1
+d $LOWER_DIR/b1/d1/d2
+d $LOWER_DIR/b1/d1/d2/d3
+f $LOWER_DIR/b1/d1/d2/d3/a
+f $LOWER_DIR/b1/d1/d2/d3/b
+f $LOWER_DIR/b1/d1/d2/d3/c
+d $LOWER_DIR/b1/d1/d2/d3/d4
+d $LOWER_DIR/b2
+d $LOWER_DIR/b2/d5
+d $LOWER_DIR/b2/d1
+d $LOWER_DIR/b2/d1/d2
+d $LOWER_DIR/b2/d1/d2/d3
+f $LOWER_DIR/b2/d1/d2/d3/d
+f $LOWER_DIR/b2/d1/d2/d3/e
+f $LOWER_DIR/b2/d1/d2/d3/f
+d $LOWER_DIR/b2/d1/d2/d3/d4
 
 FILES
 }
@@ -49,9 +36,9 @@ FILES
 function beforefiles {
 cat <<FILES
 
-f /n/lower/b0/d1/.wh.x
+f $LOWER_DIR/b0/d1/.wh.x
 
-f /n/lower/b0/d1/d2/.wh.d3
+f $LOWER_DIR/b0/d1/d2/.wh.d3
 
 FILES
 }
@@ -59,18 +46,15 @@ FILES
 
 function afterfiles_rw {
 cat <<FILES
-d /n/lower/b0/y
+d $LOWER_DIR/b0/y
 
-d /n/lower/b0/d1/x
+d $LOWER_DIR/b0/d1/x
 
-d /n/lower/b0/d1/d2/d3
-f /n/lower/b0/d1/d2/d3/.wh.a
-f /n/lower/b0/d1/d2/d3/.wh.b
-f /n/lower/b0/d1/d2/d3/.wh.c
-f /n/lower/b0/d1/d2/d3/.wh.d
-f /n/lower/b0/d1/d2/d3/.wh.d4
-f /n/lower/b0/d1/d2/d3/.wh.e
-f /n/lower/b0/d1/d2/d3/.wh.f
+d $LOWER_DIR/b0/d1/d2/d3
+
+f $LOWER_DIR/b0/d1/d2/d3/.wh.__dir_opaque
+f $LOWER_DIR/b0/d1/x/.wh.__dir_opaque
+f $LOWER_DIR/b0/y/.wh.__dir_opaque
 
 FILES
 }
@@ -79,18 +63,14 @@ FILES
 
 function afterfiles_ro {
 cat <<FILES
-d /n/lower/b0/y
+d $LOWER_DIR/b0/y
 
-d /n/lower/b0/d1/x
+d $LOWER_DIR/b0/d1/x
 
-d /n/lower/b0/d1/d2/d3
-f /n/lower/b0/d1/d2/d3/.wh.a
-f /n/lower/b0/d1/d2/d3/.wh.b
-f /n/lower/b0/d1/d2/d3/.wh.c
-f /n/lower/b0/d1/d2/d3/.wh.d
-f /n/lower/b0/d1/d2/d3/.wh.d4
-f /n/lower/b0/d1/d2/d3/.wh.e
-f /n/lower/b0/d1/d2/d3/.wh.f
+d $LOWER_DIR/b0/d1/d2/d3
+f $LOWER_DIR/b0/d1/d2/d3/.wh.__dir_opaque
+f $LOWER_DIR/b0/d1/x/.wh.__dir_opaque
+f $LOWER_DIR/b0/y/.wh.__dir_opaque
 
 FILES
 }
@@ -101,7 +81,7 @@ FILES
 ##### simple tests
 ( directories ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1 /n/lower/b2
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1 $LOWER_DIR/b2
 
 
 mkdir $MOUNTPOINT/y
@@ -113,15 +93,15 @@ checktype $MOUNTPOINT/d1/d2/d3 'd'
 checktype $MOUNTPOINT/d1/d2/d3/d4 '-'
 
 unmount_union
-( directories ; afterfiles_rw )  | check_hierarchy /n/lower
+( directories ; afterfiles_rw )  | check_hierarchy $LOWER_DIR
 
 
 
 
-##### simple tests
+#### simple tests
 ( directories ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1=ro /n/lower/b2=ro
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro $LOWER_DIR/b2=ro
 
 mkdir $MOUNTPOINT/y
 checktype $MOUNTPOINT/y 'd'
@@ -132,7 +112,6 @@ checktype $MOUNTPOINT/d1/d2/d3 'd'
 checktype $MOUNTPOINT/d1/d2/d3/d4 '-'
 
 unmount_union
-( directories ; afterfiles_ro )  | check_hierarchy /n/lower
+( directories ; afterfiles_ro )  | check_hierarchy $LOWER_DIR
 
-echo "OK"
-exit 0
+complete_test

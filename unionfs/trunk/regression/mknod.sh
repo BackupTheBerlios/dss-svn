@@ -11,16 +11,16 @@ source scaffold
 # initial directories
 function directories {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-d /n/lower/b0/d1
-d /n/lower/b0/d6
-d /n/lower/b1
-d /n/lower/b1/d5
-d /n/lower/b1/d1
-d /n/lower/b1/d1/d2
-d /n/lower/b1/d1/d2/d3
-d /n/lower/b1/d1/d2/d3/d4
+d $LOWER_DIR
+d $LOWER_DIR/b0
+d $LOWER_DIR/b0/d1
+d $LOWER_DIR/b0/d6
+d $LOWER_DIR/b1
+d $LOWER_DIR/b1/d5
+d $LOWER_DIR/b1/d1
+d $LOWER_DIR/b1/d1/d2
+d $LOWER_DIR/b1/d1/d2/d3
+d $LOWER_DIR/b1/d1/d2/d3/d4
 
 FILES
 }
@@ -28,18 +28,18 @@ FILES
 # initial set of files
 function beforefiles {
 cat <<FILES
-f /n/lower/b1/d1/d2/d3/d4/.wh.c
+f $LOWER_DIR/b1/d1/d2/d3/d4/.wh.c
 FILES
 }
 
 
 function afterfiles_rw {
 cat <<FILES
-b /n/lower/b0/a
+b $LOWER_DIR/b0/a
 
-c /n/lower/b1/d5/b
+c $LOWER_DIR/b1/d5/b
 
-b /n/lower/b1/d1/d2/d3/d4/c
+b $LOWER_DIR/b1/d1/d2/d3/d4/c
 
 FILES
 }
@@ -48,16 +48,16 @@ FILES
 
 function afterfiles_ro {
 cat <<FILES
-b /n/lower/b0/a
+b $LOWER_DIR/b0/a
 
-d /n/lower/b0/d5
-c /n/lower/b0/d5/b
+d $LOWER_DIR/b0/d5
+c $LOWER_DIR/b0/d5/b
 
-f /n/lower/b1/d1/d2/d3/d4/.wh.c
-d /n/lower/b0/d1/d2
-d /n/lower/b0/d1/d2/d3
-d /n/lower/b0/d1/d2/d3/d4
-b /n/lower/b0/d1/d2/d3/d4/c
+f $LOWER_DIR/b1/d1/d2/d3/d4/.wh.c
+d $LOWER_DIR/b0/d1/d2
+d $LOWER_DIR/b0/d1/d2/d3
+d $LOWER_DIR/b0/d1/d2/d3/d4
+b $LOWER_DIR/b0/d1/d2/d3/d4/c
 FILES
 }
 
@@ -66,7 +66,7 @@ FILES
 
 ( directories ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1
 
 mknod $MOUNTPOINT/a    b 200 0
 checktype "$MOUNTPOINT/a" 'b'
@@ -77,12 +77,12 @@ checktype "$MOUNTPOINT/d1/d2/d3/d4/c" 'b'
 
 
 unmount_union
-( directories ; afterfiles_rw )  | check_hierarchy /n/lower
+( directories ; afterfiles_rw )  | check_hierarchy $LOWER_DIR
 
 
 ( directories ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1=ro
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro
 
 mknod $MOUNTPOINT/a   b  200 0
 checktype "$MOUNTPOINT/a" 'b'
@@ -92,6 +92,6 @@ mknod $MOUNTPOINT/d1/d2/d3/d4/c   b  200 0
 checktype "$MOUNTPOINT/d1/d2/d3/d4/c" 'b'
 
 unmount_union
-( directories ; afterfiles_ro )  | check_hierarchy /n/lower
+( directories ; afterfiles_ro )  | check_hierarchy $LOWER_DIR
 
-echo "OK"
+complete_test

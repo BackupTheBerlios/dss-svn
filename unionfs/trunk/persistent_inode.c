@@ -1,10 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
- * Copyright (c) 2003-2005 David P. Quigley
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,12 +14,12 @@
  *
  * This Copyright notice must be kept intact and distributed with all sources.
  */
+/*
+ *  $Id: persistent_inode.c,v 1.19 2005/09/18 05:02:56 jsipek Exp $
+ */
 
 #include "fist.h"
 #include "unionfs.h"
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#include <linux/kdev_t.h>
-#endif
 
 /*
  * verify_forwardmap(super_block *sb)
@@ -55,7 +56,7 @@ static int verify_forwardmap(struct super_block *sb)
 		goto out;
 	}
 	stopd(sb)->usi_bmap =
-	    KMALLOC(sizeof(uuid_t) * header.usedbranches, GFP_UNIONFS);
+	    KMALLOC(sizeof(struct bmapent) * header.usedbranches, GFP_UNIONFS);
 	stopd(sb)->usi_num_bmapents = header.usedbranches;
 	if (!stopd(sb)->usi_bmap) {
 		err = -ENOMEM;
@@ -67,8 +68,8 @@ static int verify_forwardmap(struct super_block *sb)
 		bytesread =
 		    forwardmap->f_op->read(forwardmap,
 					   (char *)&stopd(sb)->usi_bmap[bindex],
-					   sizeof(uuid_t), &readpos);
-		if (bytesread < sizeof(struct fmapent)) {
+					   sizeof(struct bmapent), &readpos);
+		if (bytesread < sizeof(struct bmapent)) {
 			err = -EINVAL;
 			set_fs(oldfs);
 			goto out_err;
@@ -95,15 +96,15 @@ static int verify_forwardmap(struct super_block *sb)
 	return err;
 }
 
-/* 
+/*
  * verify_reversemap(struct super_block sb, int rmapindex)
  *
  * sb: The unionfs superblock containing all of the current imap info
- * rmapindex: the index in the usi_reversemaps array that we wish to 
+ * rmapindex: the index in the usi_reversemaps array that we wish to
  * verify
  *
  * Assumes the reverse maps less than rmapindex are valid.
- * 
+ *
  * returns: 0 if the opperation succeds
  * 	-EINVAL if the map file does not belong to the forward map
  *
@@ -117,11 +118,7 @@ static int verify_reversemap(struct super_block *sb, int rmapindex,
 	struct fmaphdr fheader;
 	struct rmaphdr rheader;
 	mm_segment_t oldfs;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	struct statfs st;
-#else
 	struct kstatfs st;
-#endif
 
 	print_entry_location();
 	forwardmap = stopd(sb)->usi_forwardmap;
@@ -169,20 +166,16 @@ static int verify_reversemap(struct super_block *sb, int rmapindex,
 	 * matches with*/
 	for (i = 0; i < stopd(sb)->usi_num_bmapents && !found; i++) {
 		if (memcmp
-		    (rheader.revuuid, stopd(sb)->usi_bmap[i],
+		    (rheader.revuuid, stopd(sb)->usi_bmap[i].uuid,
 		     sizeof(rheader.revuuid))) {
 			found = 1;
 			for (bindex = 0; bindex <= hidden_root_info->udi_bend;
 			     bindex++) {
 				struct dentry *d;
 				fsid_t fsid;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-				kdev_t dev;
-				memset(&st, 0, sizeof(struct statfs));
-#else
 				dev_t dev;
 				memset(&st, 0, sizeof(struct kstatfs));
-#endif
+
 				if (bindex < UNIONFS_INLINE_OBJECTS)
 					d = hidden_root_info->
 					    udi_dentry_i[bindex];
@@ -236,12 +229,12 @@ static int verify_reversemap(struct super_block *sb, int rmapindex,
 	return err;
 }
 
-int parse_imap_options(struct super_block *sb,
-		       struct unionfs_dentry_info *hidden_root_info,
-		       char **options)
+int parse_imap_option(struct super_block *sb,
+		      struct unionfs_dentry_info *hidden_root_info,
+		      char *options)
 {
 	int mallocsize, count = 0, err = 0, i = 0;
-	char *end, *tmp, *name;
+	char *name;
 
 	print_entry_location();
 
@@ -250,25 +243,6 @@ int parse_imap_options(struct super_block *sb,
 	stopd(sb)->usi_reversemaps = NULL;
 	stopd(sb)->usi_fsnum_table = NULL;
 	stopd(sb)->usi_bnum_table = NULL;
-	if (**options == ':') {
-		options++;
-	}
-
-	/* We don't want to go off the end of our imap arguments later on. */
-	for (end = *options; *end; end++) ;
-
-	/* colon at the end */
-	if (*(end - 1) == ':') {
-		end--;
-		*end = '\0';
-	}
-
-	if (*options == end) {
-		err = -EINVAL;
-		printk(KERN_WARNING
-		       "unionfs: non-blank imap option required\n");
-		goto out_error;
-	}
 
 	mallocsize = sizeof(struct file *) * (hidden_root_info->udi_bend + 1);
 	stopd(sb)->usi_reversemaps = KMALLOC(mallocsize, GFP_UNIONFS);
@@ -293,17 +267,9 @@ int parse_imap_options(struct super_block *sb,
 	for (i = 0; i <= hidden_root_info->udi_bend; i++) {
 		stopd(sb)->usi_bnum_table[i] = -1;
 	}
-	while (*options < end) {
-
-		tmp = *options;
-
-		while (*tmp && *tmp != ':') {
-			tmp++;
-		}
-		*tmp = '\0';
-
-		/* name contains individual dir */
-		name = *options;
+	while ((name = strsep(&options, ":")) != NULL) {
+		if (!*name)
+			continue;
 		if (!stopd(sb)->usi_forwardmap) {
 			stopd(sb)->usi_forwardmap = filp_open(name, O_RDWR, 0);
 			if (IS_ERR(stopd(sb)->usi_forwardmap)) {
@@ -329,27 +295,29 @@ int parse_imap_options(struct super_block *sb,
 			    verify_reversemap(sb, count - 1, hidden_root_info);
 			if (err)
 				goto out_error;
-
 		}
-		/* increment the string pointer */
-		*options = tmp + 1;
+	}
+	if (count <= 0) {
+		printk(KERN_WARNING "unionfs: no reverse maps specified.\n");
+		err = -EINVAL;
 	}
 	if (err)
 		goto out_error;
 
 	/* Initialize the super block's next_avail field */
 	/* Dave, you can't use 64-bit division here because the i386 doesn't
-	 * support it natively.  Instead you need to punt if the size is 
+	 * support it natively.  Instead you need to punt if the size is
 	 * greater than unsigned long, and then cast it down.  Then you should
 	 * be able to assign to this value, without having these problems. */
 
 	if (stopd(sb)->usi_forwardmap->f_dentry->d_inode->i_size > ULONG_MAX) {
-		return -EFBIG;
+		err = -EFBIG;
+		goto out_error;
 	}
 	stopd(sb)->usi_next_avail =
 	    ((unsigned long)(stopd(sb)->usi_forwardmap->f_dentry->d_inode->
 			     i_size - (sizeof(struct fmaphdr) +
-				       sizeof(uuid_t[256])))
+				       sizeof(struct bmapent[256])))
 	     / sizeof(struct fmapent));
 	if (stopd(sb)->usi_next_avail <= 2)
 		stopd(sb)->usi_next_avail = 3;	//0 1 and 2 are reserved inode numbers.
@@ -423,7 +391,7 @@ ino_t get_uin(struct super_block * sb, uint8_t branchnum, ino_t inode_number,
 		err = -EIO;
 		goto out;
 	}
-	/* If we haven't found an entry and we have the O_CREAT flag set we want to 
+	/* If we haven't found an entry and we have the O_CREAT flag set we want to
 	 * create a new entry write it out to the file and return its index
 	 */
       create:
@@ -432,7 +400,7 @@ ino_t get_uin(struct super_block * sb, uint8_t branchnum, ino_t inode_number,
 		tmp_ent.fsnum = stopd(sb)->usi_bnum_table[branchnum];
 		tmp_ent.inode = inode_number;
 		seekpos =
-		    sizeof(struct fmaphdr) + sizeof(uuid_t[256]) +
+		    sizeof(struct fmaphdr) + sizeof(struct bmapent[256]) +
 		    (sizeof(struct fmapent) * stopd(sb)->usi_next_avail);
 		oldfs = get_fs();
 		set_fs(KERNEL_DS);
@@ -494,7 +462,7 @@ int get_lin(struct super_block *sb, ino_t inode_number, struct fmapent *entry)
 	}
 	forwardmap = stopd(sb)->usi_forwardmap;
 	seek_size =
-	    sizeof(struct fmaphdr) + sizeof(uuid_t[256]) +
+	    sizeof(struct fmaphdr) + sizeof(struct bmapent[256]) +
 	    (sizeof(struct fmapent) * inode_number);
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);

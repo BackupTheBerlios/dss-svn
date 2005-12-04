@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: super.c,v 1.59 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: super.c,v 1.71 2005/09/18 04:02:20 jsipek Exp $
  */
 
 #include "fist.h"
@@ -21,9 +23,7 @@
 
 /* The inode cache is used with alloc_inode for both our inode info and the
  * vfs inode.  */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 static kmem_cache_t *unionfs_inode_cachep;
-#endif
 
 static void unionfs_read_inode(struct inode *inode)
 {
@@ -31,11 +31,6 @@ static void unionfs_read_inode(struct inode *inode)
 
 	print_entry_location();
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	ASSERT(sizeof(struct unionfs_inode_info) <
-	       sizeof(inode->u) - sizeof(void *));
-	itopd_lhs(inode) = (&(inode->u.generic_ip) + 1);
-#endif
 	if (!itopd(inode)) {
 		FISTBUG
 		    ("No kernel memory when allocating inode private data!\n");
@@ -66,11 +61,7 @@ static void unionfs_read_inode(struct inode *inode)
 	memset(itohi_inline(inode), 0,
 	       UNIONFS_INLINE_OBJECTS * sizeof(struct inode *));
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	inode->i_version = ++event;	/* increment inode version */
-#else
 	inode->i_version++;
-#endif
 	inode->i_op = &unionfs_main_iops;
 	inode->i_fop = &unionfs_main_fops;
 	/* I don't think ->a_ops is ever allowed to be NULL */
@@ -122,21 +113,28 @@ static void unionfs_delete_inode(struct inode *inode)
 static void unionfs_put_super(struct super_block *sb)
 {
 	int bindex, bstart, bend;
+	struct unionfs_sb_info *spd;
 
 	print_entry_location();
 
-	if (stopd(sb)) {
+	if ((spd = stopd(sb))) {
 		/* XXX: Free persistent inode stuff. */
+
 		bstart = sbstart(sb);
 		bend = sbend(sb);
 		for (bindex = bstart; bindex <= bend; bindex++)
 			mntput(stohiddenmnt_index(sb, bindex));
 
+		/* Make sure we have no leaks of branchget/branchput. */
+		for (bindex = bstart; bindex <= bend; bindex++)
+			ASSERT(branch_count(sb, bindex) == 0);
+
 		KFREE(stohs_ptr(sb));
 		KFREE(stohiddenmnt_ptr(sb));
-		KFREE(stopd(sb)->usi_sbcount_p);
-		KFREE(stopd(sb)->usi_branchperms_p);
-		KFREE(stopd(sb));
+		KFREE(spd->usi_sbcount_p);
+		KFREE(spd->usi_branchperms_p);
+		KFREE(spd->usi_putmaps);
+		KFREE(spd);
 		stopd_lhs(sb) = NULL;
 	}
 	fist_dprint(6, "unionfs: released super\n");
@@ -144,32 +142,18 @@ static void unionfs_put_super(struct super_block *sb)
 	print_exit_location();
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-static int unionfs_statfs(struct super_block *sb, struct statfs *buf)
-#else
 static int unionfs_statfs(struct super_block *sb, struct kstatfs *buf)
-#endif
 {
 	int err = 0;
 	struct super_block *hidden_sb;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	struct statfs rsb;
-#else
 	struct kstatfs rsb;
-#endif
 	int bindex, bindex1, bstart, bend;
 
 	print_entry_location();
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	memset(buf, 0, sizeof(struct statfs));
-#else
 	memset(buf, 0, sizeof(struct kstatfs));
-#endif
 	buf->f_type = UNIONFS_SUPER_MAGIC;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 	buf->f_frsize = 0;
-#endif
 	buf->f_namelen = 0;
 
 	bstart = sbstart(sb);
@@ -196,10 +180,8 @@ static int unionfs_statfs(struct super_block *sb, struct kstatfs *buf)
 			    bindex, (int)rsb.f_bsize, (int)rsb.f_blocks,
 			    (int)rsb.f_bfree, (int)rsb.f_bavail);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 		if (!buf->f_frsize)
 			buf->f_frsize = rsb.f_frsize;
-#endif
 		if (!buf->f_namelen) {
 			buf->f_namelen = rsb.f_namelen;
 		} else {
@@ -235,29 +217,46 @@ static int unionfs_statfs(struct super_block *sb, struct kstatfs *buf)
 		buf->f_files += rsb.f_files;
 		buf->f_ffree += rsb.f_ffree;
 	}
-	//DQ: we subtract 4 here since we can add .wh. to any file we want for whiteout 
+	//DQ: we subtract 4 here since we can add .wh. to any file we want for whiteout
 	//files so we need to make sure there is room for it.
 	buf->f_namelen -= 4;
 
 	memset(&buf->f_fsid, 0, sizeof(__kernel_fsid_t));
-	//DQ: The 6 and 5 in the below code are constants defined in the statfs struct. 
+	//DQ: The 6 and 5 in the below code are constants defined in the statfs struct.
 	//In 2.6 there is only room for 4 more variables in the struct while in 2.4
 	//there is room for 5.
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	memset(&buf->f_spare, 0, sizeof(long) * 6);
-#else
 	memset(&buf->f_spare, 0, sizeof(long) * 5);
-#endif
 	print_exit_status(err);
 	return err;
 }
 
-/*
- * XXX: not implemented.  This is not allowed yet.
- * Should we call this on the hidden_sb?  Probably not.
- */
+static int do_binary_remount(struct super_block *sb, int *flags, char *data)
+{
+	unsigned long *uldata = (unsigned long *)data;
+	int err;
+
+	uldata++;
+
+	switch (*uldata) {
+	case UNIONFS_IOCTL_DELBRANCH:
+		err = unionfs_ioctl_delbranch(sb, *(uldata + 1));
+		break;
+	default:
+		err = -ENOTTY;
+	}
+
+	return err;
+}
+
+/* We don't support a standard text remount, but we do have a magic remount
+ * for unionctl.  The idea is that you can remove a branch without opening
+ * the union.  Eventually it would be nice to support a full-on remount, so
+ * that you can have all of the directories change at once, but that would
+ * require some pretty complicated matching code. */
 static int unionfs_remount_fs(struct super_block *sb, int *flags, char *data)
 {
+	if (data && *((unsigned long *)data) == UNIONFS_REMOUNT_MAGIC)
+		return do_binary_remount(sb, flags, data);
 	return -ENOSYS;
 }
 
@@ -301,14 +300,10 @@ static void unionfs_clear_inode(struct inode *inode)
 	// ASSERT((inode->i_state & I_DIRTY) == 0);
 	KFREE(itohi_ptr(inode));
 	itohi_ptr(inode) = NULL;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	itopd_lhs(inode) = NULL;
-#endif
 
 	print_exit_location();
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 static struct inode *unionfs_alloc_inode(struct super_block *sb)
 {
 	struct unionfs_inode_container *c;
@@ -371,37 +366,18 @@ void destroy_inode_cache()
 	if (!unionfs_inode_cachep)
 		goto out;
 	if (kmem_cache_destroy(unionfs_inode_cachep))
-		printk(KERN_INFO
+		printk(KERN_ERR
 		       "unionfs_inode_cache: not all structures were freed\n");
       out:
 	print_exit_location();
 	return;
 }
-#else
-int init_inode_cache()
-{
-	print_entry_location();
-	print_exit_status(0);
-	return 0;
-}
-
-void destroy_inode_cache()
-{
-	print_entry_location();
-	print_exit_location();
-}
-#endif
 
 /* Called when we have a dirty inode, right here we only throw out
  * parts of our readdir list that are too old.
  */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,9)
 static int unionfs_write_inode(struct inode *inode, int sync)
 {
-#else
-static void unionfs_write_inode(struct inode *inode, int sync)
-{
-#endif
 	struct list_head *pos, *n;
 	struct unionfs_dir_state *rdstate;
 
@@ -464,6 +440,8 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 	int bindex, bstart, bend;
 	int perms;
 
+	lock_dentry(sb->s_root);
+
 	tmp = __get_free_page(GFP_UNIONFS);
 	if (!tmp) {
 		ret = -ENOMEM;
@@ -489,14 +467,7 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 
 	seq_printf(m, ",debug=%d", fist_get_debug_value());
 
-	if (IS_SET(sb, GLOBAL_ERR_PASSUP))
-		seq_printf(m, ",err=passup");
-	else
-		seq_printf(m, ",err=tryleft");
-
-	if (IS_SET(sb, DELETE_FIRST))
-		seq_printf(m, ",delete=first");
-	else if (IS_SET(sb, DELETE_WHITEOUT))
+	if (IS_SET(sb, DELETE_WHITEOUT))
 		seq_printf(m, ",delete=whiteout");
 	else
 		seq_printf(m, ",delete=all");
@@ -507,18 +478,13 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 		seq_printf(m, ",copyup=mounter");
 	else
 		seq_printf(m, ",copyup=preserve");
-
-	if (IS_SET(sb, SETATTR_ALL))
-		seq_printf(m, ",setattr=all");
-	else
-		seq_printf(m, ",setattr=left");
       out:
 	if (tmp)
 		free_page(tmp);
+	unlock_dentry(sb->s_root);
 	return ret;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 /**
  * The entry given by dentry here is always a directory.
  * We can't just do dentry->d_parent, because it may
@@ -538,7 +504,6 @@ static struct dentry *unionfs_get_parent(struct dentry *dentry)
 struct export_operations unionfs_export_ops = {
 	.get_parent = unionfs_get_parent
 };
-#endif
 
 struct super_operations unionfs_sops = {
 	.read_inode = unionfs_read_inode,
@@ -551,10 +516,8 @@ struct super_operations unionfs_sops = {
 	.umount_begin = unionfs_umount_begin,
 	.show_options = unionfs_show_options,
 	.write_inode = unionfs_write_inode,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 	.alloc_inode = unionfs_alloc_inode,
 	.destroy_inode = unionfs_destroy_inode,
-#endif
 #ifdef SPLIT_VIEW_CACHES
 	.select_super = unionfs_select_super,
 #endif

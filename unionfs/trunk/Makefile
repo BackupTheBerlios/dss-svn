@@ -11,7 +11,7 @@ TOPINC   = -I${LINUXSRC}/include
 PREFIX   = /usr/local
 MANDIR   = ${PREFIX}/man
 MODPREFIX=
-VERSION=071805-1518
+VERSION=20050921-1517
 TAROPTS = czvf
 COMPEXT = .gz
 UNIONFS_DEBUG_CFLAG = -g
@@ -38,14 +38,17 @@ EXTRA_CFLAGS += ${TOPINC} -Wall -Werror ${EXTRACFLAGS} ${UNIONFS_DEBUG_CFLAG} ${
 UCFLAGS = -I. ${UNIONFS_DEBUG_CFLAG} ${UNIONFS_OPT_CFLAG} -Wall -Werror ${EXTRAUCFLAGS}  ${UNIONFS_VERSION_CFLAG}
 
 obj-m := unionfs.o
-unionfs-objs := subr.o dentry.o locks.o file.o inode.o main.o super.o \
+unionfs-objs := subr.o dentry.o file.o inode.o main.o super.o \
 	stale_inode.o branchman.o xattr.o rdstate.o copyup.o  \
 	dirhelper.o rename.o unlink.o lookup.o persistent_inode.o \
 	commonfops.o dirfops.o print.o
+ifeq ($(KERNELVERSION),2.4)
+unionfs-objs += compat24.o
+endif
 
 BINS	:=	unionctl uniondbg unionimap
 
-all:	readthereadme unionfs$(KERNELVERSION) ${BINS}
+all:	readthereadme tags unionfs$(KERNELVERSION) ${BINS}
 
 readthereadme:
 	@echo "******************************************************************************"
@@ -59,24 +62,24 @@ unionfs2.6:
 unionfs2.4: ${obj-m}
 
 ${obj-m}: ${unionfs-objs}
-	ld -o ${obj-m} -r ${unionfs-objs}
+	${LD} -o ${obj-m} -r ${unionfs-objs}
 
 unionctl: unionctl.c usercommon.c
-	${CC} -o $@ $? ${UCFLAGS}
+	${CC} -o $@ $^ ${UCFLAGS}
 
 uniondbg: uniondbg.c
-	${CC} -o $@ $? ${UCFLAGS}
+	${CC} -o $@ $^ ${UCFLAGS}
 
 unionimap: unionimap.c usercommon.c
-	${CC} -o $@ -luuid $? ${UCFLAGS}
+	${CC} -o $@ -luuid $^ ${UCFLAGS}
 
 memtest:
 	perl match-malloc.pl log.txt
 
-TAGS:
+TAGS: $(wildcard *.[ch])
 	etags -t *.[hc]
 
-tags:
+tags: $(wildcard *.[ch])
 	ctags *.[ch]
 
 clean:
@@ -134,7 +137,9 @@ unionfs-${VERSION}.tar${COMPEXT}:
 	rm -rf unionfs-${VERSION}/rpm/CVS
 	rm -rf unionfs-${VERSION}/debian/CVS
 	mkdir unionfs-${VERSION}/regression
-	cp ../regression/*.sh ../regression/ChangeLog ../regression/scaffold ../regression/README unionfs-${VERSION}/regression
+	mkdir unionfs-${VERSION}/regression/progs
+	cp regression/Makefile regression/*.sh regression/ChangeLog regression/scaffold regression/README unionfs-${VERSION}/regression
+	cp regression/progs/Makefile regression/progs/*.[ch] unionfs-${VERSION}/regression/progs
 	mkdir unionfs-${VERSION}/man
 	cp man/*.[0-9] unionfs-${VERSION}/man
 	tar ${TAROPTS} unionfs-${VERSION}.tar${COMPEXT} unionfs-${VERSION}

@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: fist.h,v 1.52 2005/07/18 15:03:17 cwright Exp $
+ *  $Id: fist.h,v 1.61 2005/09/18 05:02:56 jsipek Exp $
  */
 
 #ifndef __FIST_H_
@@ -25,12 +27,6 @@
 #ifdef __KERNEL__
 #include <linux/config.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#ifdef CONFIG_MODVERSIONS
-# define MODVERSIONS
-# include <linux/modversions.h>
-#endif				/* CONFIG_MODVERSIONS */
-#endif				/* KERNEL_VERSION < 2.6.0 */
 #include <linux/sched.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
@@ -41,9 +37,6 @@
 #include <linux/limits.h>
 #include <linux/random.h>
 #include <linux/poll.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#include <linux/locks.h>
-#else
 #include <linux/buffer_head.h>
 #include <linux/pagemap.h>
 #include <linux/namei.h>
@@ -53,8 +46,6 @@
 #include <linux/writeback.h>
 #include <linux/page-flags.h>
 #include <linux/statfs.h>
-#include "missing_vfs_funcs.h"
-#endif
 #include <linux/smp.h>
 #include <linux/smp_lock.h>
 #include <linux/file.h>
@@ -63,12 +54,11 @@
 #include <linux/poll.h>
 #include <linux/list.h>
 #include <linux/init.h>
-#if defined(UNIONFS_XATTR) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,20))
+#if defined(UNIONFS_XATTR)
 #include <linux/xattr.h>
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 #include <linux/security.h>
-#endif
+#include <linux/compat.h>
 
 #include <linux/swap.h>
 
@@ -76,6 +66,8 @@
 #include <asm/segment.h>
 #include <asm/mman.h>
 #include <linux/seq_file.h>
+#include <linux/dcache.h>
+#include <linux/poll.h>
 
 /*
  * MACROS:
@@ -104,12 +96,49 @@
 #ifdef FIST_MALLOC_DEBUG
 extern void *unionfs_kmalloc(size_t len, int flag, int line, const char *file);
 extern void unionfs_kfree(void *ptr, int line, const char *file);
+
+extern struct dentry *unionfs_dget_parent(struct dentry *child, int line,
+					  const char *file);
+extern struct dentry *unionfs_dget(struct dentry *ptr, int line,
+				   const char *file);
+extern void unionfs_dput(struct dentry *ptr, int line, const char *file);
+extern struct dentry *unionfs_lookup_one_len(const char *name,
+					     struct dentry *parent, int len,
+					     int line, const char *file);
+void record_path_lookup(struct nameidata *nd, int line, const char *file);
+void record_path_release(struct nameidata *nd, int line, const char *file);
+struct file *unionfs_dentry_open(struct dentry *ptr, struct vfsmount *mnt,
+				 int flags, int line, const char *file);
+void record_set(struct dentry *upper, int index, struct dentry *ptr,
+		struct dentry *old, int line, const char *file);
+
 #define KMALLOC(size,flag) unionfs_kmalloc((size),(flag),__LINE__,__FILE__)
 #define KFREE(ptr) unionfs_kfree((ptr),__LINE__,__FILE__)
+#define DGET(d) unionfs_dget((d),__LINE__,__FILE__)
+#define DPUT(d) unionfs_dput((d),__LINE__,__FILE__)
+#define LOOKUP_ONE_LEN(name,parent,len) unionfs_lookup_one_len((name),(parent),(len),__LINE__,__FILE__)
+# define RECORD_PATH_LOOKUP(nd)	record_path_lookup((nd),__LINE__,__FILE__)
+# define RECORD_PATH_RELEASE(nd) record_path_release((nd),__LINE__,__FILE__)
+/* This has the effect of reducing the reference count sooner or later,
+ * if the file is closed.  If it isn't then the mount will be busy and
+ * you can't unmount.
+ */
+# define DENTRY_OPEN(d,m,f) unionfs_dentry_open((d),(m),(f),__LINE__,__FILE__)
+# define GET_PARENT(dentry) unionfs_dget_parent((dentry),__LINE__,__FILE__)
 #else				/* not FIST_MALLOC_DEBUG */
-# define KMALLOC(a,b)	kmalloc((a),(b))
-# define KFREE(a)	kfree((a))
+# define KMALLOC(a,b)		kmalloc((a),(b))
+# define KFREE(a)		kfree((a))
+# define DPUT(a)		dput((a))
+# define DGET(a)		dget((a))
+# define LOOKUP_ONE_LEN(a,b,c)	lookup_one_len((a),(b),(c))
+# define RECORD_PATH_LOOKUP(a)
+# define RECORD_PATH_RELEASE(a)
+# define DENTRY_OPEN(d,m,f)	dentry_open((d),(m),(f))
+# define GET_PARENT(d)		dget_parent(d)
 #endif				/* not FIST_MALLOC_DEBUG */
+
+/* This needs to go so low so that we can bring in DGET/DPUT. */
+#include "missing_vfs_funcs.h"
 
 #ifdef UNIONFS_NDEBUG
 /* All of these should be noops. */
@@ -125,6 +154,7 @@ static inline int fist_set_debug_value(int val)
 #define fist_print_dentry(msg, o)
 #define __fist_print_dentry(msg, o, i)
 #define fist_print_generic_dentry(msg, o)
+#define fist_print_generic_dentry3(msg, o)
 #define __fist_print_generic_dentry(msg, o, i)
 #define fist_print_inode(msg, o)
 #define fist_print_generic_inode(msg, o)
@@ -141,8 +171,10 @@ extern void fist_dprint_internal(const char *file, const char *function,
 extern void fist_print_dentry(const char *, const struct dentry *);
 extern void __fist_print_dentry(const char *, const struct dentry *, int);
 extern void fist_print_generic_dentry(const char *, const struct dentry *);
-extern void __fist_print_generic_dentry(const char *, const struct dentry *,
-					int);
+extern void fist_print_generic_dentry3(const char *, const char *,
+				       const struct dentry *);
+extern void __fist_print_generic_dentry(const char *, const char *, const
+					struct dentry *, int);
 extern void fist_print_inode(const char *, const struct inode *);
 extern void fist_print_generic_inode(const char *, const struct inode *);
 extern void fist_print_file(const char *, const struct file *);
@@ -155,8 +187,6 @@ extern char *del_indent(void);
 
 /* The poison pointer.  This needs to be changed on an ia64. */
 #define POISON    ((void *)0x5a5a5a5a)
-/* Used where we want poisoning, but distinct from 5a5a5a5a. */
-#define EXPLOSIVE ((void *)0xc4c4c4c4)
 
 #define WHEREAMI() \
 do { \
@@ -267,31 +297,6 @@ do { \
 #define print_util_exit_pointer(status)
 #endif
 
-#ifndef list_for_each_entry
-/* This is stolen from 2.4.21 linux/list.h:223 */
-#define list_for_each_entry(pos, head, member)				\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-		     prefetch(pos->member.next);			\
-	     &pos->member != (head); 					\
-	     pos = list_entry(pos->member.next, typeof(*pos), member),	\
-		     prefetch(pos->member.next))
-
-#endif
-
-#ifndef container_of
-/**
- * container_of - cast a member of a structure out to the containing structure
- *
- * @ptr:	the pointer to the member.
- * @type:	the type of the container struct this is embedded in.
- * @member:	the name of the member within the struct.
- *
- */
-#define container_of(ptr, type, member) ({			\
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-        (type *)( (char *)__mptr - offsetof(type,member) );})
-#endif
-
 #endif				/* __KERNEL__ */
 
 /*
@@ -308,8 +313,8 @@ do { \
 # define UNIONFS_IOCTL_RDWRBRANCH	_IOW(0x15, 14, int)
 # define UNIONFS_IOCTL_QUERYFILE	_IOR(0x15, 15, int)
 
-# define UNIONFS_EAFUNC_CLASS		"unionfs."
-# define UNIONFS_EAFUNC_DELBRANCH	"delbranch"
+/* We don't support normal remount, but unionctl uses it. */
+# define UNIONFS_REMOUNT_MAGIC		0x4a5a4380
 
 struct unionfs_addbranch_args {
 	unsigned int ab_branch;
@@ -320,15 +325,6 @@ struct unionfs_addbranch_args {
 struct unionfs_rdwrbranch_args {
 	unsigned int rwb_branch;
 	unsigned int rwb_perms;
-};
-
-struct unionfs_queryfile_args {
-	char *filename;
-#ifdef __KERNEL__
-	fd_set __user branchlist;
-#else
-	fd_set branchlist;
-#endif
 };
 
 #endif				/* not __FIST_H_ */

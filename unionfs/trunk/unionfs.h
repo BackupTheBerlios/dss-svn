@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: unionfs.h,v 1.131 2005/07/18 15:47:05 cwright Exp $
+ *  $Id: unionfs.h,v 1.159 2005/09/18 04:42:10 jsipek Exp $
  */
 
 #ifndef __UNIONFS_H_
@@ -21,19 +23,17 @@
 
 #ifdef __KERNEL__
 
-#if (!defined(UNIONFS_UNSUPPORTED)) &&(LINUX_VERSION_CODE < KERNEL_VERSION(2,4,20)) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9))
+#if (!defined(UNIONFS_UNSUPPORTED)) && (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9))
 #warning You are compiling Unionfs on an unsupported kernel version.
 #warning To compile Unionfs, you will need to define UNIONFS_UNSUPPORTED.
 #warning Try adding: EXTRACFLAGS=-DUNIONFS_UNSUPPORTED to fistdev.mk
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 #include <linux/spinlock.h>
 #define wq_write_lock_irqsave(lock,flags) spin_lock_irqsave(lock,flags)
 #define wq_write_unlock(lock) spin_unlock(lock)
 #define wq_write_lock_irq(lock) spin_lock_irq(lock)
 #define wq_write_unlock_irqrestore(lock,flags) spin_unlock_irqrestore(lock,flags)
-#endif
 
 /* number of characters while generating unique temporary file names */
 #define	UNIONFS_TMPNAM_LEN	12
@@ -53,96 +53,6 @@
 /*UUID typedef needed later*/
 typedef uint8_t uuid_t[16];
 
-/* A lock structure that a single task can lock N times and then unlock N times. */
-struct multilock {
-	spinlock_t ml_protect;
-	struct task_struct *ml_locker;
-	int ml_depth;
-	wait_queue_head_t ml_sleepers;
-};
-
-static inline void multilock_init(struct multilock *ml)
-{
-#ifdef MULTILOCK_TRACK
-	printk("MLI:%p\n", ml);
-#endif
-	ml->ml_protect = SPIN_LOCK_UNLOCKED;
-	ml->ml_locker = NULL;
-	ml->ml_depth = 0;
-	init_waitqueue_head(&ml->ml_sleepers);
-}
-
-#define multilock_lock(ml) __multilock_lock((ml), __FILE__, __FUNCTION__, __LINE__)
-static inline void __multilock_lock(struct multilock *ml, const char *file,
-				    const char *function, int line)
-{
-
-#ifdef MULTILOCK_TRACK
-	printk("ILK:%d:%p:%d (%s:%d)\n", current->pid, ml, ml->ml_depth,
-	       function, line);
-#endif
-
-      retry:
-	spin_lock(&ml->ml_protect);
-	if (ml->ml_locker == NULL) {
-		ml->ml_locker = current;
-		ml->ml_depth = 1;
-	} else if (ml->ml_locker == current) {
-		ml->ml_depth++;
-	} else {
-		/* SLEEP_ON_VAR */
-		wait_queue_t wait;
-		unsigned long flags;
-		init_waitqueue_entry(&wait, current);
-
-		/* We want to go to sleep */
-		current->state = TASK_UNINTERRUPTIBLE;
-
-		/* SLEEP_ON_HEAD */
-		wq_write_lock_irqsave(&ml->ml_sleepers.lock, flags);
-		__add_wait_queue(&ml->ml_sleepers, &wait);
-		wq_write_unlock(&ml->ml_sleepers.lock);
-
-		/* This line is why we can't use sleep_on, because we need to save our queue. */
-		spin_unlock(&ml->ml_protect);
-
-		schedule();
-
-		/* SLEEP_ON_TAIL */
-		wq_write_lock_irq(&ml->ml_sleepers.lock);
-		__remove_wait_queue(&ml->ml_sleepers, &wait);
-		wq_write_unlock_irqrestore(&ml->ml_sleepers.lock, flags);
-		goto retry;
-	}
-	spin_unlock(&ml->ml_protect);
-
-#ifdef MULTILOCK_TRACK
-	printk("OLK:%d:%p:%d\n", current->pid, ml, ml->ml_depth);
-#endif
-}
-
-#define multilock_unlock(ml) __multilock_unlock((ml), __FILE__, __FUNCTION__, __LINE__)
-static inline void __multilock_unlock(struct multilock *ml, const char *file,
-				      const char *function, int line)
-{
-#ifdef MULTILOCK_TRACK
-	printk("IUL:%d:%p:%d (%s:%d)\n", current->pid, ml, ml->ml_depth,
-	       function, line);
-#endif
-	spin_lock(&ml->ml_protect);
-	ASSERT2(ml->ml_depth > 0);
-	ASSERT2(ml->ml_locker == current);
-	ml->ml_depth--;
-	if (ml->ml_depth == 0) {
-		ml->ml_locker = NULL;
-		wake_up(&ml->ml_sleepers);
-	}
-	spin_unlock(&ml->ml_protect);
-#ifdef MULTILOCK_TRACK
-	printk("OUL:%d:%p:%d\n", current->pid, ml, ml->ml_depth);
-#endif
-}
-
 /* Operations vectors defined in specific files. */
 extern struct file_operations unionfs_main_fops;
 extern struct file_operations unionfs_dir_fops;
@@ -156,7 +66,7 @@ extern struct export_operations unionfs_export_ops;
 /* How many dentries, inodes, and other things should be stuck directly int our
  * unionfs structures without an intervening KMALLOC? */
 #ifndef UNIONFS_INLINE_OBJECTS
-#define UNIONFS_INLINE_OBJECTS 0
+#define UNIONFS_INLINE_OBJECTS 1
 #endif
 
 /* How long should an entry be allowed to persist */
@@ -178,18 +88,19 @@ struct unionfs_inode_info {
 	struct inode **uii_inode_p;
 	/* to keep track of reads/writes for unlinks before closes */
 	atomic_t uii_totalopens;
-	atomic_t uii_writeopens;
 };
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
+
 struct unionfs_inode_container {
 	struct unionfs_inode_info info;
 	struct inode vfs_inode;
 };
-#endif
 
 /* unionfs dentry data in memory */
 struct unionfs_dentry_info {
-	struct multilock udi_lock;
+	/* The semaphore is used to lock the dentry as soon as we get into a
+	 * unionfs function from the VFS.  Our lock ordering is that children
+	 * go before their parents. */
+	struct semaphore udi_sem;
 	int udi_bstart;
 	int udi_bend;
 	int udi_bopaque;
@@ -199,9 +110,15 @@ struct unionfs_dentry_info {
 	struct dentry **udi_dentry_p;
 };
 
+/* A putmap is used so that older files can still do branchput correctly. */
+struct putmap {
+	atomic_t count;
+	int bend;
+	int map[0];
+};
+
 /* unionfs super-block data in memory */
 struct unionfs_sb_info {
-	int b_start;
 	int b_end;
 
 	uid_t copyupuid;
@@ -211,18 +128,9 @@ struct unionfs_sb_info {
 	atomic_t usi_generation;
 	unsigned long usi_mount_flag;
 
-	int usi_diropaque;
 	int usi_persistent;
 
-	/* These will need a lock. */
-	uint64_t usi_next_avail;
-	uint8_t usi_num_bmapents;
-	uuid_t *usi_bmap;
-	struct file *usi_forwardmap;
-	struct file **usi_reversemaps;
-	struct file **usi_map_table;
-	int *usi_fsnum_table;	//This is a table of fsnums to branches.
-	int *usi_bnum_table;	//This is a table of branches to fsnums.
+	/* These are the pointers to our various objects. */
 	struct super_block *usi_sb_i[UNIONFS_INLINE_OBJECTS];
 	atomic_t usi_sbcount_i[UNIONFS_INLINE_OBJECTS];
 	struct vfsmount *usi_hidden_mnt_i[UNIONFS_INLINE_OBJECTS];
@@ -232,6 +140,22 @@ struct unionfs_sb_info {
 	atomic_t *usi_sbcount_p;
 	struct vfsmount **usi_hidden_mnt_p;
 	int *usi_branchperms_p;
+
+	/* These map branch numbers for old generation numbers to the new bindex,
+	 * so that branchput will behave properly. */
+	int usi_firstputmap;
+	int usi_lastputmap;
+	struct putmap **usi_putmaps;
+
+	/* These will need a lock. */
+	uint64_t usi_next_avail;
+	uint8_t usi_num_bmapents;
+	struct bmapent *usi_bmap;
+	struct file *usi_forwardmap;
+	struct file **usi_reversemaps;
+	struct file **usi_map_table;
+	int *usi_fsnum_table;	//This is a table of fsnums to branches.
+	int *usi_bnum_table;	//This is a table of branches to fsnums.
 };
 
 /*
@@ -245,9 +169,6 @@ struct filldir_node {
 	int namelen;		// name len since name is not 0 terminated
 	int bindex;		// we can check for duplicate whiteouts and files in the same branch in order to return -EIO.
 	int whiteout;		// is this a whiteout entry?
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#define DNAME_INLINE_LEN_MIN DNAME_INLINE_LEN
-#endif
 	char iname[DNAME_INLINE_LEN_MIN];	// Inline name, so we don't need to separately kmalloc small ones
 };
 
@@ -317,31 +238,22 @@ struct unionfs_file_info {
 #define fbend(file) (ftopd(file)->b_end)
 
 /* Inode to private data */
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,0)
-#define itopd(ino) ((struct unionfs_inode_info *)(ino)->u.generic_ip)
-#define itopd_lhs(ino) ((ino)->u.generic_ip)
-#else
 static inline struct unionfs_inode_info *itopd(const struct inode *inode)
 {
 	return
 	    &(container_of(inode, struct unionfs_inode_container, vfs_inode)->
 	      info);
 }
-#endif
+
 #define itohi_ptr(ino) (itopd(ino)->uii_inode_p)
 #define itohi_inline(ino) (itopd(ino)->uii_inode_i)
 #define ibstart(ino) (itopd(ino)->b_start)
 #define ibend(ino) (itopd(ino)->b_end)
 
 /* Superblock to private data */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#define stopd(super) ((struct unionfs_sb_info *)(super)->u.generic_sbp)
-#define stopd_lhs(super) ((super)->u.generic_sbp)
-#else
 #define stopd(super) ((struct unionfs_sb_info *)(super)->s_fs_info)
 #define stopd_lhs(super) ((super)->s_fs_info)
-#endif
-#define sbstart(sb) stopd(sb)->b_start
+#define sbstart(sb) 0
 #define sbend(sb) stopd(sb)->b_end
 #define sbmax(sb) (stopd(sb)->b_end + 1)
 #define stohs_ptr(super) (stopd(super)->usi_sb_p)
@@ -349,33 +261,40 @@ static inline struct unionfs_inode_info *itopd(const struct inode *inode)
 #define stohiddenmnt_ptr(super) (stopd(super)->usi_hidden_mnt_p)
 #define stohiddenmnt_inline(super) (stopd(super)->usi_hidden_mnt_i)
 
-/* Macros for locking a dentry. */
-#define lock_dpd(dentry) multilock_lock(&dtopd(dentry)->udi_lock)
-#define unlock_dpd(dentry) multilock_unlock(&dtopd(dentry)->udi_lock)
-#define lock_dpd2(dentry) __multilock_lock(&dtopd(dentry)->udi_lock, file, function, line)
-#define unlock_dpd2(dentry) __multilock_unlock(&dtopd(dentry)->udi_lock, file, function, line)
-
-/* The NODEBUG versions are defines, the debug versions are inline functions
- * with extra checks. */
-#ifdef NODEBUG
+/* The UNIONFS_NDEBUG versions are defines, the debug versions are inline
+ * functions with extra checks. */
+#ifdef UNIONFS_NDEBUG
 #include "unionfs_macros.h"
 #else
 #include "unionfs_debugmacros.h"
 #endif
 
+/* The double lock function needs to go after the debugmacros, so that
+ * dtopd is defined.  */
+static inline void double_lock_dentry(struct dentry *d1, struct dentry *d2)
+{
+	if (d2 < d1) {
+		struct dentry *tmp = d1;
+		d1 = d2;
+		d2 = tmp;
+	}
+	lock_dentry(d1);
+	lock_dentry(d2);
+}
+
 extern int new_dentry_private_data(struct dentry *dentry);
 void free_dentry_private_data(struct unionfs_dentry_info *udi);
+void update_bstart(struct dentry *dentry);
 #define sbt(sb) ((sb)->s_type->name)
 
 /*
  * EXTERNALS:
  */
 /* replicates the directory structure upto given dentry in given branch */
-extern struct dentry *unionfs_create_dirs(struct inode *dir,
-					  struct dentry *dentry, int bindex);
-struct dentry *unionfs_create_named_dirs(struct inode *dir,
-					 struct dentry *dentry, char *name,
-					 int namelen, int bindex);
+extern struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
+				     int bindex);
+struct dentry *create_parents_named(struct inode *dir, struct dentry *dentry,
+				    const char *name, int bindex);
 
 /* partial lookup */
 extern int unionfs_partial_lookup(struct dentry *dentry);
@@ -386,23 +305,17 @@ extern int create_whiteout(struct dentry *dentry, int start);
 extern int create_whiteout_parent(struct dentry *parent_dentry,
 				  const char *filename, int start);
 /* copies a file from dbstart to newbindex branch */
-extern int unionfs_copyup_file(struct inode *dir, struct file *file, int bstart,
-			       int newbindex, int size);
-extern int unionfs_copyup_named_file(struct inode *dir, struct file *file,
-				     char *name, int namelen, int bstart,
-				     int new_bindex, int len);
+extern int copyup_file(struct inode *dir, struct file *file, int bstart,
+		       int newbindex, int size);
+extern int copyup_named_file(struct inode *dir, struct file *file,
+			     char *name, int bstart, int new_bindex, int len);
 
 /* copies a dentry from dbstart to newbindex branch */
-extern int unionfs_copyup_dentry_len(struct inode *dir, struct dentry *dentry,
-				     int bstart, int new_bindex,
-				     struct file **copyup_file, int len);
-extern int unionfs_copyup_named_dentry_len(struct inode *dir,
-					   struct dentry *dentry, int bstart,
-					   int new_bindex, char *name,
-					   int namelen,
-					   struct file **copyup_file, int len);
-
-extern int create_dir_whs(struct dentry *dentry, int cur_index);
+extern int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
+			 int new_bindex, struct file **copyup_file, int len);
+extern int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
+			       int bstart, int new_bindex, char *name,
+			       int namelen, struct file **copyup_file, int len);
 
 extern int remove_whiteouts(struct dentry *dentry, struct dentry *hidden_dentry,
 			    int bindex);
@@ -429,7 +342,13 @@ extern int unionfs_file_revalidate(struct file *file, int willwrite);
 extern int unionfs_open(struct inode *inode, struct file *file);
 extern int unionfs_file_release(struct inode *inode, struct file *file);
 extern int unionfs_flush(struct file *file);
-extern long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,11)
+extern long unionfs_ioctl(struct file *file, unsigned int cmd,
+			  unsigned long arg);
+#else
+extern int unionfs_ioctl(struct inode *unused, struct file *file,
+			 unsigned int cmd, unsigned long arg);
+#endif
 
 /* Inode operations */
 extern int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
@@ -437,27 +356,35 @@ extern int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 int unionfs_unlink(struct inode *dir, struct dentry *dentry);
 int unionfs_rmdir(struct inode *dir, struct dentry *dentry);
 
+int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd);
+
 /* The values for unionfs_interpose's flag. */
 #define INTERPOSE_DEFAULT	0
 #define INTERPOSE_LOOKUP	1
 #define INTERPOSE_REVAL		2
 #define INTERPOSE_REVAL_NEG	3
-#define INTERPOSE_LINK		4
-#define INTERPOSE_PARTIAL	5
-#define INTERPOSE_PARTIAL_NEG	6
+#define INTERPOSE_PARTIAL	4
 
 extern int unionfs_interpose(struct dentry *this_dentry, struct super_block *sb,
 			     int flag);
 
 /* Branch management ioctls. */
-int unionfs_ioctl_branchcount(struct file *file, unsigned int cmd, unsigned long arg);
-int unionfs_ioctl_incgen(struct file *file, unsigned int cmd, unsigned long arg);
-int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd, unsigned long arg);
-int unionfs_ioctl_delbranch(struct inode *inode, unsigned int cmd, unsigned long arg);
-int unionfs_ioctl_rdwrbranch(struct inode *inode, unsigned int cmd, unsigned long arg);
-int unionfs_ioctl_queryfile(struct inode *inode, unsigned int cmd, unsigned long arg);
+int unionfs_ioctl_branchcount(struct file *file, unsigned int cmd,
+			      unsigned long arg);
+int unionfs_ioctl_incgen(struct file *file, unsigned int cmd,
+			 unsigned long arg);
+int unionfs_ioctl_addbranch(struct inode *inode, unsigned int cmd,
+			    unsigned long arg);
+int unionfs_ioctl_delbranch(struct super_block *sb, unsigned long arg);
+int unionfs_ioctl_rdwrbranch(struct inode *inode, unsigned int cmd,
+			     unsigned long arg);
+int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
+			    unsigned long arg);
 
-#if defined(UNIONFS_XATTR) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,20)
+/* Verify that a branch is valid. */
+int check_branch(struct nameidata *nd);
+
+#ifdef UNIONFS_XATTR
 /* Extended attribute functions. */
 extern void *xattr_alloc(size_t size, size_t limit);
 extern void xattr_free(void *ptr, size_t size);
@@ -467,39 +394,53 @@ extern int unionfs_getxattr(struct dentry *dentry, const char *name,
 extern int unionfs_removexattr(struct dentry *dentry, const char *name);
 extern int unionfs_listxattr(struct dentry *dentry, char *list, size_t size);
 
-#if defined(FIST_SETXATTR_CONSTVOID) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0))
 int unionfs_setxattr(struct dentry *dentry, const char *name, const void *value,
 		     size_t size, int flags);
-#else
-int unionfs_setxattr(struct dentry *dentry, const char *name, void *value,
-		     size_t size, int flags);
-#endif
 
-#endif				/* LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,20) */
+#endif				/* UNIONFS_XATTR */
 
 #define copy_inode_size(dst, src) \
     dst->i_size = src->i_size; \
     dst->i_blocks = src->i_blocks;
 
+/* The root directory is unhashed, but isn't deleted. */
+static inline int d_deleted(struct dentry *d)
+{
+	return d_unhashed(d) && (d != d->d_sb->s_root);
+}
+
 /* returns the sum of the n_link values of all the underlying inodes of the passed inode */
 static inline int get_nlinks(struct inode *inode)
 {
-	int sum_nlinks = 2, bindex;
+	int sum_nlinks = 0;
+	int dirs = 0;
+	int bindex;
 	struct inode *hidden_inode;
 
 	PASSERT(inode);
-	if (!S_ISDIR(inode->i_mode)) {
+	if (!S_ISDIR(inode->i_mode))
 		return itohi(inode)->i_nlink;
-	}
 
 	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
 		hidden_inode = itohi_index(inode, bindex);
-		if (!hidden_inode || !S_ISDIR(hidden_inode->i_mode)) {
+		if (!hidden_inode || !S_ISDIR(hidden_inode->i_mode))
 			continue;
-		}
-		sum_nlinks += (hidden_inode->i_nlink - 2);
+		ASSERT(hidden_inode->i_nlink >= 0);
+
+		/* A deleted directory. */
+		if (hidden_inode->i_nlink == 0)
+			continue;
+		dirs++;
+		/* A broken directory (e.g., squashfs). */
+		if (hidden_inode->i_nlink == 1)
+			sum_nlinks += 2;
+		else
+			sum_nlinks += (hidden_inode->i_nlink - 2);
 	}
-	return sum_nlinks;
+
+	if (!dirs)
+		return 0;
+	return sum_nlinks + 2;
 }
 
 static inline void fist_copy_attr_atime(struct inode *dest,
@@ -551,11 +492,7 @@ static inline void fist_copy_attr_all(struct inode *dest,
 
 	//DQ: This was a change I noticed in the templates. In 2.6 they removedi_attr_flags.
 	//Which makes me think they rolled it into flags.
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-	dest->i_attr_flags = src->i_attr_flags;
-#else
 	dest->i_flags = src->i_flags;
-#endif
 
 	print_exit_location();
 }
@@ -699,7 +636,7 @@ static inline int __is_robranch(struct dentry *dentry, char *file,
 #define UUID_LEN 16
 #define FORWARDMAP_MAGIC 0x4b1cb38f
 #define REVERSEMAP_MAGIC 0Xfcafad71
-#define FORWARDMAP_VERSION 0x01
+#define FORWARDMAP_VERSION 0x02
 #define REVERSEMAP_VERSION 0x01
 
 struct fmaphdr {
@@ -716,7 +653,10 @@ struct rmaphdr {
 	uint8_t revuuid[UUID_LEN];
 	fsid_t fsid;
 };
-
+struct bmapent {
+	fsid_t fsid;
+	uint8_t uuid[UUID_LEN];
+};
 struct fmapent {
 	uint8_t fsnum;
 	uint64_t inode;
@@ -727,27 +667,15 @@ extern ino_t get_uin(struct super_block *sb, uint8_t branchnum,
 		     ino_t inode_number, int flag);
 extern int get_lin(struct super_block *sb, ino_t inode_number,
 		   struct fmapent *entry);
-extern int parse_imap_options(struct super_block *sb,
-			      struct unionfs_dentry_info *hidden_root_info,
-			      char **options);
-
-#endif				/* __KERNEL__ */
-
-/*
- * Definitions for user and kernel code
- */
+extern int parse_imap_option(struct super_block *sb,
+			     struct unionfs_dentry_info *hidden_root_info,
+			     char *options);
 
 /* Definitions for various ways to handle errors.
    Each flag's value is its bit position */
 
-/* 1 = on error, passup,  0 = try to recover */
-#define GLOBAL_ERR_PASSUP 	0
-
-/* 1 = delete first file/directory, 0 = delete all */
-#define DELETE_FIRST      	2
-
 /* 1 = delete whiteout, 0 = check for DELETE_FIRST */
-#define DELETE_WHITEOUT   	4
+#define DELETE_WHITEOUT		4
 
 /* 1 = use current user's permissions, 0 = use original owner's permissions */
 #define COPYUP_CURRENT_USER     8
@@ -755,10 +683,9 @@ extern int parse_imap_options(struct super_block *sb,
 /* 1 = f/s mounter permission, 0 = check for COPYUP_OWNER */
 #define COPYUP_FS_MOUNTER	16
 
-/* 1 = set attributes for all underlying files, 0 = leftmost file */
-#define SETATTR_ALL             32
+#define VALID_MOUNT_FLAGS (DELETE_WHITEOUT | COPYUP_OWNER | COPYUP_FS_MOUNTER)
 
-#define VALID_MOUNT_FLAGS (GLOBAL_ERR_PASSUP | DELETE_FIRST | DELETE_WHITEOUT | COPYUP_OWNER | COPYUP_FS_MOUNTER | SETATTR_ALL)
+#endif				/* __KERNEL__ */
 
 #endif				/* not __UNIONFS_H_ */
 /*

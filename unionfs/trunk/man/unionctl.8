@@ -2,7 +2,7 @@
 .\"
 .TH UNIONFS 8 "August 2004" Linux
 .SH NAME
-Unionfs \- a unioning file system for Linux
+Unionfs \- a unification file system for Linux
 .SH SYNOPSIS
 
 .P
@@ -46,11 +46,11 @@ OPTIONS
 .SH DESCRIPTION
 .B unionctl
 is used to control a unionfs file system.  The first argument is a union, which
-is the mountpoint of unionfs, or any file within unionfs.  The second argument is
-an action.  Currently
+is the mount point of unionfs, or any file within unionfs.  The second argument
+is an action.  Currently
 .B unionctl
-supports four actions: --add, --remove, --mode, and --list.  Further arguments
-are action dependent.
+supports file actions: --add, --remove, --mode, --list and --query.  Further
+arguments are action dependent.
 
 When a branch is required as an argument, it can be specified in two ways.  The
 easiest way is to specify the path to the branch.  If the path is used multiple
@@ -76,9 +76,8 @@ Note: The directory to add must be the last argument.
 .IP "--remove"
 removes a branch from a union.  Branches with open files can not be removed.
 
-You can not use the root directory of the union to specify which union should
-be operated on.  You must chose a file or directory that does not exist within
-the branch, otherwise you will get a "Device or resource busy." error.
+.I --query
+option.
 
 To remove a branch,
 .B unionctl
@@ -93,6 +92,10 @@ modes are "ro" for read-only access and "rw" for read-write access.
 .IP "--list"
 list branches within the union (and also their permissions).
 
+.IP "--query"
+lists the branches where a given file exists.  --query requires one argument :
+the name of the file to be examined. The output is a list of branches where
+the file exists and the permissions of the branches.
 
 .SH AUTHORS
 Charles Wright <cwright@cs.sunysb.edu>,
@@ -101,4 +104,6 @@ Erez Zadok <ezk@cs.sunysb.edu>
 .SH "SEE ALSO"
 .BR unionfs(4),
 .BR uniondbg(8),
-http://www.fsl.cs.sunysb.edu/
+http://unionfs.filesystems.org/
+
+\"  LocalWords:  groff Tascii unionfs unionctl rw ro Zubair Erez uniondbg

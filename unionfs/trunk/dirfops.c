@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: dirfops.c,v 1.6 2005/07/18 15:47:05 cwright Exp $
+ *  $Id: dirfops.c,v 1.13 2005/09/18 04:59:46 dquigley Exp $
  */
 
 #include "fist.h"
@@ -60,38 +62,33 @@ static int unionfs_filldir(void *dirent, const char *name, int namelen,
 
 	found = find_filldir_node(buf->rdstate, name, namelen);
 
-	if (!found) {
-		/* if 'name' isn't a whiteout filldir it. */
-		if (!is_wh_entry) {
-			off_t pos = rdstate2offset(buf->rdstate);
-			ino_t unionfs_ino = ino;
+	if (found)
+		goto out;
 
-			if (stopd(buf->sb)->usi_persistent) {
-				unionfs_ino =
-				    get_uin(buf->sb, buf->rdstate->uds_bindex,
-					    ino, O_CREAT);
-				ASSERT(unionfs_ino > 0);
-			}
-			err =
-			    buf->filldir(buf->dirent, name, namelen, pos,
-					 unionfs_ino, d_type);
-			buf->rdstate->uds_offset++;
-			verify_rdstate_offset(buf->rdstate);
+	/* if 'name' isn't a whiteout filldir it. */
+	if (!is_wh_entry) {
+		off_t pos = rdstate2offset(buf->rdstate);
+		ino_t unionfs_ino = ino;
+
+		if (stopd(buf->sb)->usi_persistent) {
+			unionfs_ino = get_uin(buf->sb, buf->rdstate->uds_bindex,
+					      ino, O_CREAT);
+			ASSERT(unionfs_ino > 0);
 		}
-		/* If we did fill it, stuff it in our hash, otherwise return an error */
-		if (err) {
-			buf->filldir_error = err;
-			goto out;
-		} else {
-			buf->entries_written++;
-			if ((err =
-			     add_filldir_node(buf->rdstate, name, namelen,
-					      buf->rdstate->uds_bindex,
-					      is_wh_entry))) {
-				buf->filldir_error = err;
-			}
-		}
+		err = buf->filldir(buf->dirent, name, namelen, pos,
+				   unionfs_ino, d_type);
+		buf->rdstate->uds_offset++;
+		verify_rdstate_offset(buf->rdstate);
 	}
+	/* If we did fill it, stuff it in our hash, otherwise return an error */
+	if (err) {
+		buf->filldir_error = err;
+		goto out;
+	}
+	buf->entries_written++;
+	if ((err = add_filldir_node(buf->rdstate, name, namelen,
+				    buf->rdstate->uds_bindex, is_wh_entry)))
+		buf->filldir_error = err;
 
       out:
 	return err;
@@ -111,9 +108,8 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 
 	fist_print_file("In unionfs_readdir()", file);
 
-	if ((err = unionfs_file_revalidate(file, 0))) {
+	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
-	}
 
 	inode = file->f_dentry->d_inode;
 	fist_checkinode(inode, "unionfs_readdir");
@@ -140,7 +136,8 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		hidden_file = ftohf_index(file, uds->uds_bindex);
 		if (!hidden_file) {
 			fist_dprint(7,
-				    "Incremented bindex to %d of %d because hidden file is NULL.\n",
+				    "Incremented bindex to %d of %d,"
+				    " because hidden file is NULL.\n",
 				    uds->uds_bindex, bend);
 			uds->uds_bindex++;
 			uds->uds_dirpos = 0;
@@ -157,18 +154,7 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		buf.sb = inode->i_sb;
 
 		/* Read starting from where we last left off. */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-		if (hidden_file->f_op->llseek)
-			offset =
-			    hidden_file->f_op->llseek(hidden_file,
-						      uds->uds_dirpos, 0);
-		else
-			offset =
-			    generic_file_llseek(hidden_file, uds->uds_dirpos,
-						0);
-#else
 		offset = vfs_llseek(hidden_file, uds->uds_dirpos, 0);
-#endif
 		if (offset < 0) {
 			err = offset;
 			goto out;
@@ -182,20 +168,12 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			    buf.entries_written, buf.filldir_called);
 		/* Save the position for when we continue. */
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-		if (hidden_file->f_op->llseek)
-			offset = hidden_file->f_op->llseek(hidden_file, 0, 1);
-		else
-			offset = generic_file_llseek(hidden_file, 0, 1);
-#else
 		offset = vfs_llseek(hidden_file, 0, 1);
-#endif
 		if (offset < 0) {
 			err = offset;
 			goto out;
-		} else {
-			uds->uds_dirpos = offset;
 		}
+
 		/* Copy the atime. */
 		fist_copy_attr_atime(inode, hidden_file->f_dentry->d_inode);
 
@@ -214,7 +192,9 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	}
 
 	if (!buf.filldir_error && uds->uds_bindex >= bend) {
-		fist_dprint(3, "Discarding rdstate because readdir is over.\n");
+		fist_dprint(3,
+			    "Discarding rdstate because readdir is over (hashsize = %d)\n",
+			    uds->uds_hashentries);
 		/* Save the number of hash entries for next time. */
 		itopd(inode)->uii_hashsize = uds->uds_hashentries;
 		free_rdstate(uds);
@@ -252,9 +232,8 @@ static loff_t unionfs_dir_llseek(struct file *file, loff_t offset, int origin)
 	print_entry(" file=%p, offset=0x%llx, origin = %d", file, offset,
 		    origin);
 
-	if ((err = unionfs_file_revalidate(file, 0))) {
+	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
-	}
 
 	rdstate = ftopd(file)->rdstate;
 

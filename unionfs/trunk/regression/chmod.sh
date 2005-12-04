@@ -10,18 +10,18 @@ source scaffold
 # initial directories
 function beforefiles {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-f /n/lower/b0/a
-f /n/lower/b0/b
-d /n/lower/b0/c
-d /n/lower/b0/d
+d $LOWER_DIR
+d $LOWER_DIR/b0
+f $LOWER_DIR/b0/a
+f $LOWER_DIR/b0/b
+d $LOWER_DIR/b0/c
+d $LOWER_DIR/b0/d
 
-d /n/lower/b1
-f /n/lower/b1/a
-d /n/lower/b1/c
-f /n/lower/b1/e
-d /n/lower/b1/f
+d $LOWER_DIR/b1
+f $LOWER_DIR/b1/a
+d $LOWER_DIR/b1/c
+f $LOWER_DIR/b1/e
+d $LOWER_DIR/b1/f
 
 FILES
 }
@@ -29,8 +29,8 @@ FILES
 # initial set of files
 function afterfiles_ro {
 cat <<FILES
-f /n/lower/b0/e
-d /n/lower/b0/f
+f $LOWER_DIR/b0/e
+d $LOWER_DIR/b0/f
 FILES
 }
 
@@ -56,7 +56,7 @@ function do_chmod {
 
 ( beforefiles ) | create_hierarchy
 
-mount_union "" /n/lower/b0 /n/lower/b1
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1
 
 do_chmod $MOUNTPOINT/a
 do_chmod $MOUNTPOINT/b
@@ -67,12 +67,12 @@ do_chmod $MOUNTPOINT/f
 
 unmount_union
 
-( beforefiles )  | check_hierarchy /n/lower
+( beforefiles )  | check_hierarchy $LOWER_DIR
 echo -n "[rw] "
 
 # The readonly tests
 ( beforefiles ) | create_hierarchy
-mount_union "" /n/lower/b0 /n/lower/b1=ro
+mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro
 
 do_chmod $MOUNTPOINT/a
 do_chmod $MOUNTPOINT/b
@@ -82,8 +82,7 @@ do_chmod $MOUNTPOINT/e
 do_chmod $MOUNTPOINT/f
 
 unmount_union
-( beforefiles ; afterfiles_ro )  | check_hierarchy /n/lower
+( beforefiles ; afterfiles_ro )  | check_hierarchy $LOWER_DIR
 echo -n "[ro] "
 
-echo "OK"
-exit 0
+complete_test

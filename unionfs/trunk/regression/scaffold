@@ -5,12 +5,46 @@
 set -e
 echo -n "$0: "
 
-MOUNTPOINT=/mnt/unionfs
-DEBUG=0
+if [ -z "$MOUNTPOINT" ] ; then
+	MOUNTPOINT=/mnt/unionfs
+fi
+if [ -z "$LOWER_DIR" ] ; then
+	LOWER_DIR=/n/lower
+fi
+if [ -z "$NFS" ] ; then
+	NFS=
+fi
+if [ -z "$DEBUG" ] ; then
+	DEBUG=0
+fi
+MOUNTS=0
+
+function havechattr {
+	local FILE=tmp.chattr.check
+	if [ ! -d $1 ] ; then
+		return 1
+	fi
+	touch $1/$FILE
+	if ! chattr +i $1/$FILE >/dev/null 2>&1 ; then
+		rm -f $1/$FILE
+		return 1
+	fi
+	if (echo "Hello World" > $1/$FILE) >/dev/null 2>&1 ; then
+		chattr -i $1/$FILE >/dev/null 2>&1
+		rm -f $1/$FILE
+		return 1
+	fi
+	chattr -i $1/$FILE
+	rm -f $1/$FILE
+	return 0
+}
 
 function create_hierarchy {
-	chattr -R -i /n/lower
-        rm -rf /n/lower/*
+	touch $LOWER_DIR/f
+	if havechattr $LOWER_DIR ; then
+		chattr -R -i $LOWER_DIR/*
+	fi
+        rm -rf $LOWER_DIR/*
 
         while read LINE
         do
@@ -20,12 +54,13 @@ function create_hierarchy {
                 TYPE=`echo $LINE | cut -d' ' -f 1`
                 NAME=`echo $LINE | cut -d' ' -f 2`
 
-		unset DIR FILE IMMUTABLE SOURCE	
+		unset DIR FILE IMMUTABLE SOURCE	SYMLINK
 
 		( echo $TYPE | grep -q d ) && DIR=1
 		( echo $TYPE | grep -q f ) && FILE=1
 		( echo $TYPE | grep -q i ) && IMMUTABLE=1
 		( echo $TYPE | grep -q s ) && SOURCE=1
+		( echo $TYPE | grep -q l ) && SYMLINK=1
 
 		if [ ! -z "$SOURCE" ] ; then
 			if [ ! -z "$DIR" ] ; then
@@ -36,7 +71,7 @@ function create_hierarchy {
 		fi
 
 		if [ ! -z "$IMMUTABLE" ] ; then
-			if [ -z "$DIR" ] ; then
+			if [ -z "$DIR" -a -z "$SYMLINK" ] ; then
 				FILE=1
 			fi
 		fi
@@ -45,29 +80,42 @@ function create_hierarchy {
 			echo "BAD TYPE (both a file and directory) : $TYPE" 1>&2
 			exit 1
 		fi
+		if [ ! -z "$DIR" -a ! -z "$SYMLINK" ] ; then
+			echo "BAD TYPE (both a symbolic link and directory) : $TYPE" 1>&2
+			exit 1
+		fi
+		if [ ! -z "$FILE" -a ! -z "$SYMLINK" ] ; then
+			echo "BAD TYPE (both a symbolic link and a file) : $TYPE" 1>&2
+			exit 1
+		fi
 
 
 		if [ ! -z "$DIR" -a ! -z "$SOURCE" ] ; then
 			echo "Directories can not be sources: $TYPE" 1>&2
 			exit 1
 		fi
-		
+
+		if [ ! -z "$SYMLINK" -a ! -z "$SOURCE" ] ; then
+			echo "Symbolic links can not be sources: $TYPE" 1>&2
+			exit 1
+		fi
 
                 if [ ! -z "$DIR" ] ; then
                         mkdir -p $NAME
                 elif [ ! -z "$FILE" ] ; then
                         mkdir -p `dirname $NAME` || exit $?
-                        echo $NAME > $NAME || exit $?
 			if [ ! -z "$SOURCE" ] ; then
-                        	echo "Source file." > $NAME || exit $?
-			else 
-                        	echo $NAME > $NAME || exit $?
+				echo "Source file." > $NAME || exit $?
+			else
+				echo $NAME > $NAME || exit $?
 			fi
+                elif [ ! -z "$SYMLINK" ] ; then
+			ln -s "linktext:$NAME" $NAME
 		else
 			echo "What type am i: $TYPE" 1>&2
 			exit $?
 		fi
-	
+
                 if [ ! -z "$IMMUTABLE" ] ; then
 			chattr +i $NAME || exit $?
 		fi
@@ -83,6 +131,11 @@ function check_hierarchy {
 }
 
 function mount_union {
+	if [ "$MOUNTS" -gt 0 ] ; then
+		echo "There is already an outstanding mount!" 1>&2
+		exit 1
+	fi
+
         if [ -z "$1" ] ; then
                 OPTION="debug=$DEBUG,dirs="
         else
@@ -93,63 +146,57 @@ function mount_union {
 
         while [ "$#" -gt 0 ]
         do
-                OPTION="$OPTION$1" 
+                OPTION="$OPTION$1"
                 if [ "$#" -ne "1" ] ; then
                         OPTION="$OPTION"":"
                 fi
                 shift
         done
 
-        mount -t unionfs -o $OPTION none $MOUNTPOINT 
+        mount -t unionfs -o $OPTION none $MOUNTPOINT
+
+	MOUNTS=$((MOUNTS + 1))
 
         return $?
 }
 
 function unmount_union {
-    umount $MOUNTPOINT 
-    return $?
-}
-
-
-
-function checkfile_after_remove {
-    if [ -e "$1" ] ; then
-        echo "$1 still exists after trying to unlink!"
-        return 1
-    fi
-    return 0
-}
-
-
-function checkfile_after_create {
-    if [ ! -e "$1" ] ; then
-        echo "$1 does not exist after trying to create it!"
-        return 1
-    fi
-    return 0
+	umount $MOUNTPOINT
+	ERR=$?
+	if [ "$?" -eq "0" ] ; then
+		MOUNTS=$((MOUNTS - 1))
+	else
+		echo "Could not unmount $MOUNTPOINT" 1>&2
+		exit 1
+	fi
+	return $ERR
 }
 
 function checktype {
-    F=$1
-    CHECK=$2
+    local F=$1
+    local CHECK=$2
 
+    local ERR=
     if [ "$CHECK" = "-" ] ; then
-        [ ! -e "$F" ]
+        [ ! -e "$F" ] || ERR=$?
     elif [ "$CHECK" = "f" ] ; then
-        [ -f "$F" ] 
+        [ -f "$F" ] || ERR=$?
     elif [ "$CHECK" = "d" ] ; then
-        [ -d "$F" ]
+        [ -d "$F" ] || ERR=$?
     elif [ "$CHECK" = "b" ] ; then
-        [ -b "$F" ]
+        [ -b "$F" ] || ERR=$?
     elif [ "$CHECK" = "c" ] ; then
-        [ -c "$F" ]
+        [ -c "$F" ] || ERR=$?
     elif [ "$CHECK" = "l" ] ; then
-        [ -l "$F" ]
+        [ -l "$F" ] || ERR=$?
     else
         echo "Unknown check '$CHECK'" 1>&2
         /bin/false
     fi
-    ERR=$?
+    local SERR=$?
+    if [ -z "$ERR" ] ; then
+	ERR=$SERR
+    fi
 
     if [ "$ERR" != "0" ] ; then
         echo "$F doesn't match '$CHECK'" 1>&2
@@ -157,6 +204,21 @@ function checktype {
     fi
 
     return $ERR
+}
+
+function checkperms {
+	local F=$1
+	local CHECK=$2
+
+	local PERMS=`find "$1" -printf %m`
+
+	if [ "$PERMS" != "$CHECK" ] ; then
+		echo "$F permissions $PERMS doesn't match '$CHECK'" 1>&2
+		ls -ld $F 1>&2
+		return 1
+	fi
+
+	return 0
 }
 
 function shouldfail {
@@ -168,3 +230,26 @@ function shouldfail {
 	rm -f /tmp/saveout-$$
 	return 0
 }
+
+function complete_test {
+	if [ "$MOUNTS" -gt 0 ] ; then
+		echo "There is a leftover mount!" 1>&2
+		exit 1
+	fi
+	if [ -f complete.sh ] ; then
+		COMPLETE=1
+		source complete.sh
+	fi
+	echo "OK"
+	exit 0
+}
+
+function start_test {
+	if [ -f start.sh ] ; then
+		START=1
+		source start.sh
+		START=
+	fi
+}
+
+start_test

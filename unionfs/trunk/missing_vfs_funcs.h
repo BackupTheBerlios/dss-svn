@@ -22,21 +22,16 @@
  */
 static inline struct dentry *lock_parent(struct dentry *dentry)
 {
-	struct dentry *dir = dget(dentry->d_parent);
+	struct dentry *dir = DGET(dentry->d_parent);
 
 	down(&dir->d_inode->i_sem);
 	return dir;
 }
 
-static inline struct dentry *get_parent(struct dentry *dentry)
-{
-	return dget(dentry->d_parent);
-}
-
 static inline void unlock_dir(struct dentry *dir)
 {
 	up(&dir->d_inode->i_sem);
-	dput(dir);
+	DPUT(dir);
 }
 
 /*
@@ -64,7 +59,7 @@ static inline void double_down(struct semaphore *s1, struct semaphore *s2)
  * I _think_ that it works, but no warranties - please, look it through.
  * Pox on bloody lusers who mandated overwriting rename() for directories...
  */
-
+/*Not used in templates */
 static inline void triple_down(struct semaphore *s1,
 			       struct semaphore *s2, struct semaphore *s3)
 {
@@ -109,6 +104,7 @@ static inline void double_up(struct semaphore *s1, struct semaphore *s2)
 		up(s2);
 }
 
+/*not used in templates*/
 static inline void triple_up(struct semaphore *s1,
 			     struct semaphore *s2, struct semaphore *s3)
 {
@@ -126,8 +122,8 @@ static inline void double_lock(struct dentry *d1, struct dentry *d2)
 static inline void double_unlock(struct dentry *d1, struct dentry *d2)
 {
 	double_up(&d1->d_inode->i_sem, &d2->d_inode->i_sem);
-	dput(d1);
-	dput(d2);
+	DPUT(d1);
+	DPUT(d2);
 }
 
 #endif				//__MISSING_VFS_FUNCS_H_

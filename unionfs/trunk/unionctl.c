@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,14 +15,16 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: unionctl.c,v 1.22 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: unionctl.c,v 1.32 2005/09/01 13:20:49 cwright Exp $
  */
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/mount.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
@@ -46,7 +50,7 @@ void __attribute__ ((__noreturn__)) __usage(int line)
 	fprintf(stderr, "Line: %d\n", line);
 #endif
 	fprintf(stderr,
-		"unionctl version: $Id: unionctl.c,v 1.22 2005/07/18 15:03:18 cwright Exp $\n");
+		"unionctl version: $Id: unionctl.c,v 1.32 2005/09/01 13:20:49 cwright Exp $\n");
 	fprintf(stderr, "Distributed with Unionfs " UNIONFS_VERSION "\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "unionctl UNION ACTION [arguments]\n");
@@ -57,10 +61,10 @@ void __attribute__ ((__noreturn__)) __usage(int line)
 	fprintf(stderr, "\tunionctl UNION --remove BRANCH\n");
 	fprintf(stderr, "\tunionctl UNION --mode BRANCH (rw|ro)\n");
 	fprintf(stderr, "\tunionctl UNION --list\n");
-	fprintf(stderr, "\tunionctl UNION --query FILENAME\n");
+	fprintf(stderr, "\tunionctl FILENAME --query\n");
 	fprintf(stderr,
 		"The unionctl man page has a more detailed description of its usage.\n");
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 char **parse_options(char *options)
@@ -92,13 +96,13 @@ char **parse_options(char *options)
 				ret = realloc(ret, sizeof(char *) * (n + 1));
 				if (!ret) {
 					perror("realloc()");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 				branchperms =
 				    realloc(branchperms, sizeof(int) * n);
 				if (!branchperms) {
 					perror("realloc()");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 
 				l = strlen(r);
@@ -136,7 +140,7 @@ int get_branch(char *path)
 	}
 
 	ret = strlen(path);
-	if (path[ret - 1] == '/') {
+	if ((ret > 1) && (path[ret - 1] == '/')) {
 		path[ret - 1] = '\0';
 	}
 
@@ -174,17 +178,21 @@ int main(int argc, char *argv[])
 {
 	struct unionfs_addbranch_args addargs;
 	struct unionfs_rdwrbranch_args rdwrargs;
-	struct unionfs_queryfile_args queryfile;
+	unsigned long remountdata[3];
+	fd_set branchlist;
 	struct stat st;
 
-	int fd, ret, i;
+	int fd = -1;
+	int ret, i;
 
-	char *path;
+	char *path, resolv_path[PATH_MAX], resolv_bp[PATH_MAX];
 	char *options = NULL, *actual_path = NULL;
 	int action;
 
 	char *branchpath;
 	int branchnum;
+	int unionpos = 1;
+	int modepos = 2;
 
 	progname = argv[0];
 
@@ -192,20 +200,32 @@ int main(int argc, char *argv[])
 	if (argc < 3)
 		usage();
 
-	path = argv[1];
+	if (argv[1][0] == '-' && argv[1][1] == '-') {
+		modepos = 1;
+		unionpos = 2;
+	} else {
+		modepos = 2;
+		unionpos = 1;
+	}
+
+	if (realpath(argv[unionpos], resolv_path) == NULL) {
+		perror("realpath()");
+		exit(EXIT_FAILURE);
+	}
+	path = resolv_path;
 	if (strcmp(path, "/") && (path[strlen(path) - 1] == '/')) {
 		path[strlen(path) - 1] = '\0';
 	}
 
-	if (!strcmp(argv[2], "--add")) {
+	if (!strcmp(argv[modepos], "--add")) {
 		action = ADD;
-	} else if (!strcmp(argv[2], "--remove")) {
+	} else if (!strcmp(argv[modepos], "--remove")) {
 		action = REMOVE;
-	} else if (!strcmp(argv[2], "--mode")) {
+	} else if (!strcmp(argv[modepos], "--mode")) {
 		action = MODE;
-	} else if (!strcmp(argv[2], "--list")) {
+	} else if (!strcmp(argv[modepos], "--list")) {
 		action = LIST;
-	} else if (!strcmp(argv[2], "--query")) {
+	} else if (!strcmp(argv[modepos], "--query")) {
 		action = QUERY;
 	} else {
 		usage();
@@ -213,24 +233,27 @@ int main(int argc, char *argv[])
 
 	if (stat(path, &st) == -1) {
 		fprintf(stderr, "stat(%s): %s\n", path, strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if (find_union(path, &options, &actual_path, 1) < 0) {
 		fprintf(stderr, "%s is not a valid union.\n", path);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	branches = parse_options(options);
 	if (!branches) {
 		fprintf(stderr, "Could not parse options from /proc/mounts!\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	/* open file on which ioctl will operate (that is actually any file in the union) */
-	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "open(%s): %s\n", path, strerror(errno));
-		exit(1);
+	if (action != REMOVE) {
+		fd = open(path, O_RDONLY);
+		if (fd < 0) {
+			fprintf(stderr, "open(%s): %s\n", path,
+				strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	/* Parse the action's options into something usable, and do it. */
@@ -320,8 +343,13 @@ int main(int argc, char *argv[])
 			usage();
 		}
 
+		if (realpath(branchpath, resolv_bp) == NULL) {
+			perror("realpath()");
+			exit(EXIT_FAILURE);
+		}
+
 		addargs.ab_branch = branchnum;
-		addargs.ab_path = branchpath;
+		addargs.ab_path = resolv_bp;
 
 		errno = 0;
 		ret = ioctl(fd, UNIONFS_IOCTL_ADDBRANCH, &addargs);
@@ -335,7 +363,7 @@ int main(int argc, char *argv[])
 			}
 			fprintf(stderr, "Failed to add %s into %s: %s",
 				branchpath, path, strerror(errno));
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		break;
 	case MODE:
@@ -343,7 +371,27 @@ int main(int argc, char *argv[])
 			usage();
 		}
 
-		branchpath = argv[3];
+		if (!strcmp(argv[4], "ro")) {
+			rdwrargs.rwb_perms = MAY_READ;
+			branchnum = 3;
+		} else if (!strcmp(argv[4], "rw")) {
+			rdwrargs.rwb_perms = MAY_READ | MAY_WRITE;
+			branchnum = 3;
+		} else if (!strcmp(argv[3], "ro")) {
+			rdwrargs.rwb_perms = MAY_READ;
+			branchnum = 4;
+		} else if (!strcmp(argv[3], "rw")) {
+			rdwrargs.rwb_perms = MAY_READ | MAY_WRITE;
+			branchnum = 4;
+		} else {
+			usage();
+		}
+
+		if (realpath(argv[branchnum], resolv_bp) == NULL) {
+			perror("realpath()");
+			exit(EXIT_FAILURE);
+		}
+		branchpath = resolv_bp;
 
 		/* Set a branches writeable status. */
 		rdwrargs.rwb_branch = get_branch(branchpath);
@@ -352,15 +400,7 @@ int main(int argc, char *argv[])
 				"%s is not a valid branch.\nThe current branch configuration is:\n",
 				branchpath);
 			dump_branches("\t");
-			exit(1);
-		}
-
-		if (!strcmp(argv[4], "ro")) {
-			rdwrargs.rwb_perms = MAY_READ;
-		} else if (!strcmp(argv[4], "rw")) {
-			rdwrargs.rwb_perms = MAY_READ | MAY_WRITE;
-		} else {
-			usage();
+			exit(EXIT_FAILURE);
 		}
 
 		ret = ioctl(fd, UNIONFS_IOCTL_RDWRBRANCH, &rdwrargs);
@@ -368,7 +408,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr,
 				"Failed to set permissions for %s in %s: %s",
 				branchpath, path, strerror(errno));
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		goto out;
@@ -377,7 +417,12 @@ int main(int argc, char *argv[])
 		if (argc != 4) {
 			usage();
 		}
-		branchpath = argv[3];
+
+		if (realpath(argv[3], resolv_bp) == NULL) {
+			perror("realpath()");
+			exit(EXIT_FAILURE);
+		}
+		branchpath = resolv_bp;
 
 		branchnum = get_branch(branchpath);
 		if (branchnum == -1) {
@@ -385,50 +430,62 @@ int main(int argc, char *argv[])
 				"%s is not a valid branch.\nThe current branch configuration is:\n",
 				branchpath);
 			dump_branches("\t");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		errno = 0;
-		ret = ioctl(fd, UNIONFS_IOCTL_DELBRANCH, branchnum);
+		remountdata[0] = UNIONFS_REMOUNT_MAGIC;
+		remountdata[1] = UNIONFS_IOCTL_DELBRANCH;
+		remountdata[2] = branchnum;
+		ret =
+		    mount("unionfs", actual_path, "unionfs",
+			  MS_REMOUNT | MS_MGC_VAL, remountdata);
 		if (ret < 0) {
 			fprintf(stderr, "Failed to remove %s from %s: %s",
 				branchpath, path, strerror(errno));
-			if (errno == EBUSY) {
-				fprintf(stderr,
-					"Did you specify the union using its root directory?\n");
-			}
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
-
 		break;
 	case LIST:
 		dump_branches("\t");
 		break;
 
 	case QUERY:
-		if (argc != 4) {
+		if (argc != 3) {
 			usage();
 		}
-		queryfile.filename = argv[3];
 
-		ret = ioctl(fd, UNIONFS_IOCTL_QUERYFILE, &queryfile);
-		if (ret < 0) {
+		if ((fd = open(argv[unionpos], O_RDONLY)) < 0) {
 			fprintf(stderr,
-				"Unable to retrieve list of branches for file %s : %s",
-				queryfile.filename, strerror(errno));
-			exit(1);
+				"Unable to open file %s : %s",
+				argv[unionpos], strerror(errno));
+			exit(EXIT_FAILURE);
 		}
 
-		for (i = 0; i <= ret; i++)
-			if (FD_ISSET(i, &queryfile.branchlist))
-				printf("File [%s] found in branch [%d]\n",
-				       queryfile.filename, i);
+		ret = ioctl(fd, UNIONFS_IOCTL_QUERYFILE, &branchlist);
+		if (ret < 0) {
+			fprintf(stderr,
+				"Unable to retrieve list of branches for file %s : %s\n",
+				argv[unionpos], strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		for (i = 0; i <= ret; i++) {
+			char r, w;
+			r = (branchperms[i] & MAY_READ) ? 'r' : '-';
+			w = (branchperms[i] & MAY_WRITE) ? 'w' : '-';
+
+			if (FD_ISSET(i, &branchlist))
+				printf("%s\t%s (%c%c)\n", argv[unionpos],
+				       branches[i], r, w);
+		}
 		break;
 	}
 
       out:
-	close(fd);
-	exit(0);
+	if (fd != -1)
+		close(fd);
+	exit(EXIT_SUCCESS);
 }
 
 /*

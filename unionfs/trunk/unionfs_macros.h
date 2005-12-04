@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: unionfs_macros.h,v 1.3 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: unionfs_macros.h,v 1.7 2005/08/26 18:34:35 cwright Exp $
  */
 
 #ifndef __UNIONFS_H_
@@ -137,42 +139,34 @@ do { \
 #define dbopaque(dent) (dtopd(dent)->udi_bopaque)
 #define set_dbopaque(dent, val) do { dtopd(dent)->udi_bopaque = val; } while (0)
 
-/* We should rework the locking so that we don't need to use multilocks. */
-/* Then these functions could all switch back to simpler macros. */
 #define set_dtohd_index(dent, index, val) \
 do { \
 	struct dentry *d2 = dent; \
-	lock_dpd(d2); \
 	if (index < UNIONFS_INLINE_OBJECTS) \
 		dtopd(d2)->udi_dentry_i[index] = val; \
 	else \
 		dtopd(d2)->udi_dentry_p[index - UNIONFS_INLINE_OBJECTS] = val; \
-	unlock_dpd(d2); \
 } while (0);
 
-static inline struct dentry *dtohd_index(struct dentry *dent, int index)
+static inline struct dentry *dtohd_index(const struct dentry *dent, int index)
 {
 	struct dentry *d;
-	lock_dpd(dent);
 	if (index < UNIONFS_INLINE_OBJECTS)
 		d = dtopd(dent)->udi_dentry_i[index];
 	else
 		d = dtopd(dent)->udi_dentry_p[index - UNIONFS_INLINE_OBJECTS];
-	unlock_dpd(dent);
 	return d;
 }
 
-static inline struct dentry *dtohd(struct dentry *dent)
+static inline struct dentry *dtohd(const struct dentry *dent)
 {
 	struct dentry *d;
 	int index;
-	lock_dpd(dent);
 	index = dbstart(dent);
 	if (index < UNIONFS_INLINE_OBJECTS)
 		d = dtopd(dent)->udi_dentry_i[index];
 	else
 		d = dtopd(dent)->udi_dentry_p[index - UNIONFS_INLINE_OBJECTS];
-	unlock_dpd(dent);
 	return d;
 }
 
@@ -181,6 +175,11 @@ static inline struct dentry *dtohd(struct dentry *dent)
 
 #define dtohd_ptr(dent) (dtopd_nocheck(dent)->udi_dentry_p)
 #define dtohd_inline(dent) (dtopd_nocheck(dent)->udi_dentry_i)
+
+/* Macros for locking a dentry. */
+#define lock_dentry(d) down(&dtopd(d)->udi_sem)
+#define unlock_dentry(d) up(&dtopd(d)->udi_sem)
+#define verify_locked(d)
 /*
  *
  * vim:shiftwidth=8

@@ -1,9 +1,11 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
- * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
- * Copyright (c) 2003-2005 Puja Gupta
- * Copyright (c) 2003-2005 Harikesavan Krishnan
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
  * Copyright (c) 2003-2005 Stony Brook University
  * Copyright (c) 2003-2005 The Research Foundation of State University of New York
  *
@@ -13,7 +15,7 @@
  * This Copyright notice must be kept intact and distributed with all sources.
  */
 /*
- *  $Id: rdstate.c,v 1.21 2005/07/18 15:03:18 cwright Exp $
+ *  $Id: rdstate.c,v 1.25 2005/09/18 05:02:56 jsipek Exp $
  */
 
 #include "fist.h"
@@ -30,15 +32,10 @@
 static kmem_cache_t *unionfs_filldir_cachep;
 int init_filldir_cache()
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
 	unionfs_filldir_cachep =
 	    kmem_cache_create("unionfs_filldir", sizeof(struct filldir_node), 0,
 			      SLAB_RECLAIM_ACCOUNT, NULL, NULL);
-#else
-	unionfs_filldir_cachep =
-	    kmem_cache_create("unionfs_filldir", sizeof(struct filldir_node), 0,
-			      0, NULL, NULL);
-#endif
+
 	if (!unionfs_filldir_cachep) {
 		return -ENOMEM;
 	}
@@ -50,7 +47,7 @@ void destroy_filldir_cache()
 	if (!unionfs_filldir_cachep)
 		return;
 	if (kmem_cache_destroy(unionfs_filldir_cachep)) {
-		printk(KERN_INFO
+		printk(KERN_ERR
 		       "unionfs_filldir_cache: not all structures were freed\n");
 	}
 	return;
@@ -61,7 +58,7 @@ void destroy_filldir_cache()
  * at least we get a hash table size that shouldn't be too overloaded.
  * The following averages are based on my home directory.
  * 14.44693	Overall
- * 12.29 	Single Page Directories
+ * 12.29	Single Page Directories
  * 117.93	Multi-page directories
  */
 #define DENTPAGE 4096
@@ -74,19 +71,18 @@ int guesstimate_hash_size(struct inode *inode)
 	int bindex;
 	int hashsize = MINHASHSIZE;
 
-	if (itopd(inode)->uii_hashsize > 0) {
+	if (itopd(inode)->uii_hashsize > 0)
 		return itopd(inode)->uii_hashsize;
-	}
 
 	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
-		if ((hidden_inode = itohi_index(inode, bindex))) {
-			if (hidden_inode->i_size == DENTPAGE) {
-				hashsize += DENTPERONEPAGE;
-			} else {
-				hashsize +=
-				    (hidden_inode->i_size / DENTPAGE) *
-				    DENTPERPAGE;
-			}
+		if (!(hidden_inode = itohi_index(inode, bindex)))
+			continue;
+
+		if (hidden_inode->i_size == DENTPAGE) {
+			hashsize += DENTPERONEPAGE;
+		} else {
+			hashsize +=
+			    (hidden_inode->i_size / DENTPAGE) * DENTPERPAGE;
 		}
 	}
 
@@ -103,9 +99,8 @@ int init_rdstate(struct file *file)
 
 	ftopd(file)->rdstate =
 	    alloc_rdstate(file->f_dentry->d_inode, fbstart(file));
-	if (!ftopd(file)->rdstate) {
+	if (!ftopd(file)->rdstate)
 		return -ENOMEM;
-	}
 	return 0;
 }
 
@@ -148,24 +143,25 @@ struct unionfs_dir_state *alloc_rdstate(struct inode *inode, int bindex)
 	mallocsize |= mallocsize >> 8;
 	mallocsize |= mallocsize >> 16;
 	mallocsize++;
-	if (mallocsize > PAGE_SIZE) {	/* This should give us thousands of entries anyway. */
+
+	/* This should give us about 500 entries anyway. */
+	if (mallocsize > PAGE_SIZE)
 		mallocsize = PAGE_SIZE;
-	}
+
 	hashsize =
 	    (mallocsize -
 	     sizeof(struct unionfs_dir_state)) / sizeof(struct list_head);
 
 	rdstate = KMALLOC(mallocsize, GFP_UNIONFS);
-	if (!rdstate) {
+	if (!rdstate)
 		return NULL;
-	}
 
 	spin_lock(&itopd(inode)->uii_rdlock);
-	if (itopd(inode)->uii_cookie >= (MAXRDCOOKIE - 1)) {
+	if (itopd(inode)->uii_cookie >= (MAXRDCOOKIE - 1))
 		itopd(inode)->uii_cookie = 1;
-	} else {
+	else
 		itopd(inode)->uii_cookie++;
-	}
+
 	rdstate->uds_cookie = itopd(inode)->uii_cookie;
 	spin_unlock(&itopd(inode)->uii_rdlock);
 	rdstate->uds_offset = 1;
@@ -183,9 +179,8 @@ struct unionfs_dir_state *alloc_rdstate(struct inode *inode, int bindex)
 void free_filldir_node(struct filldir_node *node)
 {
 	PASSERT(node);
-	if (node->namelen >= DNAME_INLINE_LEN_MIN) {
+	if (node->namelen >= DNAME_INLINE_LEN_MIN)
 		KFREE(node->name);
-	}
 	kmem_cache_free(unionfs_filldir_cachep, node);
 }
 
@@ -266,9 +261,8 @@ inline struct filldir_node *alloc_filldir_node(const char *name, int namelen,
 	newnode =
 	    (struct filldir_node *)kmem_cache_alloc(unionfs_filldir_cachep,
 						    SLAB_KERNEL);
-	if (!newnode) {
+	if (!newnode)
 		goto out;
-	}
 
       out:
 	return newnode;

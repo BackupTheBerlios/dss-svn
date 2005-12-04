@@ -1,6 +1,25 @@
 /*
  * Copyright (c) 2003-2005 Erez Zadok
  * Copyright (c) 2003-2005 Charles P. Wright
+ * Copyright (c) 2005      Arun M. Krishnakumar
+ * Copyright (c) 2005      David P. Quigley
+ * Copyright (c) 2003-2004 Mohammad Nayyer Zubair
+ * Copyright (c) 2003-2003 Puja Gupta
+ * Copyright (c) 2003-2003 Harikesavan Krishnan
+ * Copyright (c) 2003-2005 Stony Brook University
+ * Copyright (c) 2003-2005 The Research Foundation of State University of New York
+ *
+ * For specific licensing information, see the COPYING file distributed with
+ * this package.
+ *
+ * This Copyright notice must be kept intact and distributed with all sources.
+ */
+/*
+ *  $Id: usercommon.c,v 1.6 2005/09/15 20:50:05 ezk Exp $
+ */
+/*
+ * Copyright (c) 2003-2005 Erez Zadok
+ * Copyright (c) 2003-2005 Charles P. Wright
  * Copyright (c) 2003-2005 Mohammad Nayyer Zubair
  * Copyright (c) 2003-2005 Puja Gupta
  * Copyright (c) 2003-2005 Harikesavan Krishnan
@@ -150,7 +169,7 @@ int find_union(const char *path, char **options, char **actual_path,
 }
 
 /**
- * Takes the device and creates an fsid from it by placing major in the first 
+ * Takes the device and creates an fsid from it by placing major in the first
  * int and minor in the second.
  */
 void fillfsid(dev_t dev, fsid_t * fsid)

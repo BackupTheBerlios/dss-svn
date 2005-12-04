@@ -18,106 +18,183 @@ source scaffold
 
 function files {
 cat <<FILES
-d /n/lower
-d /n/lower/b0
-d /n/lower/b1
-d /n/lower/b2
-d /n/lower/b1/d1
-d /n/lower/b1/d1/d2
+d $LOWER_DIR
+d $LOWER_DIR/b0
+d $LOWER_DIR/b1
+d $LOWER_DIR/b2
+d $LOWER_DIR/b1/d1
+d $LOWER_DIR/b1/d1/d2
 FILES
 }
 
 function beforefiles {
 cat <<FILES
-f /n/lower/b1/a
+f $LOWER_DIR/b1/a
 
-f /n/lower/b0/b
-f /n/lower/b1/b
+f $LOWER_DIR/b0/b
+f $LOWER_DIR/b1/b
 
-f /n/lower/b0/c
+f $LOWER_DIR/b0/c
 
-f /n/lower/b1/d
+f $LOWER_DIR/b1/d
 
-f /n/lower/b1/d1/d2/e
+f $LOWER_DIR/b1/d1/d2/e
 FILES
 }
 
 function beforefiles_i {
 cat <<FILES
-f /n/lower/b0/f
-i /n/lower/b1/f
-f /n/lower/b2/f
+f $LOWER_DIR/b0/f
+i $LOWER_DIR/b1/f
+f $LOWER_DIR/b2/f
 FILES
 }
+
+function beforefiles_319 {
+cat <<FILES
+f $LOWER_DIR/b1/a
+FILES
+}
+
 
 function afterfiles_ro {
 cat <<FILES
-f /n/lower/b0/.wh.a
-f /n/lower/b1/a
+f $LOWER_DIR/b0/.wh.a
+f $LOWER_DIR/b1/a
 
-f /n/lower/b0/.wh.b
-f /n/lower/b1/b
+f $LOWER_DIR/b0/.wh.b
+f $LOWER_DIR/b1/b
 
-f /n/lower/b0/.wh.d
-f /n/lower/b1/d
+f $LOWER_DIR/b0/.wh.d
+f $LOWER_DIR/b1/d
 
-d /n/lower/b0/d1
-d /n/lower/b0/d1/d2
-f /n/lower/b0/d1/d2/.wh.e
-f /n/lower/b1/d1/d2/e
+d $LOWER_DIR/b0/d1
+d $LOWER_DIR/b0/d1/d2
+f $LOWER_DIR/b0/d1/d2/.wh.e
+f $LOWER_DIR/b1/d1/d2/e
 FILES
 }
- 
+
+function afterfiles_ro2 {
+cat <<FILES
+f $LOWER_DIR/b1/a
+f $LOWER_DIR/b0/b
+f $LOWER_DIR/b1/b
+f $LOWER_DIR/b0/c
+f $LOWER_DIR/b1/d
+
+d $LOWER_DIR/b0/d1
+d $LOWER_DIR/b0/d1/d2
+f $LOWER_DIR/b0/d1/d2/.wh.e
+f $LOWER_DIR/b1/d1/d2/e
+FILES
+}
+
 function afterfiles_i {
 cat <<FILES
-f /n/lower/b0/f
-f /n/lower/b1/f
+f $LOWER_DIR/b0/f
+f $LOWER_DIR/b1/f
 FILES
 }
 
-( files ; beforefiles) | create_hierarchy
+function afterfiles_319 {
+cat <<FILES
+f $LOWER_DIR/b0/.wh.a
+f $LOWER_DIR/b1/a
+FILES
+}
 
-mount_union "" /n/lower/b0 /n/lower/b1=ro
+function ro2 {
+	( files ; beforefiles) | create_hierarchy
 
-/bin/unlink $MOUNTPOINT/a
-/bin/unlink $MOUNTPOINT/b
-/bin/unlink $MOUNTPOINT/c
-/bin/unlink $MOUNTPOINT/d
-/bin/unlink $MOUNTPOINT/d1/d2/e
+	mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro
 
-# XXX: Existence checks
+	/bin/unlink $MOUNTPOINT/d1/d2/e
+	checktype $MOUNTPOINT/d1/d2/e '-'
 
-unmount_union
+	unmount_union
 
-( files ; afterfiles_ro )  | check_hierarchy /n/lower
+	( files ; afterfiles_ro2 )  | check_hierarchy $LOWER_DIR
+}
 
-( files ; beforefiles) | create_hierarchy
+function ro {
+	( files ; beforefiles) | create_hierarchy
 
-mount_union "" /n/lower/b[0-1]
+	mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro
 
-/bin/unlink $MOUNTPOINT/a
-/bin/unlink $MOUNTPOINT/b
-/bin/unlink $MOUNTPOINT/c
-/bin/unlink $MOUNTPOINT/d
-/bin/unlink $MOUNTPOINT/d1/d2/e
+	/bin/unlink $MOUNTPOINT/a
+	/bin/unlink $MOUNTPOINT/b
+	/bin/unlink $MOUNTPOINT/c
+	/bin/unlink $MOUNTPOINT/d
+	/bin/unlink $MOUNTPOINT/d1/d2/e
 
-checktype $MOUNTPOINT/a '-'
-checktype $MOUNTPOINT/b '-'
-checktype $MOUNTPOINT/c '-'
-checktype $MOUNTPOINT/d '-'
-checktype $MOUNTPOINT/d1/d2/e '-'
+	checktype $MOUNTPOINT/a '-'
+	checktype $MOUNTPOINT/b '-'
+	checktype $MOUNTPOINT/c '-'
+	checktype $MOUNTPOINT/d '-'
+	checktype $MOUNTPOINT/d1/d2/e '-'
 
-unmount_union
-( files )  | check_hierarchy /n/lower
+	unmount_union
 
-# The immutable test
-( files ; beforefiles_i) | create_hierarchy
-mount_union "" /n/lower/b[0-2]
-shouldfail /bin/unlink $MOUNTPOINT/f
-checktype $MOUNTPOINT/f 'f'
-unmount_union
-( files ; afterfiles_i )  | check_hierarchy /n/lower
+	( files ; afterfiles_ro )  | check_hierarchy $LOWER_DIR
+}
 
+function rw {
+	( files ; beforefiles) | create_hierarchy
 
-echo "OK"
-exit 0
+	mount_union "" $LOWER_DIR/b[0-1]
+
+	/bin/unlink $MOUNTPOINT/a
+	/bin/unlink $MOUNTPOINT/b
+	/bin/unlink $MOUNTPOINT/c
+	/bin/unlink $MOUNTPOINT/d
+	/bin/unlink $MOUNTPOINT/d1/d2/e
+
+	checktype $MOUNTPOINT/a '-'
+	checktype $MOUNTPOINT/b '-'
+	checktype $MOUNTPOINT/c '-'
+	checktype $MOUNTPOINT/d '-'
+	checktype $MOUNTPOINT/d1/d2/e '-'
+
+	unmount_union
+	( files )  | check_hierarchy $LOWER_DIR
+}
+
+function immutable {
+	# The immutable test
+	( files ; beforefiles_i) | create_hierarchy
+	mount_union "" $LOWER_DIR/b[0-2]
+	shouldfail /bin/unlink $MOUNTPOINT/f
+	checktype $MOUNTPOINT/f 'f'
+	unmount_union
+	( files ; afterfiles_i )  | check_hierarchy $LOWER_DIR
+}
+
+function BUG319 {
+	( files ; beforefiles_319) | create_hierarchy
+	mount_union "" $LOWER_DIR/b0 $LOWER_DIR/b1=ro
+	checktype $MOUNTPOINT/a 'f'
+	rm -f $MOUNTPOINT/a
+	checktype $MOUNTPOINT/a '-'
+	touch $MOUNTPOINT/a
+	checktype $MOUNTPOINT/a 'f'
+	rm -f $MOUNTPOINT/a
+	checktype $MOUNTPOINT/a '-'
+	unmount_union
+	( files ; afterfiles_319 )  | check_hierarchy $LOWER_DIR
+}
+
+if [ -z "$FXNS" ] ; then
+	FXNS="rw ro BUG319"
+	if havechattr $LOWER_DIR ; then
+		FXNS="$FXNS immutable"
+	fi
+fi
+
+for x in $FXNS
+do
+	$x
+	echo -n "[$x] "
+done
+
+complete_test
