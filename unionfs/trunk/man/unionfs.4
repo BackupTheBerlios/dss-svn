@@ -1,0 +1,70 @@
+.\" Process with groff -man -Tascii unionfs.1
+.\"
+.TH UNIONFS 4 "August 2004" Linux
+.SH NAME
+Unionfs \- a unioning file system for Linux
+.SH SYNOPSIS
+Unionfs is not a command, but rather a file system.  This manual page describes
+additional mount options that Unionfs supports.
+
+mount -t unionfs -o dirs=/branch1[=ro|=rw]:/branch2[=ro|=rw]:...:/branchN[=ro|=rw],[copyup=preserve,currentuser,mounter] none /mnt/unionfs
+
+.SH DESCRIPTION
+.B dirs
+specifies a colon separated list which directories should compose the union.
+Additionally, read-only or read-write permissions of the branch can be
+specified by appending "=ro" or "=rw" to each directory.  Directories that come
+earlier in the list have a higher precedence than those which come later.
+
+.B copyup
+specifies which copy-up mode is used to provide copy-on-write semantics in
+Unionfs.  Possible values are preserve, currentuser, and mounter.  Preserve
+keeps the permissions in the higher-precedence directory the same as in the
+lower-precedence directory.  If currentuser is selected, then the copied-up
+file will be owned by the user whose actions initiated the copy-up operation.
+Finally, mounter uses an owner and permission specified at mount time.
+
+.B copyupuid
+specifies the uid of the copied-up files.
+
+.B copyupgidq
+specifies the gid of the copied-up files.
+
+.B copyupmode
+specifies the mode of the copied-up files.
+
+.B debug
+specifies the FiST debugging level.  1 through 8 specify individual log-levels.
+If debug is set to 11 through 18, the output will include debug-10 and all
+lower levels.  If you set this to a non-zero value lots of output will be sent
+to the kernel ring buffer, some of which may be sensitive.
+
+.B delete
+controls how Unionfs deletes and renames objects.  Possible values
+are "all", "first", and "whiteout".
+
+.B diropaque
+by default, newly created directories are opaque, so lower-priority files do
+not show through.  Pass diropaque=0 if you want directory creation to be
+translucent (old lower-priority files are hidden, but new files are not).
+
+.B err
+controls how errors are handled.  The default option, "tryleft" causes
+Unionfs to retry operations in higher priority branches until they suceed.
+"passup" causes Unionfs to immediately fail and return an error to the user.
+Using the passup option may violate POSIX file system semantics.
+
+.B setattr
+controls how the VFS setattr method will function.  Possible values
+are "all" and "left".  Left changes the attributes only on the leftmost
+(highest priority) branch, whereas "all" changes the attributes on all
+branches.
+
+.SH AUTHORS
+Charles Wright <cwright@cs.sunysb.edu>,
+Mohammad Zubair <mzubair@ic.sunysb.edu>,
+Erez Zadok <ezk@cs.sunysb.edu>
+.SH "SEE ALSO"
+.BR unionctl(1),
+.BR uniondbg(1),
+http://www.fsl.cs.sunysb.edu/
