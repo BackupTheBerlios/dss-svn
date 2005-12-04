@@ -1,0 +1,48 @@
+# $Id$
+
+		    Deliver
+                     -------
+Author:
+	Daniele Favara (nomed)    
+Email:
+	danjelegmail.com	    
+Reviaion:
+	$Revision$
+Release date:
+	$Date$
+Url:
+	$HeadURL$
+
+License
+-------
+
+This program is covered by the GPL.
+                     
+What is deliver?
+----------------
+
+Deliver is a scripts set that allow you to boot up your pure debian/ubuntu
+system from a cdrom or even hd.
+It can autoconfigure your environment, and it can generate an xorg.conf file.
+It doesn't use any kudzu or hwdata package, but i suggest you to use discover1.
+
+-------------------------------------
+
+Usage
+-------
+
+Just deboostrap the base system and add the packages you like (or use debaser),
+generate a module with make-mod script, and generate the hwconf module in the
+same way:
+
+eg: make-mod deliver 7_hwconf
+
+
+for more info visit:
+
+http://dss.berlios.de
+
+or contact me at:
+
+danjele@gmail.com
+

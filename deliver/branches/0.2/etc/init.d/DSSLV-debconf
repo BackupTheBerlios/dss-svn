@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+# cmdline: langconf=dialog|noninteractive(default)
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
+[ -e  "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions 
+[ -e  "/lib/lsb/DSSLV-functions" ] && . /lib/lsb/DSSLV-functions 
+[ -f /etc/sysconfig/sysconfig ]  && . /etc/sysconfig/sysconfig
+[ -f /etc/sysconfig/$lname ] && . /etc/sysconfig/$lname
+[ -f /etc/sysconfig/i18n ] && . /etc/sysconfig/i18n
+
+xfrontend="$(getbootparam langconf)"
+
+if [ "$langfrontend" = "" ];then
+	langfrontend=noninteractive
+fi
+set_debconf (){
+cat <<EOF
+
+locales       locales/default_environment_locale  select $LANG
+locales       locales/locales_to_be_generated select $LANG  $CHARSET
+xserver-xorg  xserver-xorg/config/inputdevice/keyboard/layout select $LANGUAGE
+xserver-xorg  shared/default-x-server select xserver-xorg
+xserver-xorg  xserver-xorg/autodetect_monitor select true
+xserver-xorg  xserver-xorg/config/inputdevice/mouse/zaxismapping select true
+xserver-xorg  xserver-xorg/config/inputdevice/mouse/emulate3buttons select true
+xserver-xorg  xserver-xorg/autodetect_mouse select true
+xserver-xorg  xserver-xorg/config/write_files_section select true
+xserver-xorg  xserver-xorg/autodetect_video_card select true
+xserver-xorg  xserver-xorg/config/inputdevice/keyboard/rules select xorg
+
+EOF
+}
+
+log_begin_msg "Updating debconf database..."
+set_debconf | debconf-set-selections
+echo LANG="$LANG" > /etc/environment
+echo "$LANG  $CHARSET" > /etc/locale.gen
+DEBIAN_FRONTEND=$langfrontend dpkg-reconfigure locales 2>/dev/null
+log_end_msg 0
+
+
+
+

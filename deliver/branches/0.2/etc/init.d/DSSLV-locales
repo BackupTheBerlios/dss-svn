@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+# cmdline: langconf=dialog|noninteractive(default)
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+
+
+
+log_begin_msg "Reconfiguring locales..."
+DEBIAN_FRONTEND=$LCONF dpkg-reconfigure locales 2>/dev/null
+log_end_msg $?
+
+exit 0
+
+
+
+
