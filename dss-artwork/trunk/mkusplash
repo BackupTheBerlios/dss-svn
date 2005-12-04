@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IMAGE=$1
+if [ "$IMAGE" = "" ];then
+    echo usage: 'mkusplash <image.png>'
+fi
+if [ "$(COLUMNS=130 dpkg -l libbogl-dev | grep ii)" = "" ];then
+    echo apt-get install libbogl-dev
+fi
+
+pngtobogl $IMAGE > usplash-artwork.c
+
+gcc-3.4 -Os -g -I/usr/include/bogl -fPIC -c usplash-artwork.c -o usplash-artwork.o
+gcc-3.4 -shared -Wl,-soname,usplash-artwork,usplash-artwork.o -o usplash-dsslive.so
+
+#sudo cp usplash-fix.so /root/breezy/usr/lib/usplash/usplash-dsslive.so
+echo converted $IMAGE to  usplash-dsslive.so
