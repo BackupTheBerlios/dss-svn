@@ -10,31 +10,18 @@
 # cmdline: xconf=dialog|noninteractive(default)
 
 set -e
-#set -x
-PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin"
-[ -e  "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions 
-[ -e  "/lib/lsb/DSSLV-functions" ] && . /lib/lsb/DSSLV-functions 
-[ -f /etc/sysconfig/sysconfig ]  && . /etc/sysconfig/sysconfig
-[ -f /etc/sysconfig/$lname ] && . /etc/sysconfig/$lname
-[ -f /etc/sysconfig/i18n ] && . /etc/sysconfig/i18n
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
 
-if [ $(getbootparam xconf) ];then xfrontend="$(getbootparam xconf)";fi
 
-if [ "$xfrontend" = "" ];then
-	xfrontend=noninteractive
-fi
+
+
 [ ! -e /etc/X11/xorg.conf ] && :>/etc/X11/xorg.conf
-set_debconf (){
-cat <<EOF
-XDESC="$XDESC"
-XMODULE="$XMODULE"
-XDEPTH="$XDEPTH"
-XVREFRESH="$XVREFRESH"
-XHREFRESH="$XHREFRESH"
-MODES="$MODES"
 
-EOF
-}
 
 log_begin_msg "Generating xorg.conf..."
 #DEBIAN_FRONTEND=$xfrontend dpkg-reconfigure xserver-xorg 2>/dev/null
@@ -52,17 +39,9 @@ then
 	else
 		sed -i "s/\"$LANGCLEAN\"$/\"us\"/" /etc/X11/xorg.conf
 	fi
-	XDESC="$( echo get xserver-xorg/config/device/identifier | debconf-communicate | sed 's|^[^ ]* ||' )"
-	XMODULE="$( echo get xserver-xorg/config/device/driver | debconf-communicate | sed 's|^[^ ]* ||' )"
-	XDEPTH="$( echo get xserver-xorg/config/display/default_depth | debconf-communicate | sed 's|^[^ ]* ||' )"
-	XVREFRESH="$( echo get xserver-xorg/config/monitor/vert-refresh | debconf-communicate |sed 's|^[^ ]* ||' )"
-	XHREFRESH="$( echo get xserver-xorg/config/monitor/horiz-sync | debconf-communicate | sed 's|^[^ ]* ||' )"
-	MODES="$( echo get xserver-xorg/config/monitor/mode-list | debconf-communicate | sed 's|^[^ ]* ||' )"
-	set_debconf > /etc/sysconfig/xserver
-	set_debconf >> /etc/sysconfig/$lname
-	#echo -n "Video is" " $XDESC," " using $XMODULE"
-
+	
 fi
-log_end_msg 0
+log_end_msg $?
 
+exit 0
 

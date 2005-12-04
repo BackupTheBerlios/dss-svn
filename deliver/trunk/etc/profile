@@ -5,10 +5,10 @@ umask 022
 PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/X11R6/bin:/usr/local/sbin:/usr/local/bin:/usr/games"
 [ "$UID" = "0" ] || PATH="$PATH:."
 export PATH
-
+set -x
 # Set LOCALE
-if [ -f /etc/sysconfig/i18n ]; then
-    . /etc/sysconfig/i18n
+if [ -f /etc/deliver.conf ]; then
+    . /etc/deliver.conf
     [ -n "$LANG" ] || LANG="C"
     export LANG
     [ -n "$LC_CTYPE" ] && export LC_CTYPE || unset LC_CTYPE

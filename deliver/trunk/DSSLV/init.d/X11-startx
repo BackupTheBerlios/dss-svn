@@ -7,9 +7,9 @@
 if [ -e "/usr/bin/X11/startx" ];then
 echo "starting x11"
 if [ -n "$WINDOWMANAGER" ]; then
-     su -c "COLUMNS=80 /usr/bin/X11/startx -- -dpi 94 " - $USER & 
+     su -c "/usr/bin/X11/startx -- -dpi 94 " - $USERNAME & 
 fi
 else
-	echo Login as $USER	
+	echo Login as $USERNAME	
 fi
 

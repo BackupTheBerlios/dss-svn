@@ -1,26 +1,17 @@
-#! /bin/bash
 #!/bin/sh
-#
-# $Id$
-#
-# Script to build the Debased Live CD miniroot 
-# Daniele Favara, (c) 2005 <danjele@gmail.com>
-#
+
+# $Id: DSSLV-functions 33 2005-10-11 05:38:40Z nomed $
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
 # <http://dss.berlios.de>
+
 
 COLUMNS=90
 export COLUMNS
-if [ -d /morphix/rc.m/ ];then
-	RCDIR=/morphix/rc.m/
-elif [ -d /DSSLV/rc.m/ ];then
-	RCDIR=/DSSLV/rc.m/
-fi
-if [ -f /morphix/include.sh ] ; then
-	includeme=/morphix/include.sh
-elif [ -f /DSSLV/include.sh ] ; then
-	includeme=/DSSLV/include.sh
-fi
-. $includeme >/dev/null 2>&1
+. /etc/deliver.conf
+. $FUNCS 
+. $INCLUDEME >/dev/null 2>&1
 for file in $RCDIR/*
 do
   echo "Running $file"
