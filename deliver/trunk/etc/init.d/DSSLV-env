@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+log_begin_msg "Configuring environment..."
+    loadkeys -q $KEYTABLE & >/dev/null 2>&1 
+    #consolechars -f $CONSOLEFONT & >/dev/null 2>&1 
+    # UTC=yes from /etc/default/rcS
+    #hwclock $CLOCK -s &  >/dev/null 2>&1 
+log_end_msg $?
+
+exit 0

@@ -1,0 +1,48 @@
+# $Id: README 35 2005-10-11 05:41:43Z nomed $
+
+		    Deliver
+                     -------
+Author:
+	Daniele Favara (nomed)    
+Email:
+	danjelegmail.com	    
+Reviaion:
+	$Revision: 35 $
+Release date:
+	$Date: 2005-10-11 07:41:43 +0200 (mar, 11 ott 2005) $
+Url:
+	$HeadURL: svn+ssh://nomed@svn.berlios.de/svnroot/repos/dss/deliver/trunk/README $
+
+License
+-------
+
+This program is covered by the GPL.
+                     
+What is deliver?
+----------------
+
+Deliver is a scripts set that allow you to boot up your pure debian/ubuntu
+system from a cdrom or even hd.
+It can autoconfigure your environment, and it can generate an xorg.conf file.
+It doesn't use any kudzu or hwdata package, but i suggest you to use discover1.
+
+-------------------------------------
+
+Usage
+-------
+
+Just deboostrap the base system and add the packages you like (or use debaser),
+generate a module with make-mod script, and generate the hwconf module in the
+same way:
+
+eg: make-mod deliver 7_hwconf
+
+
+for more info visit:
+
+http://dss.berlios.de
+
+or contact me at:
+
+danjele@gmail.com
+

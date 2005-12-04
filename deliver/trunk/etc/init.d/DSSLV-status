@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+
+
+log_begin_msg "Regenerating status file..."
+dpkg-genstatus -g -d /  1>/dev/null
+bkvar=$(date +%s)
+[ -f /var/lib/dpkg/status ] &&  cp /var/lib/dpkg/status /var/lib/dpkg/status.$bkvar  
+[ -f /tmp/status ]  && cp /tmp/status /var/lib/dpkg/status
+log_end_msg $?
+
+exit 0

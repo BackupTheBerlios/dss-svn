@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# $Id: DSSLV-mkxorg 36 2005-10-11 05:51:19Z nomed $
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+# cmdline: xconf=dialog|noninteractive(default)
+
+set -e
+VERBOSE=yes
+TMPTIME=0
+DEBCONFPATH=/DSSLV/debconf/DSS-config/
+
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+if [ "$QEMU" = 'true' ];then
+	modprobe -q mousedev >> /var/log/initramfs.debug 2>&1
+	modprobe -q psmouse  >> /var/log/initramfs.debug 2>&1	
+fi
+
+[ ! -e /etc/X11/xorg.conf ] && :>/etc/X11/xorg.conf
+mkdir -p $DEBCONFPATH/xserver-xorg/config/inputdevice/keyboard/
+LAYOUT="$DEBCONFPATH/xserver-xorg/config/inputdevice/keyboard/layout.txt"
+echo "Name: xserver-xorg/config/inputdevice/keyboard/layout" > $LAYOUT
+echo "Template: xserver-xorg/config/inputdevice/keyboard/layout" >> $LAYOUT
+echo "Value: $XKEYBOARD" >> $LAYOUT
+echo "Owners: xserver-xorg" >> $LAYOUT
+
+
+# to check if locales locks debconf
+#[ -f $DEBCONFPATH/.lock ] && rm $DEBCONFPATH/.lock
+if [ -f /DSSLV/debconf/config/.lock ];then
+    rm  /DSSLV/debconf/config/.lock 
+    echo 'MKXORG: debconf was locked' >> /var/log/initramfs.debug 2>&1  
+fi
+
+log_begin_msg "Generating xorg.conf..."
+#DEBIAN_FRONTEND=$xfrontend dpkg-reconfigure xserver-xorg 2>/dev/null
+dpkg-reconfigure -f$XCONF xserver-xorg >> /var/log/initramfs.debug 2>&1
+
+
+log_end_msg $?
+
+exit 0
+

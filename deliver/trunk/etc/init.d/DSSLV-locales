@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# $Id: DSSLV-debconf 40 2005-10-11 11:37:35Z nomed $
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+# cmdline: langconf=dialog|noninteractive(default)
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+
+
+
+log_begin_msg "Reconfiguring locales..."
+ dpkg-reconfigure -f$LCONF locales 2>/dev/null
+ source /etc/environment
+ if [ -n $LANG  ];then
+    echo 'export LC_ALL=$LANG' >> /etc/bash.bashrc 
+ fi
+log_end_msg $?
+
+exit 0
+
+
+
+

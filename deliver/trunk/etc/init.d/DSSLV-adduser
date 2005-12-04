@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+
+
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+
+
+log_begin_msg "Adding user $USERNAME..."
+
+# Comment for testing better
+#for question in username user-fullname user-password user-password-again; do
+#    db_set passwd/$question $USERNAME
+#    db_fset passwd/$question seen true
+#done
+#
+#db_set passwd/md5 true
+#db_fset passwd/md5 seen true
+#
+##DEBCONF_RECONFIGURE=1 dpkg-reconfigure -fpassthrough passwd
+#version="$(dpkg --status passwd | grep ^Version: | sed 's/^Version: //')"
+#CODE=0
+#DEBCONF_RECONFIGURE=1 /var/lib/dpkg/info/passwd.config reconfigure "$version"
+
+# Ugly way, but necessary by now, and anyway is the way as internally passwd package does....
+# Create the user
+#if test -x /usr/sbin/adduser; then
+#    adduser --disabled-password --gecos "$USERNAME" "$USERNAME" >/dev/null 2>&1
+#else
+    useradd -c "$USERNAME" -m "$USERNAME" -s /bin/bash >/dev/null 2>&1
+#fi
+
+# Setup the password
+if [ -n "$PASSWD" ];then
+    echo "$USERNAME:$PASSWD" | chpasswd --md5 >/dev/null 2>&1
+fi
+# Add to the groups
+groups="adm,audio,cdrom,dialout,floppy,video,voice,plugdev,dip,lp,lpadmin,scanner,admin"
+#if test -x /usr/sbin/adduser; then
+#	for group in adm audio cdrom dialout floppy video plugdev dip ; do
+#		adduser "$USERNAME" $group >/dev/null 2>&1
+#	done
+	for group in lpadmin scanner admin ; do
+		addgroup --system $group >/dev/null 2>&1
+#		adduser "$USERNAME" admin >/dev/null 2>&1
+	done
+    usermod -G $groups $USERNAME
+#else
+#	exit 1
+#fi
+
+if [ -f /etc/sudoers ]; then
+    if grep -q \%admin /etc/sudoers; then 
+        sed -i -e '/^%admin/s/ALL$/NOPASSWD: ALL/' /etc/sudoers
+    else
+	echo "%admin  ALL=NOPASSWD: ALL" >> /etc/sudoers
+    fi 
+fi
+
+# Lock the user's password
+if [ -n "$PASSWD" ];then
+    passwd -l $USERNAME
+else
+    usermod -U $USERNAME 
+fi
+
+# XXX - awful hack to stop xscreensaver locking the screen (#7150)
+#echo 'RUNNING_UNDER_GDM="yes"' >> /etc/environment
+
+log_end_msg $?
+
+exit 0

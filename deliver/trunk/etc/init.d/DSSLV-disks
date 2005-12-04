@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# $Id$
+
+# DSS-LV 
+# Daniele Favara <danjele@gmail.com> 2005
+# <http://dss.berlios.de>
+
+set -e
+VERBOSE=yes
+TMPTIME=0
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+. /lib/lsb/init-functions
+. /etc/deliver.conf
+. $FUNCS
+
+log_begin_msg "Searching local disks..."
+create_fstab
+rm -f /etc/mtab
+cat /proc/mounts > /etc/mtab
+#mount -a  >> /var/log/initramfs.debug 2>&1
+swapon -a >> /var/log/initramfs.debug 2>&1
+#device=$(get_device)
+#mount $device >> /var/log/initramfs.debug 2>&1
+log_end_msg $? 
+
+exit 0
