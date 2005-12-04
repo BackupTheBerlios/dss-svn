@@ -1,0 +1,74 @@
+#!/bin/sh
+# Search the image in the local disks
+
+# mount point /cdrom
+# check in $devices the file base/$BASE 
+# return found=y
+
+PREREQ="tmpfs"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+
+disks=""
+for device in /sys/block/* ; do
+        if [ -e ${device}/device ]; then
+                disk=${device#/sys/block/}
+                ls ${device}/${disk}* > /dev/null 2>&1
+                if [ $? = 0  ]; then
+                        for partition in ${device}/${disk}* ; do
+                                disks="${disks} ${partition#${device}/}"
+                        done
+                else
+                        disks="${disks} ${disk}"
+                fi
+        fi
+done
+
+
+modprobe -q isofs >> /tmp/initramfs.debug 2>&1
+mkdir -p $LIVEDEV >> /tmp/initramfs.debug 2>&1
+
+found=n
+for disk in $disks; do
+	#echo -n "${CRE}${WHITE}Looking for CDROM in: ${GREEN}$disk${NORMAL}   "
+	mount -t auto -o ro /dev/$disk $LIVEDEV >> /tmp/initramfs.debug 2>&1
+	if [ -e $LIVEDEV/base/$BASE ]; then
+		found=y
+		#echo -n "${CRE}${WHITE}Accessing  CDROM at ${GREEN}$i${GREEN}...${NORMAL}"	
+		if [ "x$found" = xy ] ;then
+			if  [ -n "$TORAM" ]; then 
+				echo TORAM $TORAM
+				umount $LIVEDEV  >> /tmp/initramfs.debug 2>&1
+				LIVEDEV=/mnt
+			fi
+		fi
+
+		break
+	else
+		umount /dev/$disk >> /tmp/initramfs.debug 2>&1
+	fi
+done
+if [ x${found} = xy ]; then
+	echo "FINDCD: /dev/$disk mounted on $LIVEDEV" >> /tmp/initramfs.debug
+	exit 0
+else
+	echo "FINDCD: no devices mounted on  $LIVEDEV" >> /tmp/initramfs.debug
+	exit 1
+fi
+
+
+
+
+

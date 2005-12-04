@@ -1,0 +1,31 @@
+#!/bin/sh
+# 
+PREREQ="init"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+
+# To avoid fsck
+#touch ${rootmnt}/fastboot
+
+cat <<EOF > ${rootmnt}/etc/fstab
+# /etc/fstab: static file system information.
+#
+# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+proc            /proc           proc    defaults        0       0
+sys             /sys            sysfs   defaults        0       0
+EOF
+
+exit 0
+

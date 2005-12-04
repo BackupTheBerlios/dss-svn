@@ -1,0 +1,84 @@
+#!/bin/sh
+# 
+# files:
+# /etc/network/interfaces
+# /etc/hostname
+# /etc/hosts
+#
+# cheatcodes:
+# hostname=<var> [change hostname]
+# dhcp           [use dhcp]
+# password=<var> [set user passwd]
+PREREQ="clock"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+. /conf/initramfs.conf
+. ${rootmnt}/$FUNCS
+. ${rootmnt}/$FILECONF
+
+myhostname=$(getbootparam hostname)
+if [ -n "${myhostname}" ];then
+	echo HOSTNAME=\"${myhostname}\">> ${rootmnt}/$FILECONF
+	HOSTNAME=${myhostname}
+fi
+password=$(getbootparam password)
+if [ -n "$password" ] ;then
+	echo PASSWD=\"${password}\">> ${rootmnt}/$FILECONF
+fi
+if [ $(checkbootparam dhcp)];then
+	echo DHCP=\"yes\" >> ${rootmnt}/$FILECONF
+ 	DHCP="yes"
+fi
+#
+# Setup the network. By default is going to be with dhcp
+# methods inet address family: 
+#	<loopback> <static> <manual> <dhcp> <bootp> <ppp> <wvdial>
+echo "Network setting..."  >> /tmp/initramfs.debug
+devs=$(for i in /sys/class/net/*/device ; do dev=${i#/sys/class/net/} ; echo ${dev%/device} ; done)
+echo $devs >> /tmp/initramfs.debug
+
+cat <<EOF > ${rootmnt}/etc/network/interfaces
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo ${devs}
+iface lo inet loopback
+
+
+EOF
+
+if [ "$DHCP" = "yes" ];then
+	for device in $devs ; do
+        	echo "iface $device inet dhcp" >> ${rootmnt}/etc/network/interfaces
+	done
+fi
+
+# Setup the hostname
+#HOSTNAME=$(grep ID /etc/lsb-release | cut -d "=" -f 2 | tr -s [:upper:] [:lower:])
+echo $HOSTNAME > ${rootmnt}/etc/hostname
+cat <<EOF > ${rootmnt}/etc/hosts
+127.0.0.1       localhost.localdomain   localhost       $HOSTNAME
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+EOF
+
+exit 0
