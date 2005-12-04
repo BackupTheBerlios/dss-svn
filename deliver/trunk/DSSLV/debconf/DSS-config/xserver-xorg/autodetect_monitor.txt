@@ -1,5 +1,0 @@
-Name: xserver-xorg/autodetect_monitor
-Template: xserver-xorg/autodetect_monitor
-Value: true
-Owners: xserver-xorg
-
