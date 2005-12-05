@@ -1,0 +1,4 @@
+Name: xserver-xorg/autodetect_mouse
+Template: xserver-xorg/autodetect_mouse
+Owners: xserver-xorg
+
