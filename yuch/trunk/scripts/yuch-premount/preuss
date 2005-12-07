@@ -24,7 +24,7 @@ echo -n "${WHITE}Unifing: ${GREEN} "
 #BASE MODULE
 	mkdir -p /$LIVECD/$BASE/ >> /tmp/initramfs.debug 2>&1
     if [ ! -b /dev/loop0 ];then
-        mknod /dev/loop0b 7 0 >> /tmp/initramfs.debug 2>&1
+        mknod /dev/loop0 b 7 0 >> /tmp/initramfs.debug 2>&1
     fi
 	mount -r -o loop -t squashfs $LIVEDEV/base/$BASE /$LIVECD/$BASE >> /tmp/initramfs.debug 2>&1 
 	tomove="$BASE"
