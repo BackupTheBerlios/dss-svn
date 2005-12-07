@@ -14,8 +14,8 @@
    id="svg1306"
    sodipodi:version="0.32"
    inkscape:version="0.42"
-   sodipodi:docbase="/tmp"
-   sodipodi:docname="dss-splash.svg"
+   sodipodi:docbase="/home/nomed/Desktop/DSS-svn/dss/dss-artwork/trunk/svg"
+   sodipodi:docname="dss-background.svg"
    inkscape:export-filename="C:\GFX\SVG_Render\dss-splash-640-480.png"
    inkscape:export-xdpi="72.000000"
    inkscape:export-ydpi="72.000000">
@@ -106,7 +106,7 @@
        x2="429.00304"
        y2="289.00000"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(355.0000,285.0000)" />
+       gradientTransform="matrix(0.873339,0.000000,0.000000,1.000000,404.7874,285.0000)" />
     <pattern
        patternUnits="userSpaceOnUse"
        width="105.02930"
@@ -127,9 +127,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.0000000"
-     inkscape:cx="402.78463"
-     inkscape:cy="318.37500"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="342.23879"
+     inkscape:cy="225.82602"
      inkscape:current-layer="layer1"
      inkscape:document-units="px"
      inkscape:showpageshadow="false"
@@ -179,8 +179,8 @@
        y="536.73999"
        id="rect1445" />
     <path
-       style="fill:none;fill-opacity:0.75000000;fill-rule:evenodd;stroke:url(#linearGradient8093);stroke-width:4.0000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-dasharray:4.0000000 4.0000000 ;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000"
-       d="M 629.99662,574.00000 L 782.00304,574.00000"
+       style="fill:none;fill-opacity:0.75000000;fill-rule:evenodd;stroke:url(#linearGradient8093);stroke-width:3.7381065;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-dasharray:3.7381065 3.7381065 ;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000"
+       d="M 644.95285,574.00000 L 777.70613,574.00000"
        id="path7359" />
     <g
        id="g2682"
@@ -279,14 +279,13 @@
     <text
        xml:space="preserve"
        style="font-size:14.000000px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125.00000%;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
-       x="628"
+       x="644"
        y="566"
        id="text1453"
-       sodipodi:linespacing="125.00000%"
-       transform="matrix(1.000000,0.000000,8.000000e-2,1.000000,0.000000,0.000000"><tspan
+       sodipodi:linespacing="125.00000%"><tspan
          sodipodi:role="line"
          id="tspan1455"
-         x="628.00000"
-         y="566.00000">http://dss.berlios.de</tspan></text>
+         x="644.00000"
+         y="566.00000">http://dsslive.org</tspan></text>
   </g>
 </svg>
