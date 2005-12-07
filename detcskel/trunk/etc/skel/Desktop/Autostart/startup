@@ -3,19 +3,7 @@
 
 esetroot -scale /etc/alternatives/desktop-background &
 
-if [ -f /etc/sysconfig/sysconfig ];then
-	source /etc/sysconfig/sysconfig
-	USER=$USERNAME 
-else
-	USER=$( ps aux | grep $PPID | awk '{print $1}' | head -1 )
-fi
 
-if [ "$USER" = "root" ];then
-	sed -i -e "s,/home/[^/]\+/.xtdesktop/,/root/.xtdesktop/,g" $HOME/.xtdesktop/*.lnk 
-else
- 	sed -i -e "s,/home/[^/]\+/.xtdesktop/,/home/$USER/.xtdesktop/,g" $HOME/.xtdesktop/*.lnk
-sed -i -e "s,/root/.xtdesktop/,/home/$USER/.xtdesktop/,g" $HOME/.xtdesktop/*.lnk 
-fi
 [ -e /tmp/.lasticon ] && rm -f  /tmp/.lasticon
 rm -f $HOME/.xtdesktop/allow*.lnk
 x=300
@@ -48,5 +36,6 @@ for i in $entry; do
 done
 
 xtdesk &
-ivman &
 backstep &
+# ivman as last ... it will be killed when user disconnects to X
+ivman 
