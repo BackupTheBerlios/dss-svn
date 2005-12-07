@@ -22,7 +22,7 @@ log_begin_msg "Reconfiguring locales..."
  dpkg-reconfigure -f$LCONF locales 2>/dev/null
  source /etc/environment
  if [ -n $LANG  ];then
-    echo 'export LC_ALL=$LANG' >> /etc/bash.bashrc 
+    echo 'export LC_ALL=$LANG.$CHARSET' >> /etc/bash.bashrc 
  fi
 log_end_msg $?
 
