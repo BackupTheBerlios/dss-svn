@@ -2,7 +2,7 @@ table Icon
  Type: Program
  Caption: home
  Command: rox $HOME
- Icon: //home/daniele/.xtdesktop/home.png
+ Icon: $HOME/.xtdesktop/home.png
  X: 54
  Y: 80
 end

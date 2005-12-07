@@ -2,7 +2,7 @@ table Icon
  Type: Program
  Caption: firefox
  Command: firefox www.google.com
- Icon: //home/daniele/.xtdesktop/firefox.png
+ Icon: $HOME/.xtdesktop/firefox.png
  X: 54
  Y: 226
 end

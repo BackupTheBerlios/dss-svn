@@ -2,7 +2,7 @@ table Icon
  Type: Program
  Caption: media
  Command: rox /media
- Icon: //home/daniele/.xtdesktop/media.png
+ Icon: $HOME/.xtdesktop/media.png
  X: 52
  Y: 152
 end

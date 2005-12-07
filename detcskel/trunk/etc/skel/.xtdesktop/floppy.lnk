@@ -2,7 +2,7 @@ table Icon
  Type: Program
  Caption: floppy
  Command: mount
- Icon: /home/daniele/.xtdesktop/floppy.png
+ Icon: $HOME/.xtdesktop/floppy.png
  X: 375
  Y: 230
  MenuCommand1: Mount /media/floppy : mount /media/floppy
