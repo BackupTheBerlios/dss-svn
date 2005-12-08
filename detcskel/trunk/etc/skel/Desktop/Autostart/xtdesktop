@@ -1,9 +1,6 @@
 #!/bin/bash
 
-
-esetroot -scale $HOME/desktop-background.png &
-
-
+start_xtdesk () {
 [ -e /tmp/.lasticon ] && rm -f  /tmp/.lasticon
 rm -f $HOME/.xtdesktop/allow*.lnk
 x=300
@@ -34,8 +31,19 @@ for i in $entry; do
 	echo $x $y $num> /tmp/.lasticon
 	fi
 done
+}
 
-xtdesk &
-backstep &
-# ivman as last ... it will be killed when user disconnects to X
-ivman 
+exec 1>&2
+echo -n "Launching xtdesktop... "
+if ps -C xtdesk -o user | grep -q $USER
+then
+  echo "Already running."
+  exit
+else
+  echo "OK"
+  start_xtdesk
+  exec xtdesk
+fi 
+
+
+
