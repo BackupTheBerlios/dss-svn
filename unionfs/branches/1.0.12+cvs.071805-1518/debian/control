@@ -1,0 +1,35 @@
+Source: unionfs
+Section: misc
+Priority: optional
+Maintainer: Daniele Favara <danjele@gmail.com>
+Build-Depends: debhelper (>= 4.0.0), bzip2, uuid-dev
+Standards-Version: 3.6.2
+
+Package: unionfs-utils
+Architecture: any
+Recommends: unionfs-source
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: stackable unification file system - management tools
+ The unionfs driver provides a unification file system for the Linux
+ kernel. It allows to virtually merge the contents of several
+ directories and/or stack them, so that apparent file changes in the
+ unionfs end in file changes in only one of the source directories.
+ .
+ This package contains utilities needed to configure unionfs containers
+ on-the-fly.
+
+Package: unionfs-source
+Architecture: all
+Depends: module-assistant, bzip2, debhelper (>> 4.0.0), exuberant-ctags 
+Suggests: unionfs-utils
+Description: source for the unionfs driver
+ The unionfs driver provides a unification file system for the Linux
+ kernel. It allows to virtually merge the contents of several
+ directories and/or stack them, so that apparent file changes in the
+ unionfs end in file changes in only one of the source directories.
+ .
+ This package contains the module source. The kernel driver can be built from
+ it using module-assistant or make-kpkg.
+
+
+

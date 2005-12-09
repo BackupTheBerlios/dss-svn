@@ -1,0 +1,70 @@
+#!/bin/sh
+#vim:filetype=sh
+
+if [ "$#" -lt "2" ]
+then
+cat 1>&2 <<HERE
+$0 merges Unionfs snapshots onto the base.
+$0 base snap0 [ snap1 ... ]
+
+If you want to merge two or more consecutive snapshots to create a new
+snapshot, as if snap1, snap0 are two branches that are mounted over base, you
+can not directly call snapmerge because whiteouts are not handled.  Instead,
+you should create a new Unionfs that merges an empty directory snap10 and base
+(with base=ro).  Then you can run snapmerge /mnt/unionfs snap0 snap1.  snap10
+will contain the merged snapshot, with only the proper number of whiteouts.
+HERE
+	exit 1
+fi
+
+BASE=$1
+
+shift
+
+WD=`pwd`
+if [ ! `echo $BASE | cut -b1` = "/" ] ; then
+	BASE="$WD/$BASE"
+fi
+
+while [ ! -z "$1" ]
+do
+	SNAP=$1
+	if [ ! -d $SNAP ] ; then
+		echo "$0: $SNAP not a directory" 1>&2
+		exit 1
+	fi
+
+	cd $SNAP || exit 1
+
+	echo "Merging $SNAP onto $BASE."
+
+	# Directories
+	find . -type d | tail +2 |  sed -e 's/\.\///' |
+	while read N
+	do
+		mkdir -p $BASE/$N
+		chmod $BASE/$N --reference=$N
+		touch $BASE/$N --reference=$N
+	done
+
+	# Copy Files
+	find . -not \( -regex '.*/\.wh\.[^/]*' -type f \) -not -type d |  sed -e 's/\.\///' |
+	while read N
+	do
+		cp -a $N $BASE/$N
+	done
+
+	# Handle Whiteouts
+	find . \( -regex '.*/\.wh\.[^/]*' -type f \) | sed -e 's/\.\///;s/\.wh\.//' |
+	while read N
+	do
+		rm -rf $BASE/$N
+	done
+
+	cd $WD
+	shift
+done
+
+cd $WD
+
+exit 0

@@ -1,0 +1,49 @@
+2005-03-02  David P. Quigley  <dquigley@fsl.cs.sunysb.edu>
+
+	* link.sh: Fixed more cases that were not correct due to new unionfs_link
+	code
+
+2005-02-18  David P. Quigley  <dquigley@fsl.cs.sunysb.edu>
+
+	* link.sh: Some cases were no longer valid due to the changes to unionfs_link.
+	The test cases have been fixed to reflect this and new ones have been added.
+
+2005-02-08  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* link.sh: Test two directories on the same ro branch.
+
+2004-12-27  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* chmod.sh: Reproduce bug 142.
+
+2004-08-25  Mohammad Nayyer Zubair  <zubair@filer.fsl.cs.sunysb.edu>
+
+	* create.sh: tested unionfs_create()
+
+2004-08-24  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* symlink.sh: readlink to make sure that it worked, and check the hierarchy
+
+	* *.sh: Use set -e, so we don't need to do || exit $?
+	* scaffold: Support checking devices.
+	* mknod.sh: Make sure the devices are created and check the results!
+
+	* Clean up the output for some of the scripts.
+	* truncate-all.sh: Embed truncate.c into shell script and compile it.
+
+2004-08-19  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* rename-whiteout.sh: Test rename-whiteout.
+
+2004-08-18  Mohammad Nayyer Zubair  <zubair@filer.fsl.cs.sunysb.edu>
+
+	* link.sh: script to test all cases of unionfs_link()
+
+2004-08-17  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* testplan: symlink, link, truncate, times, and mknod were left out
+		A detailed mknod plan example is included
+	* unlink.sh: Test recursive whiteout creation and an error in the
+		middle
+	* scaffold: Create immutable files with 'i' instead of 'f'
+

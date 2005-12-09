@@ -1,0 +1,104 @@
+.\" Process with groff -man -Tascii unionfs.1
+.\"
+.TH UNIONFS 8 "August 2004" Linux
+.SH NAME
+Unionfs \- a unioning file system for Linux
+.SH SYNOPSIS
+
+.P
+.B unionctl
+.I UNION
+ACTION [
+.I
+OPTIONS
+]
+
+.B unionctl
+.I UNION
+.B --add
+[
+.B --before
+.I BRANCH
+|
+.B --after
+.I BRANCH
+] [
+.B --mode
+(rw|ro) ]
+.I DIRECTORY
+
+.B unionctl
+.I UNION
+.B --remove
+.I BRANCH
+
+.B unionctl
+.I UNION
+.B --mode
+.I BRANCH
+(rw|ro)
+
+.B unionctl
+.I UNION
+.B --list
+
+
+.SH DESCRIPTION
+.B unionctl
+is used to control a unionfs file system.  The first argument is a union, which
+is the mountpoint of unionfs, or any file within unionfs.  The second argument is
+an action.  Currently
+.B unionctl
+supports four actions: --add, --remove, --mode, and --list.  Further arguments
+are action dependent.
+
+When a branch is required as an argument, it can be specified in two ways.  The
+easiest way is to specify the path to the branch.  If the path is used multiple
+times in the union, the highest priority branch will be used.  A branch can
+also be specified as an index starting from zero.
+
+.SH ACTIONS
+.IP "--add"
+add a branch into a union.  By default a read-write branch will be added as the
+first component of the union.
+
+The order of branches can be modified with --before and --after.  Each of these
+takes a single branch as an argument.  If --before is specified the new branch
+will be added before the specified branch; and if --after is specified the new
+branch will be added after the specified branch.
+
+Finally, --mode will set the permissions on the new branch.  --mode requires
+one argument, which is either "rw" for a read-write branch or "ro" for a
+read-only branch.
+
+Note: The directory to add must be the last argument.
+
+.IP "--remove"
+removes a branch from a union.  Branches with open files can not be removed.
+
+You can not use the root directory of the union to specify which union should
+be operated on.  You must chose a file or directory that does not exist within
+the branch, otherwise you will get a "Device or resource busy." error.
+
+To remove a branch,
+.B unionctl
+performs an ioctl that operates on a file descriptor.  If the root directory
+is opened, then the branch will necessarily be busy.
+
+.IP "--mode"
+sets the permissions of a branch.  --mode requires two arguments, the first is
+the branch to operate on; and the second is what mode to set.  The allowed
+modes are "ro" for read-only access and "rw" for read-write access.
+
+.IP "--list"
+list branches within the union (and also their permissions).
+
+
+.SH AUTHORS
+Charles Wright <cwright@cs.sunysb.edu>,
+Mohammad Zubair <mzubair@ic.sunysb.edu>,
+Erez Zadok <ezk@cs.sunysb.edu>
+.SH "SEE ALSO"
+.BR unionfs(4),
+.BR uniondbg(8),
+http://www.fsl.cs.sunysb.edu/
