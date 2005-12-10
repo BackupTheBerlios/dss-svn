@@ -19,17 +19,17 @@ print_lnk(){
 block_device=$1
 volume_uuid=$2
 volume_mount_point=$3
-
+source   $HOME/.ivman/default 
 	cat > $HOME_ICONS/$volume_uuid.lnk << EOF
 	table Icon
 	Type: Program
 	Caption: $(basename $volume_mount_point)
-	Command: /usr/share/xtdesktop/pmount.sh openfolder $volume_mount_point
+	Command:$FM $volume_mount_point 
 	Icon: $HOME_ICONS/hd.png
 	X: $x
 	Y: $y
-	MenuCommand1: Mount $block_device : /usr/share/xtdesktop/pmount.sh pmount $block_device
-	MenuCommand2: Umount $block_device : /usr/share/xtdesktop/pmount.sh pumount $block_device	
+	MenuCommand1: Mount $block_device :notify.py -p $block_device -s 'Device Mounted' -m 'mount point $volume_mount_point'
+	MenuCommand2: Umount $block_device :notify.py -u $block_device -s 'Device Unmounted' -m 'device name $block_device'
 	end
 EOF
 }
@@ -49,11 +49,7 @@ while getopts "g:r:" flag; do
 	esac
 done
 shift 1
-#shift $(($OPTIND - 1))
-#echo $1
-#echo $2
-#echo $3
-#exit 0
+
 mem="/tmp/.lasticon"
 HOME_ICONS=$HOME/.ivman/ivicons
 BIN=ivicons
@@ -69,21 +65,7 @@ else
 	y=$( echo $start | awk '{print $2}' )
 	num=$( echo $start | awk '{print $3}' )
 fi
-#pidxt=$(cat $VAR_RUN )
-#user=$( ps aux | grep $BIN | grep $pidxt | awk '{print $1}' | head -1 )
-#xdid=$(  ps ax | grep $BIN | awk '{print $1}' | head -1 )
-#if test -z  "$user" ; then 
-#	exit 0 
-#fi
 
-#if [ "$user" = "root" ];then
-#	HOME=/root
-#else
-#	HOME="/home/$user"
-#fi
-#sleep 1
-
-# GENERATE
 
 if [ "$GENERATE" = "yes" ];then
 	if [  ! -e "$HOME_ICONS/$2.lnk"  ];then
@@ -97,14 +79,13 @@ if [ "$GENERATE" = "yes" ];then
 		fi
 		let num+=1
 	fi
-#	chown $user\: $HOME_ICONS/*
+
 	echo $x $y $num> /tmp/.lasticon
 elif [ "$REMOVE" = "yes" ];then
 	rm   $HOME_ICONS/$1.lnk 
 fi
 killall ivicons
 ivicons
-#kill $pidxt
-#rm -f $VAR_RUN
+
 exit 0
 

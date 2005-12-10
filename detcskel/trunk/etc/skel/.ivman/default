@@ -1,4 +1,4 @@
-set -x
+MOUNTPOINT="python /usr/share/nomed/utils/mountpoint.py"
 #define file manager
 if [ -n "$(which thunar)" ];then
 	FM=$(which thunar)
@@ -26,3 +26,4 @@ elif [ -n "$(which k3b)" ];then
 	BURNER=$(which k3b)
 fi
 
+DVDPLAYER="gmplayer  -dvd-device"

@@ -60,97 +60,72 @@
 
 
     <!-- try to mount any mountable volume at all -->
+    <!-- 
     <ivm:Match name="ivm.mountable" value="true">
         <ivm:Option name="mount" value="true" />
     </ivm:Match>
+    -->
 
     <!-- example - autoplay CDs with audio tracks and no data tracks -->
-    
     <ivm:Match name="hal.volume.disc.type" value="cd_rom">
-       <ivm:Match name="hal.volume.disc.has_data" value="false">
-	 <ivm:Match name="hal.volume.disc.has_audio" value="true">
-          <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp;   zenity --question --title='Ivman' --text='Audio CD inserted.  Play?'  &amp;&amp; $AUDIOCD  $hal.block.device$ " />
-          </ivm:Match>
-         </ivm:Match>
+        <ivm:Match name="hal.volume.disc.has_data" value="false">
+	        <ivm:Match name="hal.volume.disc.has_audio" value="true">
+                <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp;   notify.py -s Notification -m 'audio cd inserted'  &amp;&amp; $AUDIOCD  $hal.block.device$ " />
+            </ivm:Match>
+        </ivm:Match>
     </ivm:Match>
     
-   <!-- example - open XFCE4_BURN is cd is blank -->
+    <!-- example - autoplay DVD with data tracks -->
+    <ivm:Match name="hal.volume.disc.type" value="dvd_rom">
+        <ivm:Match name="hal.volume.disc.has_data" value="true">
+            <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp;  notify.py -s Notification -m 'dvd inserted'  &amp;&amp; $DVDPLAYER $hal.block.device$ " />
+        </ivm:Match>
+    </ivm:Match>
 
+    <!-- example - open XFCE4_BURN is cd is blank -->
     <ivm:Match name="hal.volume.disc.is_blank" value="true">
-       <ivm:Match name="hal.volume.disc.has_audio" value="false">
-        <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp; $BURNER  $hal.block.device$ " />
+        <ivm:Match name="hal.volume.disc.has_audio" value="false">
+            <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp; notify.py -s Notification -m 'blank cd|dvd inserted' &amp;&amp; $BURNER  $hal.block.device$ " />
        </ivm:Match>
     </ivm:Match>
 
     <!-- example - open filemanager on mount point-->
     <ivm:Match name="ivm.mountable" value="true">
-        <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp;  $FM `python $HOME/.ivman/ivmanfm.py $hal.block.device$`  &amp;&amp; sh $HOME/.ivman/ivmanxticons -g $hal.block.device$ $hal.volume.uuid$  $hal.volume.mount_point$ " />
- <ivm:Option name="execun" value=" sh $HOME/.ivman/ivmanxticons -r  $hal.volume.uuid$  " />
-
-<!--  <ivm:Option name="exec" value="echo $hal.volume.uuid$ >> /tmp/nome" /> -->
+        <ivm:Option name="exec" value="notify.py -s Notification -m 'found device $hal.block.device$'  -p $hal.block.device$   " />
+        <ivm:Option name="execun" value=" sh $HOME/.ivman/ivmanxticons -r  $hal.volume.uuid$  " />
+        <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp;  $FM `$MOUNTPOINT $hal.block.device$` &amp;"/>
+        <ivm:Option name="exec" value="sh $HOME/.ivman/ivmanxticons -g $hal.block.device$ $hal.volume.uuid$  `$MOUNTPOINT $hal.block.device$` "/> 
     </ivm:Match>
     <!-- example - autoplay video DVDs -->
-    <!-- video DVD detection is an ugly hack at the moment, because it's not
-         possible to tell if a DVD contains video without mounting it first.
-         That's why we don't use a 'Match' to tell if a volume is a video
-         DVD yet. -->
-    <!--
-    <ivm:Option name="execdvd" value="pumount $hal.block.device$ &amp;&amp; /usr/bin/mplayer dvd://1 -really-quiet -fs" />
-    -->
-
-    <!-- example - don't mount /dev/camera -->
-    <!--
-    <ivm:Match name="hal.block.device" value="/dev/camera">
-        <ivm:Option name="mount" value="false" />
-    </ivm:Match>
-    -->
-
+   
     <!-- example - log whenever someone attaches or removes a device -->
- <!--   
-   <ivm:Match name="*">
+    <!--   
+    <ivm:Match name="*">
         <ivm:Option name="exec" value="echo `basename $hal.info.udi$` attached at `date` &gt;&gt; /tmp/devices" />
-<ivm:Match name="hal.device.removed" value="true">
-        <ivm:Option name="execun" value="echo `basename $hal.info.udi$` removed at `date` &gt;&gt; /tmp/devices" />
-    </ivm:Match>   
-  </ivm:Match> -->
+            <ivm:Match name="hal.device.removed" value="true">
+                <ivm:Option name="execun" value="echo `basename $hal.info.udi$` removed at `date` &gt;&gt; /tmp/devices" />
+            </ivm:Match>   
+    </ivm:Match> -->
     
 
-   <!-- open konqueror -->
-<!--   <ivm:Match name="hal.info.category" value="volume"> 
-	     <ivm:Option name="exec" value="[file manager] `python $HOME/.ivman/ivmanfm.py $hal.block.device$`" /> -->
-<!--	</ivm:Match>  -->
-
-   <!-- open kscd for audiocds   <ivm:Match name="hal.volume.disc.type" value="cd_rom">
-       <ivm:Match name="hal.volume.disc.has_audio" value="true">
-           <ivm:Match name="hal.volume.disc.has_data" value="false">
-               <ivm:Option name="exec" value="grip $hal.block.device$" />
-           </ivm:Match>
-       </ivm:Match>
-   </ivm:Match>
- -->
-
-   <!-- kaffeine for videos -->
- <!--  <ivm:Match name="hal.volume.disc.type" value="dvd_rom">
-       <ivm:Option name="execdvd" value="pumount $hal.block.device$ &amp;&amp; /usr/bin/kaffeine dvd://1" />
-   </ivm:Match> -->
 
    <!-- popup a message for scanners -->
    <ivm:Match name="hal.info.category" value="scanner">
        <ivm:Match name="hal.storage.bus" value="usb">
-           <ivm:Option name="exec" value="kdialog &#45;-passivepopup 'USB scanner detected: $hal.info.vendor$ $hal.info.product$' 6" />
+           <ivm:Option name="exec" value="notify.py -s Notification -m  'USB scanner detected: $hal.info.vendor$ $hal.info.product$' 6" />
        </ivm:Match>
    </ivm:Match>
 
    <!-- popup a message for printers -->
    <ivm:Match name="hal.info.category" value="printer">
         <ivm:Match name="hal.info.bus" value="usb">
-           <ivm:Option name="exec" value="kdialog &#45;-passivepopup 'USB printer detected: $hal.info.vendor$ $hal.info.product$' 6" />
+           <ivm:Option name="exec" value="notify.py -s Notification -m 'USB printer detected: $hal.info.vendor$ $hal.info.product$' 6" />
         </ivm:Match>
    </ivm:Match>
 
    <!-- cameras -->
-   <ivm:Match name="hal.info.product" value="USB PTP Interface">
-           <ivm:Option name="exec" value="kfmclient openURL media:/camera" />
+   <ivm:Match name="hal.info.category" value="camera">
+           <ivm:Option name="exec" value="gthumb --import-photos " />
    </ivm:Match>
 
 </ivm:ActionsConfig>
