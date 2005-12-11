@@ -11,6 +11,14 @@ if [ -n "$WINDOWMANAGER" ]; then
     fi
 
     echo "exec $WINDOWMANAGER" >> /etc/X11/xinit/xinitrc
+    ## test for an existing bus daemon, just to be safe
+    #if test -z "$DBUS_SESSION_BUS_ADDRESS" ; then
+    ## if not found, launch a new one
+    #eval ‘dbus-launch --sh-syntax --exit-with-session‘
+    #    echo "D-BUS per-session daemon address is: $DBUS_SESSION_BUS_ADDRESS"
+    #fi
+    echo "exec dbus-lounch /etc/alternatives/x-session-manager  "
+
 
     if [ ! -e /home/$USERNAME/.xinitrc ]; then
 	cp /etc/X11/xinit/xinitrc /home/$USERNAME/.xinitrc 2>/dev/null
