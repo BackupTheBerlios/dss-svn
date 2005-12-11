@@ -62,6 +62,7 @@ for disk in $disks; do
 done
 if [ x${found} = xy ]; then
 	echo "FINDCD: /dev/$disk mounted on $LIVEDEV" >> /tmp/initramfs.debug
+	echo CDROMDEV="/dev/$disk" >> /tmp/cdromdev
 	exit 0
 else
 	echo "FINDCD: no devices mounted on  $LIVEDEV" >> /tmp/initramfs.debug

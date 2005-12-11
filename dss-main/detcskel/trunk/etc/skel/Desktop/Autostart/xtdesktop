@@ -1,25 +1,45 @@
 #!/bin/bash
 
 start_xtdesk () {
+source /lib/lsb/DSSLV-functions
+source $HOME/.ivman/default
 [ -e /tmp/.lasticon ] && rm -f  /tmp/.lasticon
 rm -f $HOME/.xtdesktop/allow*.lnk
 x=300
 y=300
 num=1
-entry=$(cat /etc/pmount.allow | grep -w dev)
+entry=$(get_partitions)
+cdrom="/dev/$(get_cdroms)"
+entry="$entry $cdrom"
 echo $entry
+
+hdicon=$HOME/.xtdesktop/hd.png
+cdromicon=$HOME/.xtdesktop/cdrom_mount.png
 for i in $entry; do
+	set -x
+	mpoint=`$MOUNTPOINT $i`
+	
 	lnk=$(basename $i)
+	if [ -z "$mpoint" ];then
+	 mpoint=/media/$lnk
+	fi
+	ICONTYPE=$(echo $cdrom | grep $i)
+	if [ -n "$ICONTYPE" ];then
+		ICON=$cdromicon
+	else
+		ICON=$hdicon
+	fi
+	
 	if [ ! -e "$HOME/.xtdesktop/$lnk.lnk" ];then
 	echo "table Icon" >> $HOME/.xtdesktop/allow$lnk.lnk
 	echo "Type: Program" >> $HOME/.xtdesktop/allow$lnk.lnk
 	echo "Caption: $lnk" >> $HOME/.xtdesktop/allow$lnk.lnk
-	echo "Command: /usr/share/xtdesktop/pmount.sh openfolder $i" >> $HOME/.xtdesktop/allow$lnk.lnk
-	echo "Icon: $HOME/.xtdesktop/hd.png" >> $HOME/.xtdesktop/allow$lnk.lnk
+	echo "Command: $FM $mpoint" >> $HOME/.xtdesktop/allow$lnk.lnk
+	echo "Icon: $ICON" >> $HOME/.xtdesktop/allow$lnk.lnk
 	echo "X: $x" >> $HOME/.xtdesktop/allow$lnk.lnk
 	echo "Y: $y" >> $HOME/.xtdesktop/allow$lnk.lnk
-	echo "MenuCommand1: Mount $lnk : /usr/share/xtdesktop/pmount.sh pmount $i" >> $HOME/.xtdesktop/allow$lnk.lnk
-	echo "MenuCommand2: Umount $lnk : /usr/share/xtdesktop/pmount.sh pumount $i" >> $HOME/.xtdesktop/allow$lnk.lnk
+	echo "MenuCommand1: Mount $mpoint : notify.py -p $i -s 'Device Mounted' -m \"mount point $mpoint\" ">> $HOME/.xtdesktop/allow$lnk.lnk
+	echo "MenuCommand2: Umount $mpoint : notify.py -u $i -s 'Device Unmounted' -m  \"device name $i\"  ">> $HOME/.xtdesktop/allow$lnk.lnk 
 	echo "end" >> $HOME/.xtdesktop/allow$lnk.lnk
 	let x+=80 
 	if [ "$num" = "6" ];then
@@ -27,9 +47,9 @@ for i in $entry; do
 	num=0
 	fi
 	let num+=1
-#	[ ! -e /etc/sysconfig/lasticon  ] && touch /etc/sysconfig/lasticon
 	echo $x $y $num> /tmp/.lasticon
 	fi
+set +x
 done
 }
 

@@ -13,12 +13,13 @@ Options:
 EOF
 	exit 1
 }
-
+set -x
 print_lnk(){
+source $HOME/.ivman/default
 #usage: print_lnk </dev/block> <ID-NUM> </mount/point>
 block_device=$1
 volume_uuid=$2
-volume_mount_point=$3
+volume_mount_point=`$MOUNTPOINT $block_device`
 source   $HOME/.ivman/default 
 	cat > $HOME_ICONS/$volume_uuid.lnk << EOF
 	table Icon

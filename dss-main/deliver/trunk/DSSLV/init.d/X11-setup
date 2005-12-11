@@ -17,7 +17,8 @@ if [ -n "$WINDOWMANAGER" ]; then
     #eval ‘dbus-launch --sh-syntax --exit-with-session‘
     #    echo "D-BUS per-session daemon address is: $DBUS_SESSION_BUS_ADDRESS"
     #fi
-    echo "exec dbus-lounch /etc/alternatives/x-session-manager  "
+    echo "exec dbus-launch /etc/alternatives/x-session-manager" >> /etc/X11/xinit/xinitrc
+
 
 
     if [ ! -e /home/$USERNAME/.xinitrc ]; then

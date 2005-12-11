@@ -117,9 +117,10 @@ create_fstab ()
 			mkdir -p $mntpoint
 			#entry="${dev}	${mntpoint}	${fs}${defaults}"
 			entry="${dev}"
+			echo $entry >> /etc/pmount.allow
+
 		fi
-		echo $entry >> /etc/pmount.allow
-	done
+		done
 	num=0
 	cdroms=$(get_cdroms)
 	for cd in $cdroms; do

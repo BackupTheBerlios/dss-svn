@@ -94,7 +94,7 @@
         <ivm:Option name="exec" value="notify.py -s Notification -m 'found device $hal.block.device$'  -p $hal.block.device$   " />
         <ivm:Option name="execun" value=" sh $HOME/.ivman/ivmanxticons -r  $hal.volume.uuid$  " />
         <ivm:Option name="exec" value="source   $HOME/.ivman/default &amp;&amp;  $FM `$MOUNTPOINT $hal.block.device$` &amp;"/>
-        <ivm:Option name="exec" value="sh $HOME/.ivman/ivmanxticons -g $hal.block.device$ $hal.volume.uuid$  `$MOUNTPOINT $hal.block.device$` "/> 
+        <ivm:Option name="exec" value="sh $HOME/.ivman/ivmanxticons -g $hal.block.device$ $hal.volume.uuid$  "/> 
     </ivm:Match>
     <!-- example - autoplay video DVDs -->
    
