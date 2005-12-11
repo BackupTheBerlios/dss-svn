@@ -1,0 +1,15 @@
+Source: gfxboot
+Section: unknown
+Priority: optional
+Maintainer: Daniele Favara <danjele@gmail.com>
+Build-Depends: debhelper (>= 4.0.0), nasm,   locales, perl-base, x-dev, libx11-dev
+Standards-Version: 3.6.1
+
+Package: gfxboot
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: graphical boot logo generator
+ Here you find the graphical boot logo. Suitable for:
+   - lilo
+   - syslinux
+   - grub
