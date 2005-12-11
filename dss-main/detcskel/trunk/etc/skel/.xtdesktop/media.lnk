@@ -1,7 +1,7 @@
 table Icon
  Type: Program
  Caption: home
- Command: rox $HOME
+ Command: thunar $HOME
  Icon: $HOME/.xtdesktop/home.png
  X: 54
  Y: 80

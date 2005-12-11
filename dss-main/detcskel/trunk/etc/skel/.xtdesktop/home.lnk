@@ -1,7 +1,7 @@
 table Icon
  Type: Program
  Caption: media
- Command: rox /media
+ Command: thunar /media
  Icon: $HOME/.xtdesktop/media.png
  X: 52
  Y: 152
