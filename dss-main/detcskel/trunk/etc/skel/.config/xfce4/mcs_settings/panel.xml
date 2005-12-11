@@ -7,5 +7,5 @@
 	<option name="orientation" type="int" value="0"/>
 	<option name="popupposition" type="int" value="1"/>
 	<option name="size" type="int" value="1"/>
-	<option name="theme" type="string" value="Rodent"/>
+	<option name="theme" type="string" value="DSS-icon"/>
 </mcs-option>
