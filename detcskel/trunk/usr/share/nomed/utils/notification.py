@@ -20,6 +20,7 @@ class NotificationDaemon(object):
     def __init__(self): 
         self.logger = logging.getLogger()
         bus = dbus.SessionBus()
+        #bus = dbus.SystemBus() 
         obj = bus.get_object('org.freedesktop.Notifications',
                 '/org/freedesktop/Notifications')
 

@@ -269,11 +269,11 @@ setlocales (){
 case "$LANGUAGE" in
     de)
 	COUNTRY="de"
-	LANG="de_DE@euro"
+	LANG="de_DE"
 	KEYTABLE="de-latin1-nodeadkeys"
 	XKEYBOARD="de"
 	KDEKEYBOARD="de"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,fr"
 	TZ="Europe/Berlin"
@@ -286,7 +286,7 @@ case "$LANGUAGE" in
 	KEYTABLE="be-latin1"
 	XKEYBOARD="be"
 	KDEKEYBOARD="be"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,de,fr"
 	TZ="Europe/Brussels"
@@ -298,7 +298,7 @@ case "$LANGUAGE" in
 	KEYTABLE="bg"
 	XKEYBOARD="bg"
 	KDEKEYBOARD="bg"
-	CHARSET="microsoft-cp1251"
+	CHARSET="UTF-8"
  # Additional KDE Keyboards
 	KDEKEYBOARDS="us,de,fr"
 	TZ="Europe/Sofia"
@@ -311,7 +311,7 @@ case "$LANGUAGE" in
 	KEYTABLE="sg-latin1"
 	XKEYBOARD="de_CH"
 	KDEKEYBOARD="de_CH"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="de,us,fr"
 	TZ="Europe/Zurich"
@@ -337,7 +337,7 @@ case "$LANGUAGE" in
 	KEYTABLE="cz-lat2"
 	XKEYBOARD="cs"
 	KDEKEYBOARD="cs"
-	CHARSET="ISO-8859-2"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,de,fr"
 	TZ="Europe/Prague"
@@ -352,7 +352,7 @@ case "$LANGUAGE" in
 	KEYTABLE="dk"
 	XKEYBOARD="dk"
 	KDEKEYBOARD="dk"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="dk,de,us,fr"
 	TZ="Europe/Copenhagen"
@@ -365,18 +365,18 @@ case "$LANGUAGE" in
 	KEYTABLE="gr-pc"
 	XKEYBOARD="el"
 	KDEKEYBOARD="el"
-	CHARSET="ISO-8859-7"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="el,us"
 	;;
     es)
 # Spanish version
 	COUNTRY="es"
-	LANG="es_ES@euro"
+	LANG="es_ES"
 	KEYTABLE="es"
 	XKEYBOARD="es"
 	KDEKEYBOARD="es"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="de,us,fr"
 	TZ="Europe/Madrid"
@@ -384,11 +384,11 @@ case "$LANGUAGE" in
     fi)
 # finnish version, though we may not have the kde-i18n files
 	COUNTRY="fi"
-	LANG="fi_FI@euro"
+	LANG="fi_FI"
 	KEYTABLE="fi"
 	XKEYBOARD="fi"
 	KDEKEYBOARD="fi"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us"
 	TZ="Europe/Helsinki"
@@ -396,11 +396,11 @@ case "$LANGUAGE" in
     fr)
 # french version
 	COUNTRY="fr"
-	LANG="fr_FR@euro"
+	LANG="fr_FR"
 	KEYTABLE="fr"
 	XKEYBOARD="fr"
 	KDEKEYBOARD="fr"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="de,us"
 	;;
@@ -411,7 +411,7 @@ case "$LANGUAGE" in
 	KEYTABLE="es"
 	XKEYBOARD="es"
 	KDEKEYBOARD="es"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="es"
 	;;
@@ -423,7 +423,7 @@ case "$LANGUAGE" in
 	KEYTABLE="us"
 	XKEYBOARD="us"
 	KDEKEYBOARD="il"
-	CHARSET="ISO-8859-8"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,fr,de"
 	TZ="Asia/Jerusalem"
@@ -431,11 +431,11 @@ case "$LANGUAGE" in
     it)
 # italian version
 	COUNTRY="it"
-	LANG="it_IT@euro"
+	LANG="it_IT"
 	KEYTABLE="it"
 	XKEYBOARD="it"
 	KDEKEYBOARD="it"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="fr,us,de"
 	TZ="Europe/Rome"
@@ -449,7 +449,7 @@ case "$LANGUAGE" in
 	KEYTABLE="us"
 	XKEYBOARD="us"
 	KDEKEYBOARD="us"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="fr,us,de"
 	TZ="Asia/Tokyo"
@@ -462,7 +462,7 @@ case "$LANGUAGE" in
 	KEYTABLE="lv-latin7" 
 	XKEYBOARD="lv" 
 	KDEKEYBOARD="lv" 
-	CHARSET="ISO-8859-13"
+	CHARSET="UTF-8"
 	KDEKEYBOARDS="ee,lt,en_US,ru" # Additional KDE Keyboards 
 	;;
     lt)
@@ -473,17 +473,17 @@ case "$LANGUAGE" in
 	KEYTABLE="lt" 
 	XKEYBOARD="lt,us,ru"
 	KDEKEYBOARD="lt" 
-	CHARSET="ISO-8859-13"
+	CHARSET="UTF-8"
 	KDEKEYBOARDS="ee,lv,en_US,ru" # Additional KDE Keyboards 
 	;;
     nl)
 # netherland version
 	COUNTRY="nl"
-	LANG="nl_NL@euro"
+	LANG="nl_NL"
 	KEYTABLE="us"
 	XKEYBOARD="us,nl"
 	KDEKEYBOARD="us"
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="nl,de,fr"
 	TZ="Europe/Amsterdam" # Hup holland hup! :D
@@ -495,7 +495,7 @@ case "$LANGUAGE" in
 	KEYTABLE="pl"
 	XKEYBOARD="pl"
 	KDEKEYBOARD="pl"
-	CHARSET="ISO-8859-2"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="de,us,fr"
 	TZ="Europe/Warsaw"
@@ -523,7 +523,7 @@ case "$LANGUAGE" in
 	KDEKEYBOARD="fr_CH"
 	CONSOLEFONT="lat1-12"
 #I'm not sure with that
-	CHARSET="ISO-8859-15"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="de,us,it"
 	TZ="Europe/Zurich"
@@ -535,7 +535,7 @@ case "$LANGUAGE" in
 	KEYTABLE="sk-qwerty"
 	XKEYBOARD="sk"
 	KDEKEYBOARD="sk"
-	CHARSET="ISO-8859-2"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,de,fr"
 	;;
@@ -547,7 +547,7 @@ case "$LANGUAGE" in
 	KEYTABLE="slovene"
 	XKEYBOARD="sl,us"
 	KDEKEYBOARD="si"
-	CHARSET="ISO-8859-2"
+	CHARSET="UTF-8"
 	CONSOLEFONT="iso02g"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,de,fr"
@@ -560,7 +560,7 @@ case "$LANGUAGE" in
 	KEYTABLE="tr_q-latin5"
 	XKEYBOARD="tr"
 	KDEKEYBOARD="tr"
-	CHARSET="ISO-8859-9"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us,de,fr"
 	TZ="Europe/Istanbul"
@@ -574,7 +574,7 @@ case "$LANGUAGE" in
 	XKEYBOARD="us"
 	KDEKEYBOARD="us"
 # CHARSET="big5-0"
-	CHARSET="ISO-8859-1"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us"
 	XMODIFIERS="@im=xcin"
@@ -588,7 +588,7 @@ case "$LANGUAGE" in
 	KEYTABLE="uk"
 	XKEYBOARD="uk"
 	KDEKEYBOARD="gb"
-	CHARSET="ISO-8859-1"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="us"
 	TZ="Europe/London"
@@ -601,7 +601,7 @@ case "$LANGUAGE" in
 	KEYTABLE="us"
 	XKEYBOARD="us"
 	KDEKEYBOARD="us"
-	CHARSET="ISO-8859-1"
+	CHARSET="UTF-8"
 # Additional KDE Keyboards
 	KDEKEYBOARDS="de,fr"
 	TZ="America/New_York"
