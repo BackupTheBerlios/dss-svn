@@ -1,3 +1,5 @@
+# Cleanlooks-Dance
+
 style "clearlooks-default"
 {
   GtkButton      ::default_border    = { 0, 0, 0, 0 }
@@ -10,42 +12,61 @@ style "clearlooks-default"
   GtkMenuBar     ::internal-padding  = 0
   GtkTreeView    ::expander_size     = 14
   GtkExpander    ::expander_size     = 16
+  GtkTreeView::even_row_color = "#ffffff"
+  GtkTreeView::odd_row_color = "#E7EFFF"
+  
 
+  GtkScrollbar::has_secondary_backward_stepper 	= 1
+  GtkScrollbar::has_secondary_forward_stepper 	= 1
+  
   xthickness = 1
   ythickness = 1
 
-	bg[NORMAL]     		= "#101010"
-	fg[PRELIGHT]     	= "#101010"
-	fg[ACTIVE]        	= "#152E46"
-	fg[SELECTED]     	= "#ffffff"
-	fg[INSENSITIVE]  	= "#B4AD9F"
+  fg[NORMAL]		= "#000000"
+  fg[PRELIGHT]		= "#202020" 
+  fg[SELECTED]		= "#ffffff"
+  fg[ACTIVE]		= "#000000"
+  fg[INSENSITIVE]	= "#a8a8a8"
+  
+  bg[NORMAL]		= "#efebe7" 
+  bg[PRELIGHT]		= "#efebe7" 
+  bg[SELECTED]   	= "#6589b9" 
+  bg[ACTIVE]		= "#bdb6ad" 
+  bg[INSENSITIVE]	= "#d9d9d9" 
 
-	bg[NORMAL]    		= "#E3E0D9"
-	bg[PRELIGHT]    	= "#EBE8E3"
-	bg[ACTIVE]       	= "#E6E1D7"
-	bg[SELECTED]   		= "#AFA88E"
-	bg[INSENSITIVE]		= "#F1EEEB"
-	
-	base[NORMAL] 		= "#ffffff"
-	base[PRELIGHT] 		= "#AFA88E"
-	base[ACTIVE]   		= "#E6E1D7"
-	base[SELECTED]	 	= "#AFA88E"
-	base[INSENSITIVE] 	= "#F1EEEB"
-	
-	text[NORMAL]   		= "#101010"
-	text[PRELIGHT]   	= "#101010"
-	text[ACTIVE]   	 	= "#25293B"
-	text[SELECTED] 		= "#ffffff"
-	text[INSENSITIVE] 	= "#B4AD9F"
-	
+  base[NORMAL]     	= "#FFFFFF"
+  base[PRELIGHT]   	= "#47477e" 
+  base[SELECTED]   	= "#6589b9" 
+  base[ACTIVE]     	= "#c0c0c0"
+  base[INSENSITIVE]	= "#f5f5f5"
+
+  text[NORMAL]		= "#000000"
+  text[PRELIGHT]	= "#000000"
+  text[SELECTED]	= "#ffffff" 
+  text[ACTIVE]		= "#000000"
+  text[INSENSITIVE]	= "#a8a8a8"
+  
+
+  #A semi-transparent hi-light for files selected in Nautilus
+  NautilusIconContainer::highlight_alpha=160
+
+  #This sets the color used for the text under the icons in nautilus when they are not highlighted.
+  NautilusIconContainer::dark_info_color="#000000"
+  #This is the color of the text under an icon in Nautilus when it is highlighted.
+  NautilusIconContainer::light_info_color="#ffffff"
+
   engine "clearlooks" 
   {
-    sunkenmenubar       = 2       # 0 = flat, 1 = sunken, 2 = flat gradient
-    menuitemstyle     = 2       # 0 = flat, 1 = 3d-ish (gradient), 2 = 3d-ish (button)
+#    contrast = 1.0 
+#    sunkenmenubar = 0 # 0 = disable, 1 = enable
+    menubarstyle      = 2       # 0 = flat, 1 = sunken, 2 = flat gradient
+    menuitemstyle     = 1       # 0 = flat, 1 = 3d-ish (gradient), 2 = 3d-ish (button)
     listviewitemstyle = 1       # 0 = flat, 1 = 3d-ish (gradient)
     progressbarstyle  = 0       # 0 = candy bar, 1 = flat
   }
 }
+
+
 
 style "clearlooks-wide" = "clearlooks-default"
 {
@@ -57,12 +78,17 @@ style "clearlooks-button" = "clearlooks-default"
 {
   xthickness = 3
   ythickness = 3
+
+
+  bg[NORMAL] = "#d4d0c7" 
 }
 
 style "clearlooks-notebook" = "clearlooks-wide"
 {
- 	bg[NORMAL] 		= "#D9D5C9"
-	bg[ACTIVE]       	= "#E6E1D7"
+
+  bg[NORMAL] = "#d4d0c8"
+  bg[INSENSITIVE] = "#EFEFEF"
+
 }
 
 style "clearlooks-tasklist" = "clearlooks-default"
@@ -72,17 +98,21 @@ style "clearlooks-tasklist" = "clearlooks-default"
 }
 
 style "clearlooks-menu" = "clearlooks-default"
+
 {
   xthickness = 2
   ythickness = 1
-  bg[NORMAL] 	= "#EAE7E0"
+  bg[NORMAL] = "#efebe7"
 }
 
 style "clearlooks-menu-item" = "clearlooks-default"
 {
+
   xthickness = 2
   ythickness = 3
   fg[PRELIGHT] = "#ffffff"
+  text[PRELIGHT] = "#ffffff"
+
 }
 
 style "clearlooks-menu-itembar" = "clearlooks-default"
@@ -95,6 +125,7 @@ style "clearlooks-tree" = "clearlooks-default"
 {
   xthickness = 2
   ythickness = 2
+  
 }
 
 style "clearlooks-frame-title" = "clearlooks-default"
@@ -102,32 +133,90 @@ style "clearlooks-frame-title" = "clearlooks-default"
   fg[NORMAL] = "#404040"
 }
 
+style "clearlooks-panel" = "clearlooks-default"
+{
+  xthickness = 3
+  ythickness = 3
+}
+
 style "clearlooks-tooltips" = "clearlooks-default"
 {
   xthickness = 4
   ythickness = 4
-  bg[NORMAL] = { 1.0,1.0,0.75 }
+  bg[NORMAL]		= "#f1cf9b"
+
 }
 
 style "clearlooks-progressbar" = "clearlooks-default"
 {
   xthickness = 1
   ythickness = 1
-	fg[NORMAL]  	= "#4B473C"
-  	fg[PRELIGHT]  	= "#FFFFFF"
-  	bg[NORMAL] 	= "#E6E1D7"
+
+  fg[PRELIGHT]  = "#ffffff"
 }
 
 style "clearlooks-combo" = "clearlooks-default"
 {
   xthickness = 2
   ythickness = 3
-	bg[NORMAL] 	= "#EBE8E5"
-  	bg[PRELIGHT] 	= "#F1EEEB"
-	fg[NORMAL]      = "#6D6654"
-	fg[PRELIGHT]   	= "#57503E"
 
 }
+
+style "clearlooks-scrollbar" = "clearlooks-default"
+{
+#	bg[NORMAL] = "#EDF0F2"
+#	bg[NORMAL] = "#e6e6e6"
+#	bg[PRELIGHT] = "#f5f5f5"			
+#	bg[PRELIGHT] = "#F7FAFF"			
+}
+class "GtkScrollbar" style "clearlooks-scrollbar"
+
+################################################
+# Toolbars drawn by gtk 
+################################################
+#style "rpanther-toolbar"="clearlooks-default"
+#{
+#
+#   engine "pixmap"
+#   {
+#
+#	# This tells gtk how to draw the toolbar
+#	image
+#	{
+#	  	function = BOX
+#		recolorable = TRUE
+#		shadow = OUT
+#		#file = "plain_background.png"
+#		#file = "brushed.png"
+#		border = {1,1,1,2}
+#		stretch = FALSE
+#                overlay_file   = "resources/brushed_a.png"
+#		overlay_stretch = TRUE   
+#	}
+#
+#   }
+#}
+
+#widget_class "GtkToolBar" style "rpanther-toolbar"
+#class "*Tool*" style "rpanther-toolbar"
+##class "GtkMenuBar" style "rpanther-toolbar"
+
+#############################################
+#Gnome Panel
+#############################################
+
+
+#style "panelbg" {
+#  bg_pixmap[NORMAL] = "Panel/panel_background.png"
+#  bg_pixmap[NORMAL] = "Bgs/panel_background2.png"
+#  bg_pixmap[INSENSITIVE] = "<parent>"
+#  bg_pixmap[PRELIGHT] = "<parent>"
+#  bg_pixmap[SELECTED] = "<parent>"
+#  bg_pixmap[ACTIVE] = "<parent>"
+#}
+#class "Panel*" style "panelbg"
+
+
 
 # widget styles
 class "GtkWidget" style "clearlooks-default"
@@ -162,4 +251,3 @@ widget_class "*.GtkFrame.GtkLabel" style "clearlooks-frame-title"
 # notebook stuff
 widget_class "*.GtkNotebook.*.GtkEventBox" style "clearlooks-notebook"
 widget_class "*.GtkNotebook.*.GtkViewport" style "clearlooks-notebook"
-
