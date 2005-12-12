@@ -13,13 +13,16 @@ Options:
 EOF
 	exit 1
 }
-set -x
+
 print_lnk(){
 source $HOME/.ivman/default
 #usage: print_lnk </dev/block> <ID-NUM> </mount/point>
 block_device=$1
 volume_uuid=$2
+set -x
 volume_mount_point=`$MOUNTPOINT $block_device`
+echo MOUNT POINT $volume_mount_point
+set +x
 source   $HOME/.ivman/default 
 	cat > $HOME_ICONS/$volume_uuid.lnk << EOF
 	table Icon
@@ -70,7 +73,7 @@ fi
 
 if [ "$GENERATE" = "yes" ];then
 	if [  ! -e "$HOME_ICONS/$2.lnk"  ];then
-	print_lnk $1 $2 $3
+	print_lnk $1 $2
 	let x+=80
 	echo $x $y
 		if [ "$num" = "6" ];then
@@ -86,7 +89,7 @@ elif [ "$REMOVE" = "yes" ];then
 	rm   $HOME_ICONS/$1.lnk 
 fi
 killall ivicons
-ivicons
+ivicons &
 
 exit 0
 

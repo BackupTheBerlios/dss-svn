@@ -42,7 +42,11 @@ fi
 
 log_begin_msg "Generating xorg.conf..."
 #DEBIAN_FRONTEND=$xfrontend dpkg-reconfigure xserver-xorg 2>/dev/null
-dpkg-reconfigure -f$XCONF xserver-xorg >> /var/log/initramfs.debug 2>&1
+if [ $XCONF != "noninteractive"  ];then
+	dpkg-reconfigure -f$XCONF xserver-xorg
+else
+	dpkg-reconfigure -f$XCONF xserver-xorg >> /var/log/initramfs.debug 2>&1
+fi
 
 
 log_end_msg $?
