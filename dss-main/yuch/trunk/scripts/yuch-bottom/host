@@ -36,7 +36,7 @@ fi
 username=$(getbootparam username)
 if [ -n "${username}" ];then
 	echo USERNAME=\"${username}\">> ${rootmnt}/$FILECONF
-	HOSTNAME=${username}
+	USERNAME=${username}
 fi
 password=$(getbootparam password)
 if [ -n "$password" ] ;then

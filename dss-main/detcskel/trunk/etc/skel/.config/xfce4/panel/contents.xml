@@ -5,7 +5,7 @@
   </Panel>
   <Groups>
     <Group>
-      <Control id="-1" filename="libdesktopmenu.so" menu_file="/home/debaser/.config/xfce4/desktop/menu.xml" icon_file="/usr/share/pixmaps/yuch.png" show_menu_icons="1"/>
+      <Control id="-1" filename="libdesktopmenu.so" menu_file="/etc/skel/.config/xfce4/desktop/menu.xml" icon_file="/usr/share/pixmaps/yuch.png" show_menu_icons="1"/>
     </Group>
     <Group>
       <Control id="-2" popup="0">

@@ -32,12 +32,12 @@ hdicon=$HOME/.xtdesktop/hd.png
 cdromicon=$HOME/.xtdesktop/cdrom_mount.png
 for i in $entry; do
 	set -x
-	mpoint=`$MOUNTPOINT $i`
+	#mpoint=`$MOUNTPOINT $i`
 	
 	lnk=$(basename $i)
-	if [ -z "$mpoint" ];then
+	#if [ -z "$mpoint" ];then
 	 mpoint=/media/$lnk
-	fi
+	#fi
 	ICONTYPE=$(echo $cdrom | grep $i)
 	if [ -n "$ICONTYPE" ];then
 		ICON=$cdromicon
