@@ -7,5 +7,5 @@ then
   exit
 else
   echo "OK"
-  exec backstep 
+  exec backstep & 
 fi

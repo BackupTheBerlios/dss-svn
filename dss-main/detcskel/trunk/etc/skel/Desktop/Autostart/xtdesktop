@@ -62,7 +62,7 @@ then
 else
   echo "OK"
   start_xtdesk
-  exec xtdesk
+  exec xtdesk &
 fi 
 
 
