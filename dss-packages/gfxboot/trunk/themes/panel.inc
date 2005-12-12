@@ -41,10 +41,12 @@
 
       } {
 
-        [ keyF3 0 "F3" /panel.install /panel.install.width /panel.install.update /install.init ]
-        [ keyF4 0 "F4" /panel.lang /panel.lang.width /panel.lang.update /lang.init ]
-%        [ keyF5 0 "F5" /panel.splash /panel.splash.width /panel.splash.update /splash.init ]
-        [ keyF5 0 "F5" /panel.dud /panel.dud.width /panel.dud.update .undef ]
+%        [ keyF3 0 "F3" /panel.install /panel.install.width /panel.install.update /install.init ]
+%	  [ keyF3 0 "F3" /panel.splash /panel.splash.width /panel.splash.update /splash.init ]
+
+        [ keyF3 0 "F3" /panel.lang /panel.lang.width /panel.lang.update /lang.init ]
+ %       [ keyF5 0 "F5" /panel.splash /panel.splash.width /panel.splash.update /splash.init ]
+%        [ keyF5 0 "F5" /panel.dud /panel.dud.width /panel.dud.update .undef ]
 
         do_64bit_check 32+64bit_source and {
           64bit {

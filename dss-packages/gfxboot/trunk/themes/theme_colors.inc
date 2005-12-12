@@ -9,10 +9,10 @@
 /lightgray           0xffffff          newcolor
 /dotcolor            0xa9bbcd          newcolor
 /lightdotcolor       0xeff2f6          newcolor
-/somegreen           0x78a424          newcolor
+/somegreen           0x3465a4          newcolor
 
 % some global stuff
-/loading_color       red          def
+/loading_color       somegreen           def
 %/loading_color       0x128542          newcolor
 /fn_color            somegreen def
 /frame_color         0xd0d0ff          newcolor

@@ -11,7 +11,7 @@
 % Boot loader splash areas to uncover.
 %
 /bsplash.areas [
-  [ 327 230 144 108  true ]
+  [ 250 250 300 108  true ]
   [  82  68 131  35 false ]
   [ 205 157 125  32 false ]
   [ 431  77 173  37 false ]

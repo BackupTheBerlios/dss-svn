@@ -302,16 +302,16 @@
   } if
 
   % add splash only if an entry already exists
-%  bc.cmd "splash" bootopt.find dup .undef ne {
-%    % remove existing entry
-%    dup skipnonspaces skipspaces strcpy pop
+  bc.cmd "splash" bootopt.find dup .undef ne {
+   % remove existing entry
+    dup skipnonspaces skipspaces strcpy pop
 %
 %    % append new entry
-%    xmenu.splash .xm_current get splash.options exch get
-%    "%s " bc.cmd dup length add sprintf
-%  } {
-%    pop
-%  } ifelse
+    xmenu.splash .xm_current get splash.options exch get
+    "%s " bc.cmd dup length add sprintf
+  } {
+    pop
+  } ifelse
 
   xmenu.profile {
     profile.options xmenu.profile .xm_current get get dup "" ne {
@@ -747,7 +747,8 @@
   progress.bar.x progress.bar.y moveto
   progress.sym.width progress.sym.current 1 sub mul 1 add 1 rmoveto
   progress.sym.width 2 sub
-  progress.bar.height 2 sub
+%  progress.bar.height 2 sub
+  progress.bar.height 4 sub
   loading_color setcolor
   fillrect
 
@@ -895,15 +896,19 @@
   dup "memtest" eq over "memtest86" eq or { pop txt_memtest return } if
   syslinux {
     livecd {
-      dup "linux"     eq { pop "SUSE LINUX 9.3 LiveCD (english)" return } if
+      dup "linux"     eq { pop "DSS LIVE (english)" return } if
       dup "failsafe"  eq { pop "LiveCD - Safe Settings" return } if
-      dup "linux2"    eq { pop "SUSE LINUX 9.3 LiveCD (deutsch)" return } if
+      dup "linux2"    eq { pop "DSS LIVE (deutsch)" return } if
       dup "failsaf2"  eq { pop "LiveCD - Sichere Einstellungen" return } if
     } {
-      dup "linux"     eq { pop txt_install        return } if
-      dup "failsafe"  eq { pop txt_safe_install   return } if
+      dup "linux"     eq { pop txt_boot           return } if
+      dup "failsafe"  eq { pop txt_boot_safe      return } if
     } ifelse
-    dup "noacpi"    eq { pop txt_noacpi_install return } if
+    dup "noacpi"    eq { pop txt_boot_noacpi    return } if
+    dup "qemu"      eq { pop txt_boot_qemu      return } if
+    dup "xconf"     eq { pop txt_boot_xconf     return } if
+    dup "lconf"     eq { pop txt_boot_lconf     return } if
+    dup "toram"     eq { pop txt_boot_toram     return } if
     dup "manual"    eq { pop txt_manual_install return } if
     dup "rescue"    eq { pop txt_rescue         return } if
     dup "hwcheck"   eq { pop "Hardware Check"   return } if
@@ -1314,7 +1319,7 @@
 
   dup .title "Cool computer, but..." put
   dup .text
-    "Sorry, but SUSE LINUX 9.3 LiveCD needs at least 256MB main memory."
+    "Sorry, but DSS LIVE needs at least 256MB main memory."
   put
   dup .buttons [
     button.reboot button.default actReboot actNoClose or button.setaction

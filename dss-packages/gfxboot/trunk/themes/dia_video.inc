@@ -17,10 +17,8 @@
 % We have kernel splash images for at least these sizes.
 /video.splashsizes [
    640  480
-   800  600
-  1024  768
-  1280 1024
 ] def
+
 
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,8 +96,8 @@
   % always accept 800x600
 
   video.modes.list {
-    dup .vm_width get 800 eq
-    over .vm_height get 600 eq
+    dup .vm_width get 640 eq
+    over .vm_height get 480 eq
     and { .vm_ok 1 put } { pop } ifelse
   } forall
 
@@ -123,13 +121,14 @@
     video.modes.text exch
     dup video.modes.list exch get
     dup .vm_width get 0 eq {
-      pop "Text Mode" put
+      pop "text mode" put
     } {
         dup .vm_width get 640 eq
         over .vm_height get 480 eq
         and {
           pop "VESA" put
-      } {
+      }
+ {
         32 string dup rot
         dup .vm_height get exch .vm_width get
         "%d x %d" 4 -1 roll sprintf

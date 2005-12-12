@@ -8,7 +8,7 @@
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % Some global vars.
 %
-/splash.default 2 def
+/splash.default 1 def
 
 /splash.options [
   "splash=0"
@@ -43,8 +43,10 @@
   /xmenu xmenu.splash def
 
   /window.action actRedrawPanel def
-
   pmenu.update
+
+
+
 } def
 
 

@@ -15,7 +15,7 @@ DEFAULT_LANG = en
 FILES_INST   = init languages $(TRANSLATIONS) 16x16.fnt back.jpg \
 	       splash.jpg greeting.jpg dots.jpg kroete.dat \
 	       $(HELPINST_ALL)
-
+#FILES_INST   = init languages 
 FILES_BOOT   = init languages $(TRANSLATIONS) 16x16.fnt back.jpg \
 	       dots.jpg $(HELPBOOT_ALL)
 
@@ -24,8 +24,8 @@ FILES_TRY    =  init languages $(TRANSLATIONS) 16x16.fnt back.jpg \
 
 FILES_BOOT_EN = init languages en.tr 16x16.fnt back.jpg dots.jpg en.hlp
 
-INST_EXT     = 16x16.fnt back.jpg splash.jpg greeting.jpg dots.jpg kroete.dat *.hlp *.tr
-
+#INST_EXT     = 16x16.fnt back.jpg splash.jpg greeting.jpg dots.jpg kroete.dat *.hlp *.tr
+INST_EXT      =
 ifdef DEFAULT_LANG
 FILES_INST += lang
 FILES_BOOT += lang
@@ -68,7 +68,7 @@ installdir: install.config $(INCLUDES) $(HELPINST)
 ifdef DEFAULT_LANG
 	@echo $(DEFAULT_LANG) >install/lang
 endif
-	@sh -c 'cd install; chmod +t $(INST_EXT)'
+#	@sh -c 'cd install; chmod +t $(INST_EXT)'
 	@sh -c 'cd install; echo $(FILES_INST) | sed -e "s/ /\n/g" | cpio --quiet -o >bootlogo'
 
 font:
