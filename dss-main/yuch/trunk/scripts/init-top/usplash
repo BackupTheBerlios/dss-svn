@@ -47,8 +47,7 @@ if [ $SPLASH = "true" ]; then
 		mknod /dev/tty$i c 4 $i
 	done
 	/sbin/usplash -c &
-	sleep 1
-	/sbin/usplash_write "TIMEOUT 60"
+	/sbin/usplash_write "TIMEOUT 60" &
 	sleep 1
 
 

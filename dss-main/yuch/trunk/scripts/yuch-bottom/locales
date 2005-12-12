@@ -77,8 +77,9 @@ if [ -n "${tz}" ];then
 	fi
 fi
 if [ -f "${rootmnt}/usr/share/zoneinfo/$TZ" ];then
-    ln -sf "${rootmnt}/usr/share/zoneinfo/$TZ"  ${rootmnt}/etc/localtime >> /tmp/initramfs.debug 2>&1
- 
+    cd ${rootmnt}/etc/
+    ln -sf "../usr/share/zoneinfo/$TZ"  localtime >> /tmp/initramfs.debug 2>&1
+    cd ../../
 fi
 
 # used by dpkg-reconfigure -f$nagfrontend locales

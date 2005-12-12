@@ -33,6 +33,11 @@ if [ -n "${myhostname}" ];then
 	echo HOSTNAME=\"${myhostname}\">> ${rootmnt}/$FILECONF
 	HOSTNAME=${myhostname}
 fi
+username=$(getbootparam username)
+if [ -n "${username}" ];then
+	echo USERNAME=\"${username}\">> ${rootmnt}/$FILECONF
+	HOSTNAME=${username}
+fi
 password=$(getbootparam password)
 if [ -n "$password" ] ;then
 	echo PASSWD=\"${password}\">> ${rootmnt}/$FILECONF
