@@ -32,7 +32,7 @@ esac
 
 myclock=$(getbootparam clock )
 if [ "${myclock}" = "localtime" ];then
-	mode=" "
+	mode="--localtime "
 else
 	mode="-u"
 fi

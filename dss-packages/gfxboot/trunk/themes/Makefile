@@ -48,7 +48,8 @@ boot install: po
 po:
 	make -C po
 
-themes: bootdir installdir
+#themes: bootdir installdir
+themes: installdir
 
 bootdir: boot.config $(INCLUDES) $(HELPBOOT)
 	@cp -a po/*.tr boot

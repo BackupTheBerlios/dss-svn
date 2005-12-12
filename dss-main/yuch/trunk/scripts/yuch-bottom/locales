@@ -77,16 +77,18 @@ if [ -n "${tz}" ];then
 	fi
 fi
 if [ -f "${rootmnt}/usr/share/zoneinfo/$TZ" ];then
-cp "${rootmnt}/usr/share/zoneinfo/$TZ"  ${rootmnt}/etc/localtime
-fi
-
-langconf=$(getbootparam langconf 2>/dev/null)
-if [ "${langconf}" = "dialog" ];then
-	LCONF=${langconf}
+    ln -sf "${rootmnt}/usr/share/zoneinfo/$TZ"  ${rootmnt}/etc/localtime >> /tmp/initramfs.debug 2>&1
+ 
 fi
 
 # used by dpkg-reconfigure -f$nagfrontend locales
-echo "LCONF=\"$LCONF\"" >> ${rootmnt}/$FILECONF
-echo LANG="$LANG" > ${rootmnt}/etc/environment
+# check init script
+#langconf=$(getbootparam langconf 2>/dev/null)
+#if [ "${langconf}" = "dialog" ];then
+#	LCONF=${langconf}
+#fi
+#echo "LCONF=\"$LCONF\"" >> ${rootmnt}/$FILECONF
+echo LANG="$LANG.$CHARSET" > ${rootmnt}/etc/environment
+echo LANGUAGE="$LANG" >> ${rootmnt}/etc/environment 
 echo "$LANG  $CHARSET" > ${rootmnt}/etc/locale.gen
 exit 0
