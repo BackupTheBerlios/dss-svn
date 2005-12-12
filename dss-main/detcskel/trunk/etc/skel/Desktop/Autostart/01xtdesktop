@@ -13,6 +13,21 @@ cdrom="/dev/$(get_cdroms)"
 entry="$entry $cdrom"
 echo $entry
 
+# if removable in ivicons
+a=$(hal-find-by-capability --capability volume)
+for i in $a; do
+	dev=$(hal-get-property --udi $i --key block.device)
+	name=$(hal-get-property --udi $i --key volume.uuid)
+	echo $dev $name
+	if [ -n "$dev" ];then
+		if [ -n "$name" ];then
+			entry=${entry/$dev}
+			sh $HOME/.ivman/ivmanxticons -g $dev $name
+		fi
+	fi
+done
+
+
 hdicon=$HOME/.xtdesktop/hd.png
 cdromicon=$HOME/.xtdesktop/cdrom_mount.png
 for i in $entry; do
@@ -63,6 +78,16 @@ else
   echo "OK"
   start_xtdesk
   exec xtdesk &
+fi 
+
+
+if ps -C ivicons -o user | grep -q $USER
+then
+  echo "Already running."
+  exit
+else
+  echo "OK"
+  exec ivicons &
 fi 
 
 

@@ -6,7 +6,7 @@ then
   echo "Already running."
   exit
 else
-  echo "OK"
+  echo "OK" 
   exec ivman & 
 fi
 

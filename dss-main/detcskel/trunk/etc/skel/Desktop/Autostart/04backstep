@@ -1,11 +1,14 @@
 #!/bin/sh
+
+
 exec 1>&2
 echo -n "Launching backstep... "
-if ps -C backstep -o user | grep -q $USER
+if ps -C backstep -o user | grep $USER
 then
   echo "Already running."
   exit
 else
-  echo "OK"
-  exec backstep & 
+  echo "OK" 
+  exec backstep &
+  
 fi

@@ -1,3 +1,4 @@
 #!/bin/sh
  esetroot -scale $HOME/desktop-background.png &
+ echo OK >>/tmp/log
 
