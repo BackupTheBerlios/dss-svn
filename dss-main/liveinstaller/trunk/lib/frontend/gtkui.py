@@ -520,12 +520,14 @@ class Wizard:
       misc.set_var(vars)
 
 
-  def show_error(self, msg):
+  #def show_error(self, msg):
+  def show_error(self): 
     """show warning message on Identification screen where validation
     doesn't work properly."""
 
-    self.warning_info.set_markup(msg)
-    self.help.show()
+    #self.warning_info.set_markup(msg)
+    #self.help.show()
+    self.error_box.show()
 
 
   def quit(self):
@@ -688,7 +690,7 @@ class Wizard:
     """Processing info to peez step tasks."""
 
     from ue import validation
-    error_msg = ['\n']
+    #error_msg = ['\n']
     error = 0
 
     # Validation stuff
@@ -696,35 +698,55 @@ class Wizard:
     # checking username entry
     for result in validation.check_username(self.username.get_property('text')):
       if ( result == 1 ):
-        error_msg.append(_("· El <b>nombre de usuario</b> contiene carácteres incorrectos (sólo letras y números están permitidos).\n"))
+        #error_msg.append(_("· El <b>nombre de usuario</b> contiene carácteres incorrectos (sólo letras y números están permitidos).\n"))
+        self.user_err_1.show()
+        error = 1
       elif ( result == 2 ):
-        error_msg.append(_("· El <b>nombre de usuario</b> contiene mayúsculas (no están permitidas).\n"))
+        #error_msg.append(_("· El <b>nombre de usuario</b> contiene mayúsculas (no están permitidas).\n"))
+        self.user_err_2.show() 
+        error = 1
       elif ( result == 3 ):
-        error_msg.append(_("· El <b>nombre de usuario</b> tiene tamaño incorrecto (permitido entre 3 y 24 caracteres).\n"))
+        #error_msg.append(_("· El <b>nombre de usuario</b> tiene tamaño incorrecto (permitido entre 3 y 24 caracteres).\n"))
+        self.user_err_3.show()
+        error = 1
       elif ( result == 4 ):
-        error_msg.append(_("· El <b>nombre de usuario</b> contiene espacios en blanco (no están permitidos).\n"))
+        #error_msg.append(_("· El <b>nombre de usuario</b> contiene espacios en blanco (no están permitidos).\n"))
+        self.user_err_4.show()
+        error = 1
       elif ( result in [5, 6] ):
-        error_msg.append(_("· El <b>nombre de usuario</b> ya está en uso o está prohibido.\n"))
-
+        #error_msg.append(_("· El <b>nombre de usuario</b> ya está en uso o está prohibido.\n"))
+        self.user_err_5.show()
+        error = 1
     # checking password entry
     for result in validation.check_password(self.password.get_property('text'), self.verified_password.get_property('text')):
       if ( result in [1,2] ):
-        error_msg.append(_("· La <b>contraseña</b> tiene tamaño incorrecto (permitido entre 4 y 16 caracteres).\n"))
+        #error_msg.append(_("· La <b>contraseña</b> tiene tamaño incorrecto (permitido entre 4 y 16 caracteres).\n"))
+        self.passwd_err_1.show()
+        error = 1
       elif ( result == 3 ):
-        error_msg.append(_("· Las <b>contraseñas</b> no coinciden.\n"))
-
+        #error_msg.append(_("· Las <b>contraseñas</b> no coinciden.\n"))
+        self.passwd_err_2.show()    
+        error = 1
     # checking hostname entry
     for result in validation.check_hostname(self.hostname.get_property('text')):
       if ( result == 1 ):
-        error_msg.append(_("· El <b>nombre del equipo</b> tiene tamaño incorrecto (permitido entre 3 y 18 caracteres).\n"))
+        #error_msg.append(_("· El <b>nombre del equipo</b> tiene tamaño incorrecto (permitido entre 3 y 18 caracteres).\n"))
+        self.host_err_1.show()
+        error = 1
       elif ( result == 2 ):
-        error_msg.append(_("· El <b>nombre del equipo</b> contiene espacios en blanco (no están permitidos).\n"))
+        #error_msg.append(_("· El <b>nombre del equipo</b> contiene espacios en blanco (no están permitidos).\n"))
+        self.host_err_2.show() 
+        error = 1
       elif ( result == 3 ):
-        error_msg.append(_("· El <b>nombre del equipo</b> contiene carácteres incorrectos (sólo letras y números están permitidos).\n"))
+        #error_msg.append(_("· El <b>nombre del equipo</b> contiene carácteres incorrectos (sólo letras y números están permitidos).\n"))
+        self.host_err_3.show()
+        error = 1
 
     # showing warning message is error is set
-    if ( len(error_msg) > 1 ):
-      self.show_error(self.resize_text(''.join(error_msg), '4'))
+    #if ( len(error_msg) > 1 ):
+    #  self.show_error(self.resize_text(''.join(error_msg), '4'))
+    if error != 0 :
+        self.show_error()
     else:
       # showing next step and destroying mozembed widget to release memory
       self.browser_vbox.destroy()
@@ -1185,6 +1207,6 @@ def launch_autoparted (wizard, assistant, drive, progress):
   wizard.live_installer.window.set_cursor (None)
 
 if __name__ == '__main__':
-  w = Wizard('guadalinex')
+  w = Wizard('dsslive')
   w.run()
 

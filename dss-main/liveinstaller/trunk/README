@@ -20,8 +20,20 @@ It needs:
     *Python
     *Peez2
 
+Localization:
+
+Localizations are still needed,
+
+dir: htmldocs/dsslive/
+- index.$LANG.html
+- $LANG/messages.txt
+- $LANG/screenshots.html
+
+dir: glade/locale/dsslive
+- $LANG.po (use glade/messages.po)
+
 Based on Guadalinex2005 installer
 =========================================================
 
 web: http://dsslive.org
-contact: Daniele Favara (nomed)<danjele@gmail.com>
+contact: Daniele Favara (nomed) <danjele@gmail.com>
