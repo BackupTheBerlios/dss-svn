@@ -1,0 +1,71 @@
+Source: liveinstaller
+Section: admin
+Priority: optional
+Maintainer: Daniele Favara <danjele@gmail.com>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.2.1
+
+Package: liveinstaller
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, debconf, yaboot | grub, liveinstaller-frontend, system-tools-backends, liveinstaller-doc, zenity
+Recommends: gparted, peez2
+Description: Live installer
+ Live installers have featured itself until now by being very
+ simple, friendly and graphical.
+ .
+ This Live Installer will be a simple one and well integrated with
+ Debian and Ubuntu based systems.
+ .
+ Use Cases:
+   * An user takes the liveCD, he likes it and wants to install, as is,
+ in his computer.
+   * An user takes liveCD, he likes it, tests it, configures it and
+ wants to have it installed, keeping the stored configuration, in his
+ computer.
+   * An user has tried liveCD, he knows that likes it and wants to
+ install it, but neither wants nor needs to launch the complete distro
+ (Desktop and so on). He just wants a fast and simple way to install.
+   * An user has installed Ubuntu from Live version and wants to be
+ able to have a configuration file with the chosen options, so in case
+ he needs to reinstall or to install in a similar computer, just must
+ get it.
+
+
+
+Package: liveinstaller-dsslive-artwork
+Architecture: all
+Depends: ${shlibs:Depends}
+Provides: liveinstaller-artwork
+Description: Ubuntu artwork for Ubuntu Express Live installer
+ This package provides a set of pixmaps, logo images and colormap for
+ window styles and Ubuntu Express UI. All the stuff provide by this
+ package is Dsslive related.
+
+
+
+
+
+Package: liveinstaller-dsslive-doc
+Architecture: all
+Depends: ${shlibs:Depends}
+Provides: liveinstaller-doc
+Description: Ubuntu Documentation and help files for UE Live installer
+ This package provides a set of help files, html pages for the Ubuntu
+ Express UI, text messages for the installer and more stuff related
+ to Dsslive distribution.
+
+
+
+Package: liveinstaller-frontend-gtk
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-gnome2-extras, python-glade2, gparted ( >= 0.0.8+cvs2005061901-0ubuntu2 ), liveinstaller-artwork, liveinstaller-doc, python-gtk2, firefox, peez2
+Provides: liveinstaller-frontend
+Description: Gtk+ Frontend for Ubuntu Express Live installer
+ This package provides a Gtk+ based Ubuntu Express GUI.
+
+Package: liveinstaller-frontend-cloner
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, liveinstaller-artwork, liveinstaller-doc
+Provides: liveinstaller-frontend
+Description: Network Cloner Frontend for Ubuntu Express Live installer
+ This package provides a Ubuntu Express GUI non interactive which will install the system from a server.

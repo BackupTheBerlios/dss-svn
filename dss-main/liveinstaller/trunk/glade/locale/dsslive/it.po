@@ -1,0 +1,317 @@
+# Ubuntu Express PO file.
+# Copyright (C) 2005 Dsslive
+# This file is distributed under the same license as the ubuntu-express package.
+# http://dsslive.org <danjele@gmail.com>, 2005.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Ubuntu Express 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2005-11-30 08:05+0100\n"
+"PO-Revision-Date: 2005-12-16 14:08+0100\n"
+"Last-Translator: Filippo Pappalardo <filippo@email.it>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: liveinstaller.glade:9
+msgid "Express installer"
+msgstr "Dsslive installer"
+
+#: liveinstaller.glade:70
+msgid ""
+"<span foreground=\"#9F6C49\"> <span foreground=\"white\" background=\"#9F6C49"
+"\"><b>0. Intro</b></span> > <b>1. Identification</b> > <b>2. Disk space</b> "
+"> <b>3. Installation</b> > <b>4. Ready!</b></span>"
+msgstr ""
+"<span foreground=\"#3b5da5\"> <span foreground=\"white\" background=\"#3b5da5"
+"\"><b>0. Intro</b></span> > <b>1. Identificazione</b> > <b>2. Spazio su disco</b> "
+"> <b>3. Installazione</b> > <b>4. Fine</b></span>"
+
+#: liveinstaller.glade:176
+msgid ""
+"<span foreground=\"#9F6C49\"> <b>0. Intro</b> > <span foreground=\"white\" "
+"background=\"#9F6C49\"><b>1. Identification</b></span> > <b>2. Disk space</"
+"b> > <b>3. Installation</b> > <b>4. Ready!</b></span>"
+msgstr ""
+"<span foreground=\"#3b5da5\"> <b>0. Intro</b> > <span foreground=\"white\" "
+"background=\"#3b5da5\"><b>1. Identificazione</b></span> > <b>2. Spazio su disco</"
+"b> > <b>3. Installazione</b> > <b>4. Fine</b></span>"
+
+#: liveinstaller.glade:242
+msgid "<span size=\"xx-large\">Identify yourself and your computer</span>"
+msgstr "<span size=\"xx-large\" foreground=\"#3b5da5\">Identificarsi e dare un nome al computer</span>"
+
+#: liveinstaller.glade:301
+msgid "Real Name:"
+msgstr "<span foreground='#3b5da5'>Nome completo:</span> "
+
+#: liveinstaller.glade:351
+msgid "Username:"
+msgstr "<span foreground='#3b5da5'>Nome utente:</span> "
+
+#: liveinstaller.glade:401
+msgid "Password:"
+msgstr "<span foreground='#3b5da5'>Password:</span> "
+
+#: liveinstaller.glade:473
+msgid "Verify password:"
+msgstr "<span foreground='#3b5da5'>Verifica password</span> "
+
+#: liveinstaller.glade:505
+msgid "<b>Personal data</b>"
+msgstr "<span foreground='#90b5f9'><b>Dati personali</b></span>"
+
+#: liveinstaller.glade:570
+msgid "Hostname:"
+msgstr "<span foreground='#3b5da5'>Nome del computer:</span> "
+
+#: liveinstaller.glade:651
+msgid "<b>Computer data</b>"
+msgstr "<span foreground='#90b5f9'><b>Dati del computer</b></span>"
+
+#: liveinstaller.glade:687
+#FIXME
+msgid ""
+"<span>Es necesario que introduzca su <b>nombre de usuario</b> para el "
+"sistema, su <b>nombre completo</b> para generar una ficha de usuario, así "
+"como el <b>nombre de máquina</b> con el que quiera bautizar su equipo. "
+"Deberá teclear la contraseña de usuario en dos ocasiones.</span>"
+msgstr ""
+"Il nuovo sistema necessita il vostro nome completo (es: Mario Rossi),"
+"un nome utente (es: mrossi) e una password per identificarsi.\n"
+"Serve anche un nome per il computer, che deve essere una unica "
+"parola senza accenti o caratteri speciali (es: Dsslive)."
+
+#: liveinstaller.glade:796 liveinstaller.glade:1261 liveinstaller.glade:1472
+msgid ""
+"<span foreground=\"#9F6C49\"> <b>0. Intro</b> > <b>1. Identification</b> > "
+"<span foreground=\"white\" background=\"#9F6C49\"><b>2. Disk space</b></"
+"span> > <b>3. Installation</b> > <b>4. Ready!</b></span>"
+msgstr ""
+"<span foreground=\"#3b5da5\"> <b>0. Intro</b> > <b>1. Identificazione</b> > "
+"<span foreground=\"white\" background=\"#3b5da5\"><b>2. Spazio su disco</b></"
+"span> > <b>3. Installazione</b> > <b>4. Fine</b></span>"
+
+#: liveinstaller.glade:847 liveinstaller.glade:1312 liveinstaller.glade:1517
+#FIXME
+msgid ""
+"<span size=\"xx-large\">Please prepare some space for you new system</span>"
+msgstr ""
+"<span size=\"xx-large\" foreground=\"#3b5da5\">Specificare dove va installato Linux</span>"
+
+#: liveinstaller.glade:895
+#FIXME
+msgid "<b>Unidades de disco disponibles</b>"
+msgstr "<b>Unità disco disponibili</b>"
+
+#: liveinstaller.glade:956
+#FIXME
+msgid "<b>¿Cómo desea particionar el disco?</b>"
+msgstr "<b>Come si desidera partizionare il disco?</b>"
+
+#: liveinstaller.glade:991
+#FIXME
+msgid ""
+"Seleccione esta opción para usar el espacio libre que hay en su disco duro, "
+"sin perder los datos que ya contiene"
+msgstr ""
+"Selezionare questa opzione per usare lo spazio libero del disco rigido, "
+"senza perdere i dati in esso contenuti"
+
+#: liveinstaller.glade:993
+#FIXME
+msgid "Usar el espacio libre [EXPERIMENTAL]"
+msgstr "Usare lo spazio libero [SPERIMENTALE]"
+
+#: liveinstaller.glade:1016
+#FIXME
+msgid ""
+"Con este método se aprovecharán las particiones GNU/Linux que hay en el "
+"disco duro, reemplazando el sistema anterior"
+msgstr ""
+"Con questo metodo si sfrutteranno le partizioni GNU/Linux già presenti "
+"su disco rigido, rimpiazzando un eventuale sistema precedentemente installato"
+
+#: liveinstaller.glade:1018
+#FIXME
+msgid "Reutilizar las particiones existentes"
+msgstr "Riutilizzare le partizioni esistenti"
+
+#: liveinstaller.glade:1042
+#FIXME
+msgid ""
+"Particionamiento avanzado: mediante esta opción podrá crear, redimensionar y "
+"destruir las particiones actuales de su disco duro con entera libertad"
+msgstr ""
+"Partizionamento avanzato: tramite questa opzione si potranno creare, ridimensionare "
+"ed eliminare manualmente le partizioni attualmente presenti su disco"
+
+#: liveinstaller.glade:1044
+#FIXME
+msgid "Particionar a mano"
+msgstr "Partizionare manualmente"
+
+#: liveinstaller.glade:1129
+#FIXME
+msgid "Marque esta casilla para confirmar la operación"
+msgstr "Spuntare questa casella per confermare l'operazione"
+
+#: liveinstaller.glade:1131
+#FIXME
+msgid "Confirmar el particionado automático"
+msgstr "Confermare il partizionamento automatico"
+
+#: liveinstaller.glade:1372
+msgid ""
+"You have to make room in one or more of your hard disks in order to have GNU/"
+"Linux properly installed. 3 partitions are necessary:\n"
+"· The root partition (“/”), with a minimum size of 1.5 GB.\n"
+"· The home partition (“/home”), of 512 MB at least.\n"
+"· The swap partition (“swap”), with 256 MB or more.\n"
+"You can now modify your existing partition table and select where you wan "
+"what.\n"
+"Remember that you can keep the data in a previous home partition – just "
+"leave it as it is and it will not be formatted.\n"
+"Alternatively, it is possible to return to the previous page to select an "
+"easier partitioning method."
+msgstr ""
+"Con questo metodo manuale si possono creare, eliminare e ridimensionare "
+"partizioni. Da non prendere alla leggera: un uso incauto potrebbe portare alla "
+"perdita di eventuali dati personali presenti su disco rigido.\n"
+"Si raccomandano tre partizioni per il nuovo sistema, da ricavare dallo "
+"spazio libero su disco o da partizioni già esistenti:\n"
+"· La partizione principale, o radice (\"/\"), dove verrà installato il nuovo sistema. Richiede un"
+" minimo di 1,5Gb.\n"
+"· La partizione /swap, necessaria al sistema per un corretto funzionamento. "
+"256Mb sono sufficienti.\n"
+"· La partizione /home, destinata ai documenti e dati personali di tutti gli "
+"utenti. Il minimo raccomandato è da 500Mb in su, in base alle esigenze."
+"Se si ha già una partizione /home di un altro sistema Linux, la si può "
+"utilizzare per il nuovo sistema, senza necessità di cambiamenti.\n"
+"Se si ha più spazio disponibile si possono creare più partizioni. Ogni partizione è "
+"interpretata dal sistema come un disco indipendente, per cui si può avere ad esempio "
+"una partizione /copie per conservare copie di sicurezza di dati importanti.\n"
+"Continuare per rendere effettive le modifiche alle partizioni o tornare indietro "
+"per il partizionamento assistito."
+
+#: liveinstaller.glade:1578
+msgid ""
+"Now you should have at least 3 GNU/Linux partitions with space enough. It's "
+"time to specify where you want every component to be installed.\n"
+"Proceed as follows: select one partition in the column on the left and link "
+"it with one mount point on the right. Repeat for every desired partition.\n"
+"There are 3 necessary “mount points” – they must be associated with 3 "
+"partitions. They are “/”, “/home” and “swap”.\n"
+"If you kept an intact home partition, you can now link it with the “/home” "
+"mount point. It will not be formatted, so data is preserved."
+msgstr ""
+"Adesso bisogna solo assegnare un punto di montaggio, ossia una cartella, "
+"alle nuove partizioni:\n"
+"· / per la partizione principale, o radice\n"
+"· /swap per la partizione di swap\n"
+"· /home per la partizione degli utenti\n"
+"Si può definire il punto di montaggio desiderato per le eventuali partizioni "
+"aggiuntive o personalizzate (es: /copie).\n"
+"Una volta definiti tutti i punti di montaggio si può continuare."
+
+#: liveinstaller.glade:1632
+msgid "<b>Mountpoint</b>"
+msgstr "<b>Punto di montaggio</b>"
+
+#: liveinstaller.glade:1871
+msgid "<b>Size</b>"
+msgstr "<b>Dimensione</b>"
+
+#: liveinstaller.glade:2150
+msgid "<b>Partition</b>"
+msgstr "<b>Partizione</b>"
+
+#: liveinstaller.glade:2422
+#FIXME
+msgid ""
+"<span>Debe introducir un punto de montaje <b>\"/\"</b> para su sistema "
+"instalado.</span>"
+msgstr ""
+"<span>Bisogna introdurre un punto di montaggio <b>\"/\"</b> per il sistema" 
+"installato.</span>"
+
+#: liveinstaller.glade:2560
+msgid ""
+"<span foreground=\"#9F6C49\"> <b>0. Intro</b> > <b>1. Identification</b> > "
+"<b>2. Disk space</b> > <span foreground=\"white\" background=\"#9F6C49"
+"\"><b>3. Installation</b></span> > <b>4. Ready!</b></span>"
+msgstr ""
+"<span foreground=\"#3b5da5\"> <b>0. Intro</b> > <b>1. Identificazione</b> > "
+"<b>2. Spazio su disco</b> > <span foreground=\"white\" background=\"#3b5da5"
+"\"><b>3. Installazione</b></span> > <b>4. Fine</b></span>"
+
+#: liveinstaller.glade:2626
+msgid ""
+"<span size=\"xx-large\">Introducing your forthcoming free desktop</span>"
+msgstr ""
+"<span size=\"xx-large\" foreground=\"#3b5da5\">Ecco come sarà il nuovo sistema</span>"
+
+#: liveinstaller.glade:2731
+msgid "Installation progress"
+msgstr "Progresso dell'installazione"
+
+#: liveinstaller.glade:2808
+msgid ""
+"<span foreground=\"#9F6C49\"> <b>0. Intro</b> > <b>1. Identification</b> > "
+"<b>2. Disk space</b> > <b>3. Installation</b> > <span foreground=\"white\" "
+"background=\"#9F6C49\"><b>4. Ready!</b></span></span>"
+msgstr ""
+"<span foreground=\"#3b5da5\"> <b>0. Intro</b> > <b>1. Identificazione</b> > "
+"<b>2. Spazio su disco</b> > <b>3. Installazione</b> > <span foreground=\"white\" "
+"background=\"#3b5da5\"><b>4. Fine</b></span></span>"
+
+#: liveinstaller.glade:2853
+msgid "<span size=\"xx-large\">Congratulations!</span>"
+msgstr "<span size=\"xx-large\" foreground=\"#3b5da5\">Congratulazioni!</span>"
+
+#: liveinstaller.glade:2885
+msgid ""
+"The installation has been successfully completed.\n"
+"\n"
+"In order to work with your new free operative system you need to eject the "
+"CDLive and reboot your computer."
+msgstr ""
+"Il processo di installazione è stato completato.\n"
+"\n"
+"Per usare il nuovo sistema operativo è necessario estrarre il "
+"CD dal lettore e riavviare."
+
+#: liveinstaller.glade:2925
+msgid "Ready"
+msgstr "Fine"
+
+#: liveinstaller.glade:3090
+#FXIME
+msgid "¿Salir del instalador de Guadalinex?"
+msgstr "Uscire dall'installatore?"
+
+#: liveinstaller.glade:3200
+#FIXME
+msgid "¿Desea salir verdaderamente del instalador de Dsslive2005?"
+msgstr "Uscire dall'installatore?"
+
+#: liveinstaller.glade:3222 liveinstaller.glade:3379
+#FIXME
+msgid "<b>Instalador de Dsslive</b>"
+msgstr "<b>Installatore di Dsslive</b>"
+
+#: liveinstaller.glade:3261
+#FIXME
+msgid "Se interrumpió el particionado"
+msgstr "Il partizionamento è stato interrotto"
+
+#: liveinstaller.glade:3357
+#FIXME
+msgid ""
+"No es posible particionar automáticamente esta unidad. Tendrá que "
+"seleccionar otra forma de particionado."
+msgstr ""
+"Non è possibile partizionare automaticamente questa unità. Si dovrà "
+"selezionare un'altro modo per partizionare"

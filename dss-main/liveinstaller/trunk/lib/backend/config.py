@@ -1,0 +1,396 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+from ue import misc, settings
+
+import debconf, os
+import subprocess
+
+class Config:
+
+  def __init__(self, vars):
+    """Initial attributes."""
+
+    # We get here the current kernel version
+    self.kernel_version = open('/proc/sys/kernel/osrelease').readline().strip()
+    # FIXME: Hack (current kernel loaded on liveCD doesn't work on installed systems)
+    #self.kernel_version = '2.6.12-9-386'
+    self.distro = open('/etc/lsb-release').readline().strip().split('=')[1].lower()
+    self.target = '/target/'
+    # Getting vars: fullname, username, password, hostname
+    # and mountpoints
+    for var in vars.keys():
+      setattr(self,var,vars[var])
+
+
+  def run(self, queue):
+    """Run configuration stage. These are the last steps to launch in live
+    installer."""
+
+    #queue.put('92 92% Configurando sistema locales')
+    #misc.post_log('info', 'Configuring distro')
+    #if self.get_locales():
+    #  queue.put('92 92% Sistema locales configurado')
+    #  misc.post_log('info', 'Configured distro')
+    #else:
+    #  misc.post_log('error', 'Configuring distro')
+    #  return False
+    queue.put('93 93% Configurando sistema de particiones en disco')
+    misc.post_log('info', 'Configuring distro')
+    if self.configure_fstab():
+      queue.put('93 93% Sistema de particiones en disco configurado')
+      misc.post_log('info', 'Configured distro')
+    else:
+      misc.post_log('error', 'Configuring distro')
+      return False
+    queue.put('94 94% Configurando skel dir')
+    misc.post_log('info', 'Configuring distro')
+    if self.configure_skel():
+      queue.put('94 94% Skel horaria configurada')
+      misc.post_log('info', 'Configured distro')
+    else:
+      misc.post_log('error', 'Configuring distro')
+      return False
+    #queue.put('94 94% Configurando zona horaria')
+    #misc.post_log('info', 'Configuring distro')
+    #if self.configure_timezone():
+    #  queue.put('94 94% Zona horaria configurada')
+    #  misc.post_log('info', 'Configured distro')
+    #else:
+    #  misc.post_log('error', 'Configuring distro')
+    #  return False
+    queue.put('95 95% Creando usuario')
+    misc.post_log('info', 'Configuring distro')
+    if self.configure_user():
+      queue.put('95 95% Usuario creado')
+      misc.post_log('info', 'Configured distro')
+    else:
+      misc.post_log('error', 'Configuring distro')
+      return False
+    queue.put('96 96% Bautizando ordenador')
+    misc.post_log('info', 'Configuring distro')
+    if self.configure_hostname():
+      queue.put('96 96% Ordenador bautizado')
+      misc.post_log('info', 'Configured distro')
+    else:
+      misc.post_log('error', 'Configuring distro')
+      return False
+    queue.put('97 97% Configurando hardware')
+    misc.post_log('info', 'Configuring distro')
+    if self.configure_hardware():
+      queue.put('97 97% Hardware configurado')
+      misc.post_log('info', 'Configured distro')
+    else:
+      misc.post_log('error', 'Configuring distro')
+      return False
+    #queue.put('98 98% Configurando red')
+    #misc.post_log('info', 'Configuring distro')
+    #if self.configure_network():
+    #  queue.put('98 98% Red configurada')
+    #  misc.post_log('info', 'Configured distro')
+    #else:
+    #  misc.post_log('error', 'Configuring distro')
+    #  return False
+    queue.put('99 99% Configurando sistema de arranque')
+    misc.post_log('info', 'Configuring distro')
+    if self.configure_bootloader():
+      queue.put('100 100% Instalación finalizada')
+      misc.post_log('info', 'Configured distro')
+    else:
+      misc.post_log('error', 'Configuring distro')
+      return False
+
+
+  def get_locales(self):
+    """set timezone and keymap attributes from debconf. It uses the same values
+    the user have selected on live system.
+
+    get_locales() -> timezone, keymap, locales"""
+
+    debconf.runFrontEnd()
+    db = debconf.Debconf()
+
+    try:
+      self.timezone = db.get('express/timezone')
+      if self.timezone == '':
+          self.timezone = db.get('tzconfig/choose_country_zone_multiple')
+    except:
+      self.timezone = open('/etc/timezone').readline().strip()
+    self.keymap = db.get('debian-installer/keymap')
+
+    self.locales = db.get('locales/default_environment_locale')
+    return True
+
+  def configure_skel(self):
+    """copy to target the main configuration files for user """
+    misc.ex('dpkg-genstatus','-g','-d',self.target)
+    misc.ex('cp',os.path.join(self.target,'tmp/status'),
+                 os.path.join(self.target,'var/lib/dpkg/status') )
+                 
+    FILES=["etc/locale.gen",
+           "etc/X11/xorg.conf",
+           "etc/environment",
+          "etc/network/interfaces",
+          "/etc/lsb-release"]
+    for filename in FILES:
+      misc.ex('cp', '/' + filename, os.path.join(self.target, filename) )
+    
+    misc.ex('cp','-ar', '/etc/skel', os.path.join(self.target, 'etc/') )
+    return True
+
+  def configure_fstab(self):
+    """create and configure /etc/fstab depending on our installation selections.
+    It creates a swapfile instead of swap partition if it isn't defined along the
+    installation process. """
+
+    swap = 0
+    fstab = open(os.path.join(self.target,'etc/fstab'), 'w')
+    print >>fstab, 'proc\t/proc\tproc\tdefaults\t0\t0\nsysfs\t/sys\tsysfs\tdefaults\t0\t0'
+    for device, path in self.mountpoints.items():
+        if path == '/':
+            passno, options, filesystem = 1, 'defaults,errors=remount-ro', 'ext3'
+        elif path == 'swap':
+            swap, passno, filesystem, options, path = 1, 0, 'swap', 'sw', 'none'
+        else:
+            passno, filesystem, options = 2, 'ext3', 'defaults'
+
+        print >>fstab, '%s\t%s\t%s\t%s\t%d\t%d' % (device, path, filesystem, options, 0, passno)
+
+    counter = 1
+    for device, fs in misc.get_filesystems().items():
+      if ( fs in ['vfat', 'ntfs'] ):
+        passno = 2
+        if fs == 'vfat' :
+          options = 'rw,exec,users,sync,noauto,umask=022'
+        else:
+          options = 'utf8,noauto,user,exec,uid=1000,gid=1000'
+        path = '/media/Windows%d' % counter
+        os.mkdir(os.path.join(self.target, path[1:]))
+        counter += 1
+
+        print >>fstab, '%s\t%s\t%s\t%s\t%d\t%d' % (device, path, fs, options, 0, passno)
+
+    # if swap partition isn't defined, we create a swapfile
+    if ( swap != 1 ):
+      print >>fstab, '/swapfile\tnone\tswap\tsw\t0\t0'
+      os.system("dd if=/dev/zero of=%s/swapfile bs=1024 count=%d" % (self.target, settings.MINIMAL_PARTITION_SCHEME ['swap'] * 1024) )
+      os.system("mkswap %s/swapfile" % self.target)
+
+    fstab.close()
+    return True
+
+
+  def configure_timezone(self):
+    """set timezone on installed system (which was obtained from get_locales)."""
+
+    # tzsetup ignores us if these exist
+    for tzfile in ('etc/timezone', 'etc/localtime'):
+        path = os.path.join(self.target, tzfile)
+        if os.path.exists(path):
+            os.unlink(path)
+
+    self.set_debconf('base-config', 'tzconfig/preseed_zone', self.timezone)
+    self.chrex('tzsetup', '-y')
+    return True
+
+
+  def configure_keymap(self):
+    """set keymap on installed system (which was obtained from get_locales)."""
+
+    self.set_debconf('debian-installer', 'debian-installer/keymap', self.keymap)
+    self.chrex('install-keymap', self.keymap)
+    return True
+
+
+  def configure_user(self):
+    """create the user selected along the installation process into the installed
+    system. Default user from live system is deleted and skel for this new user is
+    copied to $HOME."""
+
+    self.chrex('passwd', '-l', 'root')
+    #self.set_debconf('passwd', 'passwd/username', self.username)
+    #self.set_debconf('passwd', 'passwd/user-fullname', self.fullname)
+    #self.set_debconf('passwd', 'passwd/user-password', self.password)
+    #self.set_debconf('passwd', 'passwd/user-password-again', self.password)
+    #self.reconfigure('passwd')
+
+    # Only for Guadalinex
+    #self.chrex('deluser', 'guada')   #nomed
+    #self.chrex('rm', '-rf', '/home/guada')   #nomed
+    #self.chrex('delgroup', 'guada')  #nomed
+
+    self.chrex('useradd', 
+               '-u', '1000', 
+               '-d', '/home/' + self.username, 
+               '-m', '-s', '/bin/bash', 
+               '-c', self.fullname, 
+               self.username)
+    
+    passwd = subprocess.Popen(['echo', self.username + ':' + self.password],
+                              stdout=subprocess.PIPE)
+    subprocess.Popen(['chroot', self.target, 'chpasswd', '--md5'], 
+                     stdin=passwd.stdout)
+                     
+    self.chrex('mkdir', '/home/%s' % self.username)
+    GROUPS='adm,audio,cdrom,dialout,floppy,video,voice,plugdev,dip,lp,lpadmin,scanner,admin'
+    for group in ['lpadmin', 'scanner', 'admin']:
+      self.chrex('addgroup', '--system', group)
+    self.chrex('usermod', '-G', GROUPS, self.username)
+
+    #try:
+    #  self.chrex('adduser', self.username, 'admin')
+    #  self.chrex('/usr/local/sbin/adduser.local', self.username)
+    #except Exception, e:                           #nomed
+    #  for group in GROUPS:                         #nomed
+    #    self.chrex('adduser', self.username, group)#nomed
+
+    # Copying skel
+    #
+    #def visit (arg, dirname, names):
+    #  for name in names:
+    #    oldname = os.path.join (dirname, name)
+    #    for pattern in str(dirname).split('/')[2:]:
+    #      dir = os.path.join('', pattern)
+    #    newname = os.path.join (self.target, 'home/%s/' % self.username, dir, name)
+    #    if ( os.path.isdir(oldname) ):
+    #      os.mkdir(newname)
+    #    else:
+    #      os.system('cp ' + oldname + ' ' + newname)
+    #
+    #os.path.walk('/etc/skel/', visit, None)
+
+    self.chrex('chown', '-R', self.username, '/home/%s' % self.username)
+
+    return True
+
+
+  def configure_hostname(self):
+    """setting hostname into installed system from data got along the installation
+    process."""
+
+    fp1 = open(os.path.join(self.target, 'etc/hostname'), 'w')
+    print >>fp1, self.hostname
+    fp1.close()
+    #nomed: configure hosts
+    fp2 = open(os.path.join(self.target, 'etc/hosts'), 'w')
+    print >>fp2,'127.0.0.1 localhost.localdomain localhost', self.hostname
+    fp2.close()
+    return True
+
+
+  def configure_hardware(self):
+    """reconfiguring several packages which depends on the hardware system in
+    which has been installed on and need some automatic configurations to get
+    work."""
+
+    self.chrex('mount', '-t', 'proc', 'proc', '/proc')
+    self.chrex('mount', '-t', 'sysfs', 'sysfs', '/sys')
+    # nomed: regenerate the status file
+    
+    #packages = ['gnome-panel', 'linux-image-' + self.kernel_version]
+    packages = ['locales', 'linux-image-' + self.kernel_version, 'netbase', 'ifupdown']
+
+    try:
+        for package in packages:
+            self.copy_debconf(package)
+            self.reconfigure(package)
+    finally:
+        self.chrex('umount', '/proc')
+        self.chrex('umount', '/sys')
+    return True
+
+
+  def configure_network(self):
+    """setting network configuration into installed system from live system data. It's
+    provdided by setup-tool-backends."""
+
+    conf = subprocess.Popen(['/usr/share/setup-tool-backends/scripts/network-conf',
+        '--platform', 'ubuntu-5.04', '--get'], stdout=subprocess.PIPE)
+    subprocess.Popen(['chroot', self.target, '/usr/share/setup-tool-backends/scripts/network-conf', 
+        '--platform', 'ubuntu-5.04', '--set'], stdin=conf.stdout)
+    return True
+
+
+  def configure_bootloader(self):
+    """configuring and installing boot loader into installed hardware system."""
+
+    import re
+
+    target_dev = self.mountpoints.keys()[self.mountpoints.values().index('/')]
+    distro = self.distro.capitalize()
+
+    misc.ex('mount', '/proc', '--bind', self.target + '/proc')
+    misc.ex('mount', '/sys', '--bind', self.target + '/sys')
+    misc.ex('mount', '/dev', '--bind', self.target + '/dev')
+
+    if not os.path.exists(self.target + '/boot/grub'):
+          os.mkdir(self.target + '/boot/grub')
+
+    #/target/etc/mtab creation - temporary bugfix for buggy grub-install
+    mtab = open(os.path.join(self.target,'etc/mtab'), 'w')
+    print >>mtab, '%s\t%s\t%s\t%s\t%s' % (target_dev, '/', 'auto', 'defaults', '0 0')
+    mtab.close()
+
+    #grub-install it's enough, because it calls grub-shell with setup command
+    device_regex = re.compile(r'/dev/[a-z]+')
+    device = device_regex.search(target_dev).group()
+    if not os.path.exists ( device ) or os.path.isdir ( device ):
+      device = target_dev
+    self.chrex('grub-install', device )
+
+    # creates grub menu.lst on target
+    self.chrex ('rm', '-f', '/boot/grub/menu.lst')
+    self.chrex('update-grub', '-y')
+    misc.ex('umount', '-f', self.target + '/proc')
+    misc.ex('umount', '-f', self.target + '/sys')
+    misc.ex('umount', '-f', self.target + '/dev')
+    return True
+
+
+  def chrex(self, *args):
+    """executes commands on chroot system (provided by *args)."""
+
+    msg = ''
+    for word in args:
+      msg += str(word) + ' '
+    if not misc.ex('chroot', self.target, *args):
+      misc.post_log('error', 'chroot' + msg)
+      return False
+    misc.post_log('info', 'chroot' + msg)
+    return True
+
+
+  def copy_debconf(self, package):
+    """setting debconf database into installed system."""
+
+    targetdb = os.path.join(self.target, 'var/cache/debconf/config.dat')
+    misc.ex('debconf-copydb', 'configdb', 'targetdb', '-p', '^%s/' % package,
+            '--config=Name:targetdb', '--config=Driver:File','--config=Filename:' + targetdb)
+
+
+  def set_debconf(self, owner, question, value):
+    dccomm = subprocess.Popen(['chroot', self.target, 'debconf-communicate', '-fnoninteractive', owner],
+                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
+    dc = debconf.Debconf(read=dccomm.stdout, write=dccomm.stdin)
+    dc.set(question, value)
+    dc.fset(question, 'seen', 'true')
+    dccomm.stdin.close()
+    dccomm.wait()
+
+
+  def reconfigure(self, package):
+    """executes a dpkg-reconfigure into installed system to each package which
+    provided by args."""
+
+    self.chrex('dpkg-reconfigure', '-fnoninteractive', package)
+
+
+if __name__ == '__main__':
+  from Queue import Queue
+  queue = Queue ()
+  vars = misc.get_var()
+  config = Config(vars)
+  config.run(queue)
+  print 101
+
+# vim:ai:et:sts=2:tw=80:sw=2:

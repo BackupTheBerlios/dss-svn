@@ -1,0 +1,89 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+BUILDDIR=$(CURDIR)/debian/build
+
+build: build-stamp
+
+build-stamp:
+	dh_testdir
+
+	#mkdir -p $(BUILDDIR)/ubuntu
+	#mkdir -p $(BUILDDIR)/guadalinex
+	mkdir -p $(BUILDDIR)/dsslive
+
+
+	
+	# Dsslive-doc
+	for file in $$(ls $(CURDIR)/glade/locale/dsslive/*.po); do msgfmt -o $(BUILDDIR)/dsslive/$$(echo $$(basename $$file) | sed -e 's,\.po$$,\.mo,') $(CURDIR)/glade/locale/dsslive/$$(basename $$file); done || true
+	
+	
+	# Fixing perms
+	chmod +x $(CURDIR)/lib/backend/*.py
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -fr build-stamp $(BUILDDIR)
+
+	dh_clean 
+
+install:
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs -A
+
+
+	# Dsslive-doc
+	for locale in $$(find $(BUILDDIR)/dsslive/ -name \*.mo -exec basename {} \; | sed -e 's/\.mo//g'); do mkdir -p $(CURDIR)/debian/liveinstaller-dsslive-doc/usr/share/locale/$$locale/LC_MESSAGES/; mv $(BUILDDIR)/dsslive/$$locale\.mo $(CURDIR)/debian/liveinstaller-dsslive-doc/usr/share/locale/$$locale/LC_MESSAGES/dsslive-installer.mo; done
+	cp -r $(CURDIR)/htmldocs/dsslive $(CURDIR)/debian/liveinstaller-dsslive-doc/usr/share/liveinstaller/htmldocs/ 2> /dev/null || true
+
+	# Dsslive-artwork
+	cp -r $(CURDIR)/glade/pixmaps/dsslive $(CURDIR)/debian/liveinstaller-dsslive-artwork/usr/share/liveinstaller/glade/pixmaps/
+
+	# Gtk+ Frontend
+	cp $(CURDIR)/lib/frontend/gtkui.py $(CURDIR)/debian/liveinstaller-frontend-gtk/usr/lib/python2.4/site-packages/ue/frontend/
+	cp $(CURDIR)/glade/dsslive.glade* $(CURDIR)/debian/liveinstaller-frontend-gtk/usr/share/liveinstaller/glade/
+
+	# Network Cloner Frontend
+	cp $(CURDIR)/lib/frontend/netcloner.py $(CURDIR)/debian/liveinstaller-frontend-cloner/usr/lib/python2.4/site-packages/ue/frontend/
+	cp $(CURDIR)/netcloner $(CURDIR)/debian/liveinstaller-frontend-cloner/usr/sbin/
+
+	# Liveinstaller
+	cp $(CURDIR)/lib/frontend/noui.py $(CURDIR)/debian/liveinstaller/usr/lib/python2.4/site-packages/ue/frontend/
+	cp $(CURDIR)/lib/frontend/__init__.py $(CURDIR)/debian/liveinstaller/usr/lib/python2.4/site-packages/ue/frontend/
+	cp -r $(CURDIR)/doc/* $(CURDIR)/debian/liveinstaller/usr/share/doc/liveinstaller/
+	cp -a $(CURDIR)/lib/{*.py,backend} $(CURDIR)/debian/liveinstaller/usr/lib/python2.4/site-packages/ue/
+	cp $(CURDIR)/liveinstaller $(CURDIR)/installer $(CURDIR)/debian/liveinstaller/usr/bin/
+	rm -rf `find $(CURDIR)/debian/ -mindepth 2 -type d -name .svn`
+
+# Build architecture-independent files here.
+binary-indep: install
+
+# Build architecture-dependent files here.
+binary-arch: install
+	dh_testdir -A
+	dh_testroot -A
+	dh_installchangelogs Changelog
+	dh_installdocs -A
+#	dh_installexamples -A
+#	dh_install -A
+#	dh_installdebconf -A
+#	dh_installman -A
+	dh_strip -A
+	dh_compress -A
+	dh_fixperms -A
+	dh_python -A
+	dh_installdeb -A
+	dh_shlibdeps -A
+	dh_gencontrol -A
+	dh_md5sums -A
+	dh_builddeb -A
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install

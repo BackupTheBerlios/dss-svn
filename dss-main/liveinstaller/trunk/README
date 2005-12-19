@@ -1,0 +1,27 @@
+
+
+========================================================
+Liveinstaller is the installer for dsslive derivatives.
+
+
+There are six major components to implement:
+
+    *A user interface
+    *A partitioning tool
+    *A component to copy the filesystem into place
+    *Language pack installation [todo]
+    *Base system configuration
+    *Boot loader installation
+
+It needs:
+
+    *An USS design
+    *Gparted (patched)
+    *Python
+    *Peez2
+
+Based on Guadalinex2005 installer
+=========================================================
+
+web: http://dsslive.org
+contact: Daniele Favara (nomed)<danjele@gmail.com>
