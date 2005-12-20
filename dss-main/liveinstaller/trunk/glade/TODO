@@ -16,26 +16,58 @@ error messages:
 user error 1: 
 - El <b>nombre de usuario</b> contiene carácteres incorrectos  (sólo letras y números están permitidos).
 
+====
+The <b>username</b> contains incorrect characters (only letters and numbers are allowed).
+====
+
 user error 2:
 - El <b>nombre de usuario</b> contiene mayúsculas (no están permitidas)
+
+====
+The <b>username</b> contains capital letters (they are not allowed)
+====
 
 user error 3:
 - El <b>nombre de usuario</b> tiene tamaño incorrecto (permitido entre 3 y 24 caracteres).
 
+=====
+The <b>username</b> has incorrect size (allowed between 3 and 24 characters).
+=====
+
 user error 4:
 - El <b>nombre de usuario</b> contiene espacios en blanco (no están permitidos)
+
+====
+The <b>username</b> contains spaces in target (they are not allowed)
+====
 
 user error 5:
 - El <b>nombre de usuario</b> ya está en uso o está prohibido.
 
+====
+The <b>username</b> or is in use or is prohibited.
+====
+
 passwd error 1:
 - La <b>contraseña</b> tiene tamaño incorrecto (permitido entre 4 y 16 caracteres)
+
+====
+The <b>password</b> has incorrect size (allowed between 4 and 16 characters)
+====
 
 passwd error 2:
 - Las <b>contraseñas</b> no coinciden.
 
+====
+The <b>passwords</b> do not match.
+====
+
 host error 1:
 - El <b>nombre del equipo</b> tiene tamaño incorrecto (permitido entre 3 y 18 caracteres)
+
+====
+- the <b>hostname</b> has incorrect size (allowed between 3 and 18 characters)
+====
 
 host error 2:
 - El <b>nombre del equipo</b> contiene espacios en blanco (no están permitidos)

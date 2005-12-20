@@ -163,6 +163,7 @@ class Wizard:
     self.install_image = 0
     PIXMAPSDIR = os.path.join(GLADEDIR, 'pixmaps', self.distro)
     self.total_images   = glob.glob("%s/snapshot*.png" % PIXMAPSDIR)
+    self.total_images.reverse()
     self.total_messages = open(messages_uri).readlines()
 
     # set pixmaps
@@ -644,7 +645,7 @@ class Wizard:
     self.install_image+=1
     step = self.install_image % len(self.total_images) -1
     self.installing_image.set_from_file(self.total_images[step])
-    self.installing_text.set_markup(self.resize_text(_('%s') % self.total_messages[step], '4'))
+    self.installing_text.set_markup(self.resize_text(self.total_messages[step], '4'))
     return True
 
 

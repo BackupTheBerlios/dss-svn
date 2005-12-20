@@ -131,7 +131,7 @@ class Config:
            "etc/X11/xorg.conf",
            "etc/environment",
           "etc/network/interfaces",
-          "/etc/lsb-release"]
+          "etc/lsb-release"]
     for filename in FILES:
       misc.ex('cp', '/' + filename, os.path.join(self.target, filename) )
     
