@@ -23,22 +23,6 @@
 ] def
 
 
-% start value
-/rand.start time def
-
-
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% Generate pseudo random number.
-% Good enough for boot loader splash screen.
-%
-% ( ) ==> ( int )
-%
-/rand {
-  rand.start 59 mul 97 add 0x7fffffff and
-  /rand.start over def
-} def
-
-
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % Show boot loader splash.
 %
@@ -102,13 +86,11 @@
 
   currentpoint
 
-  0x303030 setcolor
   0 0 moveto
-  b.mask b.back blend2
+  0x303030 b.mask b.back blend
 
-  white setcolor
   1 1 moveto
-  b.mask b.back blend2
+  white b.mask b.back blend
 
   moveto
   b.back restorescreen

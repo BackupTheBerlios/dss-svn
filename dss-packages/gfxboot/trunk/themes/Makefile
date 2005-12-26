@@ -1,4 +1,4 @@
-BINDIR       = /usr/sbin/
+BINDIR       = /usr/bin/
 HELP2TXT     = $(BINDIR)help2txt
 MKBOOTMSG    = $(BINDIR)mkbootmsg
 BFLAGS       = -O -v -L ../..

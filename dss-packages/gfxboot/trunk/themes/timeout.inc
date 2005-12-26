@@ -6,7 +6,8 @@
 % ( timeout time ) ==> ( )
 /Timeout {
   % first time
-  timeout.time .undef eq { timeout.init } if
+
+  ptheme { over over p.timeout.animate } if
 
   dup /timeout.time exch def
 
@@ -30,23 +31,22 @@
     timeout.areas {
       /to.tmp exch def
 
-      to.tmp .to_mask over over get free
-      to.tmp .to_mask .undef put
-
       to.tmp .to_back over over get free
       to.tmp .to_back .undef put
 
     } forall
   } {
 
-    black setcolor
+    ptheme not {
+      white setcolor
 
-    timeout.time.x timeout.time.y moveto -30 0 rmoveto
-    currentpoint 30 fontheight image
+      timeout.time.x timeout.time.y moveto -30 0 rmoveto
+      currentpoint 30 fontheight image
 
-    timeout.time 10 mul 150 add 182 div "%ds" timeout.buf sprintf
+      timeout.time 10 mul 150 add 182 div "%ds" timeout.buf sprintf
 
-    timeout.time.x timeout.time.y moveto timeout.buf showright
+      timeout.time.x timeout.time.y moveto timeout.buf showright
+    } if
 
     timeout.last 1 timeout.current {
       1 sub dup 0 ge {

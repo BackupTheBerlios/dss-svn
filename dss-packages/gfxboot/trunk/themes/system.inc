@@ -79,9 +79,97 @@
 /statusShift  0x0003 def
 
 % boot loader
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% bootloader - boot loader type
+%
+% group: system
+%
+% ( -- int1 )
+%
+% int1: boot loader type (0: lilo, 1:syslinux/isolinux, 2: grub)
+%
+/bootloader sysconfig getbyte def
+
 /lilo     bootloader 0 eq def
 /syslinux bootloader 1 eq def
 /grub     bootloader 2 eq def
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% bootdrive - drive the BIOS booted from
+%
+% group: system
+%
+% ( -- int1 )
+%
+% int1: BIOS drive id
+%
+/bootdrive sysconfig 5 add getbyte def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% mediatype - type of media we booted from
+%
+% group: system
+%
+% ( -- int1 )
+%
+% int1: media type (0 disk, 1 floppy, 2 cdrom)
+%
+/mediatype sysconfig 2 add getbyte def
+
+/m_disk   0 def
+/m_floppy 1 def
+/m_cdrom  2 def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% biosmem - BIOS reported memory size
+%
+% group: mem
+%
+% ( -- int1 )
+%
+% int1: total memory size according to BIOS
+%
+/biosmem sysconfig 20 add getdword def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% sectorsize - sector size
+%
+% group: mem system
+%
+% ( -- int1 )
+%
+% int1: sector size in bytes
+%
+/sectorsize
+  1
+  sysconfig 1 add getbyte
+  20 min	% max. 1 MB
+  dup 0 eq { pop 9 } if
+  shl
+def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% getinfo - type of info box
+%
+% group: system
+%
+% ( int1 -- int2 )
+%
+% int1: type of info box we have to show
+% int2: some data
+%
+% Note: really weird, should be replaced by something more obvious.
+%
+/getinfo {
+  2 shl
+  sysconfig 12 add exch add getdword
+} def
+
 
 % bool values
 /true     0 0 eq def
@@ -292,6 +380,276 @@
 %
 /showcenter {
   dup strsize pop 2 div neg 0 rmoveto show
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% Generate pseudo random number.
+% Good enough for boot loader splash screen.
+%
+% ( ) ==> ( int )
+%
+/rand {
+  rand.start 59 mul 97 add 0x7fffffff and
+  /rand.start over def
+} def
+
+% start value
+/rand.start time def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%
+% ( date ) ==> ( weekday )
+%
+/weekday {
+  dup 8 shr 0xff and 1 sub
+  dup 3 mul over 2 div sub
+  exch 2 mul 0x11000a exch shr 3 and add
+  over 0xff and 6 add add
+  exch 16 shr add
+  7 mod
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%
+% ( date ) ==> ( day )
+%
+/day {
+  0xff and
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%
+% ( date ) ==> ( month )
+%
+/month {
+  8 shr 0xff and
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%
+% ( date ) ==> ( year )
+%
+/year {
+  16 shr
+} def
+
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% readsector - read sector
+%
+% group: system
+%
+% ( int1 -- ptr1 )
+%
+% int1: sector number
+% ptr1: buffer with sector data or .undef. Use @free to free the buffer.
+%
+% Note: does not return on error. Returns .undef if function is not implemented.
+%
+/readsector {
+  _readsector
+  dup .undef eq { return } if
+
+  sectorsize malloc dup rot over length memcpy
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% getgfxconfig - get gfxboot config file entry
+%
+% group: system
+%
+% ( str1 -- str2 )
+%
+% str1: key for config entry
+% str2: config string (or .undef)
+%
+/getgfxconfig {
+  gfxconfig.data .undef eq {
+    "gfxboot.cfg" findfile dup .undef ne {
+      dup dup length dup string dup cvp 4 2 roll memcpy exch free
+    } {
+      pop ""
+    } ifelse
+
+    /gfxconfig.data over '\n' split def free
+
+  } if
+
+  currenteotchar '=' seteotchar
+
+  .undef
+
+  gfxconfig.data {
+
+    % overkill because string compare does not honour eotchar
+    dup strdup dup 5 index eq {
+      dup length exch free 1 add add exch pop exit
+    } {
+      free pop
+    } ifelse
+
+  } forall
+
+  exch seteotchar exch pop
+
+} def
+
+/gfxconfig.data .undef def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% split - split string
+%
+% group:
+%
+% ( str1 int1 -- array1 )
+%
+% str1: string
+% int1: char
+% array1: array of strings
+%
+/split {
+
+  currenteotchar exch seteotchar exch
+
+  [ exch
+
+    {
+      dup length 0 gt {
+        dup strdup exch
+        dup length add
+      } if
+
+      dup cvp length 1 le { pop exit } if
+
+      1 add
+
+    } loop
+
+  ]
+
+  exch seteotchar
+
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% Skip leading non-spaces.
+%
+% ( string ) ==> ( string )
+%
+/skipnonspaces {
+  { dup 0 get dup 0 ne exch ' ' ne and { 1 add } { exit } ifelse } loop
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% Skip leading spaces.
+%
+% ( string ) ==> ( string )
+%
+/skipspaces {
+  { dup 0 get ' ' eq { 1 add } { exit } ifelse } loop
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% Drop spaces at string end.
+% Modifies string!
+%
+% ( string ) ==> ( )
+%
+/dropspaces {
+  dup length
+  dup 0 eq {
+    pop pop
+  } {
+    1 sub
+    -1 0 {
+      over over get ' ' eq { over exch 0 put } { pop exit } ifelse
+    } for
+    pop
+  } ifelse
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% Test if string[ofs-1]/string[ofs] is a word boundary.
+%
+% ( string ofs ) ==> ( true|false )
+%
+% boundary is either space/non-space or non-space/(space|'=')
+%
+/iswordboundary {
+  dup 0 eq { pop pop true return } if
+
+  add dup 1 sub 0 get exch 0 get
+
+  over ' ' eq over ' ' gt and { pop pop true return } if
+  over ' ' gt over dup ' ' eq exch dup '=' eq exch 0 eq or or and { pop pop true return } if
+
+  pop pop false
+} def
+
+
+%% findmode - find video mode number
+%
+% group: gfx.screen
+%
+% ( int1 int2 int3 -- int4 )   
+%
+% int1, int2: width, height
+% int3: color bits
+% int4: mode number (or .undef)
+%
+% example
+%   1024 768 16 findmode setmode        % 1024x768, 16-bit color mode
+%
+/findmode {
+  0 1 videomodes {
+    videomodeinfo dup .undef eq {
+      pop pop pop pop
+    } {
+      % compare width, height, colors
+      6 index 4 index eq 6 index 4 index eq and 5 index 3 index eq and {
+        7 1 roll 6 { pop } repeat 0xbfff and return
+      } {
+        pop pop pop pop
+      } ifelse
+    } ifelse
+  } for
+
+  pop pop pop .undef
+} def
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%
+% Replace substring. Returns newly allocated string.
+%
+% ( str key value ) ==> ( new_str )
+%
+% Replaces first occurence of 'key' in str with 'value'.
+%
+/strreplace {
+  2 index 2 index strstr dup 0 ne {
+    1 sub
+    over length 3 index length sub 4 index length add string
+    dup cvp 5 index cvp 3 index memcpy
+    dup 6 1 roll over add exch 5 -1 roll exch add
+    4 -1 roll length add 3 1 roll "%s%s" exch sprintf
+  } {
+    pop pop pop strdup
+  } ifelse
+
+
 } def
 
 
