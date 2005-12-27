@@ -1,0 +1,18 @@
+for i in $1/* ;
+do
+set -x
+if [ -f "$i" ];then
+file=$(basename $i)
+if [ ! -d "$1/thumb"  ];then
+mkdir $1/thumb
+fi
+if [ ! -d "$1/album"  ];then
+mkdir $1/album
+fi
+
+set -x
+convert $1/$file -resize 106 $1/thumb/$file
+convert $1/$file -resize 500 $1/album/$file
+set +x
+fi
+done
