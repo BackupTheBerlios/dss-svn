@@ -15,8 +15,8 @@
    sodipodi:version="0.32"
    inkscape:version="0.42.2"
    sodipodi:docbase="C:\GFX\SVG"
-   sodipodi:docname="dss-splash.svg"
-   inkscape:export-filename="C:\GFX\SVG_Render\dss-splash-640-480.png"
+   sodipodi:docname="dss-splash-lo-col.svg"
+   inkscape:export-filename="C:\GFX\SVG_Render\dss-splash-640-480-lo.png"
    inkscape:export-xdpi="72.000000"
    inkscape:export-ydpi="72.000000">
   <defs
@@ -55,29 +55,6 @@
          offset="1.0000000"
          id="stop6435" />
     </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       id="linearGradient4203">
-      <stop
-         style="stop-color:#7c95b8;stop-opacity:1;"
-         offset="0"
-         id="stop4205" />
-      <stop
-         style="stop-color:#7c95b8;stop-opacity:0;"
-         offset="1"
-         id="stop4207" />
-    </linearGradient>
-    <radialGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient4203"
-       id="radialGradient4209"
-       cx="187.29684"
-       cy="252.44757"
-       fx="187.29684"
-       fy="252.44757"
-       r="409.21972"
-       gradientTransform="matrix(1.239480,0.000000,0.000000,1.051473,-44.85388,-15.44197)"
-       gradientUnits="userSpaceOnUse" />
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient6431"
@@ -150,7 +127,7 @@
     <path
        id="path4201"
        d="M -123.42290,-129.78370 L -123.42290,729.78350 L 393.48142,729.78350 C 572.71125,629.41485 694.01655,437.74531 694.01655,217.84856 C 694.01657,87.686759 651.48921,-32.506040 579.63144,-129.78370 L -123.42290,-129.78370 z "
-       style="opacity:1.0000000;color:#000000;fill:url(#radialGradient4209);fill-opacity:1.0;fill-rule:nonzero;stroke:#ffffff;stroke-width:0.99999976;stroke-linecap:butt;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4.0000000;stroke-dasharray:0.99999978 5.9999987;stroke-dashoffset:0.00000000;stroke-opacity:0.44705883;visibility:visible;display:inline;overflow:visible" />
+       style="opacity:1.0000000;color:#000000;fill:#ffffff;fill-opacity:0.052173913;fill-rule:nonzero;stroke:#ffffff;stroke-width:0.99999976;stroke-linecap:butt;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4.0000000;stroke-dasharray:0.99999978 5.9999987;stroke-dashoffset:0.00000000;stroke-opacity:0.44705883;visibility:visible;display:inline;overflow:visible" />
     <rect
        style="opacity:1.0000000;color:#000000;fill:#ffffff;fill-opacity:0.14782609;fill-rule:nonzero;stroke:none;stroke-width:1.0000000;stroke-linecap:butt;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4.0000000;stroke-dasharray:none;stroke-dashoffset:0.00000000;stroke-opacity:1.0000000;visibility:visible;display:inline;overflow:visible"
        id="rect3419"
