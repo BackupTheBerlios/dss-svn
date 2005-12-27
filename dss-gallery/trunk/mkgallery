@@ -1,3 +1,5 @@
+#svn propset svn:mime-type "image/png" path/*
+
 for i in $1/* ;
 do
 set -x
