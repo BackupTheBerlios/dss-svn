@@ -1,0 +1,17 @@
+#!/bin/bash
+cp indextemplate.html $1/.indextemplate.html
+cp slidetemplate.html $1/.slidetemplate.html
+cd $1
+igal -c -n -r -w 5   --bigy 350
+svn add *.*
+svn add .*.jpg
+svn add .*.png
+svn propset svn:mime-type "text/html" *.html
+svn propset svn:mime-type "image/png" .*.png
+svn propset svn:mime-type "image/jpg" .*.jpg
+svn propset svn:mime-type "image/jpg" *.jpg
+svn propset svn:mime-type "image/png" *.png
+
+svn commit
+
+
