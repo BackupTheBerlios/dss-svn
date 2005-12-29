@@ -1,0 +1,301 @@
+5/12/2005:	v3.2.5
+	- Colin Watson <cjwatson@ubuntu.com>: build fixes for x86-64
+	- fixed kernel splash loading
+	- include 'unpack_bootlogo' script in package
+
+30/11/2005:	v3.2.4
+	- adjust to syslinux 3.11
+	- remove some primary words and reimplement them as bytecode
+	- read config options from 'gfxboot.cfg'
+
+19/10/2005:	v3.2.3
+	- offer Croatian
+
+12/10/2005:	v3.2.2
+	- do only aligned dword reads from video memory - some ATI boards
+	  need this (#114804)
+
+6/10/2005:	v3.2.1
+	- needs syslinux with updated gfx patch
+	- texts updated for 10.1
+	- implemented filesize, getcwd, chdir commands
+	- using new cd layout
+
+15/9/2005:	v3.2.0
+	- better testing script
+	- gcc 4.1 compile fixes
+
+9/9/2005:	v3.1.8
+	- oops, was already December
+
+5/9/2005:	v3.1.7
+	- Finnish texts updated
+
+31/8/2005:	v3.1.6
+	- fix color handling bug (#72232)
+	- show penguins a bit more often
+
+29/8/2005:	v3.1.5
+	- added more keymaps (#113265)
+	- long menus are wrapped
+	- added 640x480 fallback for i845-like boards
+	- new translations
+
+24/8/2005:	v3.1.4
+	- a different shade of blue
+	- fixed penguin theme drawing bug
+
+22/8/2005:	v3.1.3
+	- new translations
+
+22/8/2005:	v3.1.2
+	- prepare for jpeg decompression to 8-bit color space
+	- add penguin theme
+	- Dansk keymap added
+
+15/8/2005:	v3.1.1
+	- fixed Dansk locale (#104084)
+	- new translations added
+
+5/8/2005:	v3.1.0
+	- support images with alpha channel
+	- new theme
+
+27/7/2005:	v3.0.23
+	- texts updated
+
+23/6/2005:	v3.0.22
+	- 32 bit modes now fully supported
+
+22/6/2005:	v3.0.21
+	- updated documentation
+
+26/4/2005:	v3.0.20
+	- harddisk install option gone (#60128)
+	- syslinux updated for testing
+
+22/4/2005:	v3.0.19
+	- fixed 16 bit color mode selection (#79312)
+
+21/4/2005:	v3.0.18
+	- added live cd entry
+
+20/4/2005:	v3.0.17
+	- taiwan text fix (#78946)
+
+11/4/2005:	v3.0.16
+	- fixed file reading
+
+21/3/2005:	v3.0.15
+	- added slowenic translations
+
+16/3/2005:	v3.0.14
+	- new graphics
+
+16/3/2005:	v3.0.13
+	- speedup transparent menu drawing
+	- adjust some colors
+
+15/3/2005:	v3.0.12
+	- updated translations
+
+8/3/2005:	v3.0.11
+	- fixed install source dialogs
+	- fixed some memory leaks
+
+7/3/2005:	v3.0.10
+	- translation fix (#66743)
+	- new splash graphics
+	- fixed slow timeout (#66730)
+	- enabled transparent menus
+
+1/3/2005:	v3.0.9
+	- new graphics
+	- fixed translation texts
+	- prepared for transparent menus
+
+22/2/2005:	v3.0.8
+	- fixed translation texts
+	- ask for smb domain
+	- corrected minor drawing error
+
+21/2/2005:	v3.0.7
+	- 9.3 theme
+	- fixed color handling bug
+
+15/2/2005:	v3.0.6
+	- sync language list with yast2
+	- fixed making slp default
+
+14/2/2005:	v3.0.5
+	- allow selecting slp or cdrom as default install target
+
+8/2/2005:	v3.0.4
+	- support ukrainian
+
+4/2/2005:	v3.0.3
+	- use 8x16 console font (8x14 does not always exist)
+	- avoid overlap with bootloader memory usage
+	- fixed memory addressing probem
+
+1/2/2005:	v3.0.2
+	- workaround to avoid memory corruption
+	- added experimental mouse code (for testing)
+
+31/1/2005:	v3.0.1
+	- support symlinks in cpio archive
+	- lots of minor fixes
+	- renamed files to stick to 8.3 scheme
+	- much improved test script
+	- use bold font
+	- use 800x600, 16bit color
+	- added new help texts
+
+25/1/2005:	v3.0.0
+	- jpeg decoding works
+
+8/11/2004:	v2.6.0
+	- rewrote internal memory management
+
+5/10/2004:	v2.5.10
+	- added help text for '64bit' switch (#46806)
+
+1/10/2004	v2.5.9
+	- new blue theme
+
+1/10/2004:	v2.5.8
+	- polish translations
+	- back to blue theme
+
+30/9/2004:	v2.5.7
+	- new theme
+	- hide passwords (#46094)
+
+27/9/2004:	v2.5.6
+	- more translations
+
+20/9/2004:	v2.5.5
+	- minor i18n fixes
+
+13/9/2004:	v2.5.4
+	- final graphics
+	- norsk translations
+
+6/9/2004:	v2.5.3
+	- added new translations
+	- preliminary SuSE theme graphics
+
+2/9/2004:	v2.5.2
+	- do the F-key-move-down magic only for syslinux (#44238)
+	- some text cleanup (9.1 -> 9.2, dropped unused liveeval msgs)
+	- integrated new splash picture
+
+18/9/2004:	v2.5.1
+	- basic arabic language support
+
+9/8/2004:	v2.5.0
+	- add 32/64 dualboot code
+	- removed obsolete themes
+	- switch to 'installation' if some F-key has been used (#41097)
+	- don't offer 640x480; instead, select x11 vesa driver
+	- assume monitor can display at least 800x600
+
+2/8/2004:	v2.4.24
+	- added SLES-Live theme
+
+9/6/2004	v2.4.23
+	- added SuSE-NLD theme
+
+21/5/2004:	v2.4.22
+	- new SLES pictures
+
+12/5/2004:	v2.4.21
+	- hide password in lilo (#40348)
+
+14/4/2004:	v2.4.20
+	- irqs might have been turned off in some cases
+	- new SLES pictures
+
+14/4/2004:	v2.4.19
+	- font creation missed some chars (#38223)
+
+8/4/2004:	v2.4.18
+	- use 'install=slp://' (#36982)
+	- add new 'biosmem' function
+	- live cd layout changes
+	- added live cd warning if there's not enough memory
+	- added SLES theme (copy of SuSE theme)
+
+7/4/2004:	v2.4.17
+	- add SuSE-Live theme
+
+6/4/2004:	v2.4.16
+	- handle case where we can't set graphics mode (#35806)
+
+5/4/2004:	v2.4.15
+	- add HTTP install option
+
+5/4/2004:	v2.4.14
+	- add only english to boot/message (#38339)
+
+5/4/2004:	v2.4.13
+	- japanese translations, again
+	- new boot graphics, again
+
+3/4/2004:	v2.4.12
+	- new japanese translations (#38224)
+	- not all japanese chars were added to font (#38223)
+
+2/4/2004	v2.4.11
+	- new boot graphics
+
+2/4/2004:	v2.4.10
+	- reset timeout if we show some popup during start
+
+2/4/2004:	v2.4.9
+	- added amd64 test
+	- fixed lilo password dialog
+	- use less memory for input dialogs
+	- modplayer should work again
+	- added russian texts
+
+31/3/2004:	v2.4.8
+	- take out romanian install help text; not enough space
+
+31/3/2004:	v2.4.7
+	- swedish texts
+	- added japanese texts
+	- fixed html viewer to work with japanese (allow line
+	  breaks at any place)
+	- added hungarian, italian and french texts
+
+29/3/2004:	v2.4.6
+	- dutch help texts
+	- slovene & romanian texts
+
+28/3/2004:	v2.4.5
+	- menu texts localized via 'translations.<locale>'
+	- new boot graphics
+	- added Home theme
+	- fixed language setting (#37195)
+	- pass lang info to yast (#35841)
+
+22/3/2004:	v2.4.4
+	- new boot graphics
+	- fixed japanese locale name (#36487)
+	- added spanish texts
+	- added dutch & hungarian texts
+	- localized driver update text
+
+17/3/2004:	v2.4.3
+	- new/updated czech texts
+	- reworked themes Makefile
+
+16/3/2004:	v2.4.2
+	- added german translations
+
+14/4/2004:	v2.4.1
+	- created Changelog
+	- lang menu build from 'languages' file
+	- corrected help text (#35630)
+	- added german & slovak translations

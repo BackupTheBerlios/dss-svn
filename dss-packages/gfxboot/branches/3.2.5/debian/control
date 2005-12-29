@@ -1,0 +1,15 @@
+Source: gfxboot
+Section: utils
+Priority: optional
+Maintainer: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Build-Depends: cdbs (>= 0.4.23-1.1), debhelper (>= 4.1.0), patchutils (>= 0.2.25), x-dev, libx11-dev, nasm, xmlto
+Standards-Version: 3.6.2
+
+Package: gfxboot
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: grub-gfxboot
+Suggests: kanotix-graphics | kanotix64-graphics | kanotixbh-graphics
+Description: bootlogo creator for gfxboot compliant boot loaders
+ This package is needed to create the graphical boot logos for gfxboot, 
+ introduced and developed by SuSE, it is suitable for grub, lilo and syslinux.
