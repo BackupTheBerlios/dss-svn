@@ -1,0 +1,296 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="">
+  <title></title>
+</head>
+
+<body>
+<!-- help=install -->
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="main">Boot Loader Help</a></h3>
+<em>&product;</em><br><br>
+
+Use this menu to select the desired function. If you have problems navigating in this help system, press <em>F1</em> to enter the <a href="#help">description</a> of the help system. The main functions in this menu are:<br>
+<br>
+<a href="#linux">Default</a>: This boot mode works on most machines. If you experience a system freeze during boot or problems with detection of your hardware components, such as disk controllers or network cards, try one of the following boot options. <br>
+<br>
+<a href="#noacpi">ACPI Disabled</a>: Many of the currently-sold computers have incomplete or faulty ACPI implementations. This selection disables ACPI support in the kernel, but still enables many performance features, like DMA for IDE hard disks.  <br>
+<br>
+<a href="#failsafe">Safe Settings</a>: If you were not successful with <em>Default</em>, this selection might solve the issue.<br>
+<br>
+<a href="#memtest">Memory Test</a>: Memory testing is useful for more than checking installation of new memory modules. It is a stress test for a big part of your computer system and may indicate hardware problems. <br>
+<br>
+<a href="#opt">Boot Options</a>: The boot options may change the behavior of your system completely. They are settings for the kernel.<br>
+<br>
+<a href="#help">F1 Help</a>: This is context sensitive. It will show different screens depending on the active element of the boot screen. There is also a description of this help system available.<br>
+<br>
+<a href="#videomode">F2 Video Mode</a>: Here, choose between different screen resolutions while booting. If you encounter problems with the graphical boot, the <em>text mode</em> may be a work-around for you.<br>
+<br>
+<a href="#keytable">F3 Language</a>: Set language and keyboard mapping used by the boot loader.<br>
+<br>
+
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="help">Using the Help System</a></h3>
+The boot loader online help is context sensitive. It gives information about the selected menu item or, if you are editing boot options, it tries to look up information about the option in which the cursor is positioned.<br>
+<br>
+Navigation Keys<br>
+<br>
+<em>Up Arrow</em>: highlight previous link<br>
+<em>Down Arrow</em>: highlight next link<br>
+<em>Left Arrow</em>, <em>Backspace</em>: return to previous topic<br>
+<em>Right Arrow</em>, <em>Enter</em>, <em>Space</em>: follow link<br>
+<em>Page Up</em>: scroll up one page<br>
+<em>Page Down</em>: scroll down one page<br>
+<em>Home</em>: go to page start<br>
+<em>End</em>: go to page end<br>
+<em>Esc</em>: leave help<br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="videomode">Video Mode Selection</a></h3>
+Press <em>F2</em> to get the list of video modes your graphics card supports. The highest mode your monitor can display is preselected.<br>
+<br>
+It is possible that your monitor cannot be detected automatically. In that case, select your preferred mode manually.<br>
+<br>
+If your system has problems with the graphics card during the boot, the <em>text mode</em> may be a usable work-around. <br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="keytable">Language and Keyboard Layout Selection</a></h3>
+Press <em>F3</em> to change language and keyboard layout the boot loader uses. <br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="linux">Default</a></h3>
+Select <em>default </em><a href="#opt">boot options</a> entered are used in the start-up. This item activates many features of commonly available hardware. <br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="noacpi">ACPI Disabled</a></h3>
+Very new hardware sometimes requires ACPI to control the interrupt handling. ACPI completely replaces the old APM system. <br>
+<br>
+Select <em>ACPI Disabled</em> if you encounter problems during boot of the kernel.  Known problems with machines that have problems with ACPI are: <br>
+<br>
+* kernel freezes when booting<br>
+* PCI Cards are not detected or initialized properly<br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="failsafe">Safe Settings</a></h3>
+Select <em>safe settings</em> if you encounter hangs while booting or irreproducible errors. This option disables DMA for IDE drives and all power management features. See also the kernel options for <a href="#o_acpi">acpi</a> and <a href="#o_ide">ide</a>. <br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="memtest">Memory Test</a></h3>
+The included <em>memory test</em> provides good possibilities to stress test the hardware of a system. Its main purpose is to detect broken RAM, but it also stresses many other parts of the system. <br>
+There is no guarantee that the memory is good if no errors are found, although most of memory defects will be found.<br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="opt">Boot Options</a></h3>
+Some of the more common options are: <br>
+<br>
+<a href="#o_base">base</a> --use a different base module<br>
+<a href="#o_kernel">kernel</a> --use a different kernel module<br>
+<a href="#o_base">deliver</a> --use a different deliver module<br>
+<a href="#o_dhcp">dhcp</a> --enable dhcp<br>
+<a href="#o_clock">clock</a> --set hw clock<br>
+<a href="#o_tz">tz</a> --set timezone<br>
+<a href="#o_xconf">xconf</a> --configure inreactively the X server<br>
+<a href="#o_lconf">lconf</a> --configure inreactively the locales<br>
+<a href="#o_hostname">hostname</a> --use a different hostname<br>
+<a href="#o_username">username</a> --use a different username<br>
+<a href="#o_password">password</a> --use a password for username<br>
+<a href="#o_splash">splash</a> -- influence the behavior of the splash screen<br>
+<a href="#o_acpi">acpi</a> -- advanced configuration and power interface<br>
+<a href="#o_ide">ide</a> -- control the IDE subsystem<br>
+<br>
+Return to <a href="#main">Start Page</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_base">Boot Options: base</a></h3>
+Use a different base module.<br>
+<br>
+
+
+<em>base=[base|base-ppc|base-sparc|base-debian| ... ]</em><br>
+<br>
+The default chice is to use base/base, using base= it's possible to specify the base module to load.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_kernel">Boot Options: kernel</a></h3>
+Use a different base module.<br>
+<br>
+
+
+<em>kernel=[kernel|kernel-ppc|kernel-sparc|kernel-2.7| ... ]</em><br>
+<br>
+The default chice is to use kernel/kernel, using kernel= it's possible to specify the kernel module to load.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_deliver">Boot Options: deliver</a></h3>
+Use a different base module.<br>
+<br>
+<em>deliver=[autoconf|hwsetup|hwinfo|discover| ... ]</em><br>
+<br>
+The default chice is to use deliver/autoconf, using deliver= it's possible to specify the autoconf module to load.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_dhcp">Boot Options: dhcp</a></h3>
+Enable dhcp at boot.<br>
+<br>
+<em>dhcp</em><br>
+<br>
+select this option in case you want to try to configure the network interface with <em>dhcp</em>.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_clock">Boot Options: clock</a></h3>
+Set the hardware clock.<br>
+<br>
+
+
+<em>clock=[localtime|utc]</em><br>
+<br>
+Indicates that the Hardware Clock is kept in Coordinated Universal Time [utc] or local time [localtime], respectively.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_tz">Boot Options: tz</a></h3>
+Set the timezone.<br>
+<br>
+
+
+<em>tz=[ex: Europe/Rome]</em><br>
+<br>
+A valid system time together with the correct local time zone will give you best performance and highest reliablility. <br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_xconf">Boot Options: xconf</a></h3>
+Configure interactively the X server.<br>
+<br>
+
+
+<em>xonf=dialog </em><br>
+<br>
+select this option in case you video card is not properly detected.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_lconf">Boot Options: lconf</a></h3>
+Configure interactively the locales.<br>
+<br>
+
+
+<em>lconf=dialog</em><br>
+<br>
+select this option in case you need to change the default locales..<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_hostname">Boot Options: hostname</a></h3>
+Set a different hostname, default dsslive.<br>
+<br>
+<em>hostname=name</em><br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_username">Boot Options: username</a></h3>
+Set a different username, default debaser..<br>
+<br>
+<em>username=name</em><br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_password">Boot Options: password</a></h3>
+Use a password..<br>
+<br>
+<em>password=passwd</em><br>
+<br>
+the default option is to don't use any possword..<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_splash">Boot Options: splash</a></h3>
+The splash screen is the picture shown during system start-up.<br>
+<br>
+<em>splash</em><br>
+<br>
+Activates splash,a progress bar is drawn, kernel and boot messages are still shown.<br>
+<br>
+Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<h3><a name="o_acpi">Boot Options: acpi</a></h3>
+ACPI (Advanced Configuration and Power Interface) is a standard that defines power and configuration management interfaces between an operating system and the BIOS. By default, <em>acpi</em> is switched on when a BIOS is detected that is newer than from year 2000. There are several commonly used parameters to control the behavior of ACPI:<br>
+<br>
+<em>pci=noacpi</em> -- do not use ACPI to route PCI interrupts
+<em>acpi=oldboot</em> -- only the parts of ACPI that are relevant for booting
+remain activated<br>
+<em>acpi=off</em> -- switch off ACPI completely<br>
+<em>acpi=force</em> -- switch on ACPI even if your BIOS is dated before 2000<br>
+<br>
+ Return to <a href="#opt">Boot Options</a>
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+<h3><a name="o_ide">Boot Options: ide</a></h3>
+IDE is, unlike SCSI, commonly used in most desktop workstations. To circumvent some hardware problems that occur with IDE systems, use the kernel parameter: <br>
+<br>
+<em>ide=nodma</em>  -- switch off DMA for IDE drives<br>
+<br>
+Return to <a href="#opt">Boot Options</a>.
+<hr>
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+Return to <a href="#main">Start Page</a></body>
+</html>

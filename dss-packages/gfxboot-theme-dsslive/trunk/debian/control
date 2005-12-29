@@ -1,0 +1,16 @@
+Source: gfxboot-theme-dsslive
+Section: utils
+Priority: optional
+Maintainer: Daniele Favara <danjele@gmail.com> 
+Build-Depends: debhelper (>= 4), gfxboot
+Standards-Version: 3.6.2
+
+Package: gfxboot-theme-dsslive
+Architecture: amd64 i386
+Depends: gfxboot
+Description: Dsslive theme for gfxboot-compliant boot loaders
+ This is a Dsslive  theme for the gfxboot graphical boot loader extension. It
+ should be suitable for Dsslive derivatives as well as Dsslive itself.
+ .
+ This theme does not include any help texts or logos itself. Those should be
+ provided by other packages, and may be specific to Dsslive derivatives.

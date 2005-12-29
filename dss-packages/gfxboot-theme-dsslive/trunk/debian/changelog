@@ -1,0 +1,82 @@
+gfxboot-theme-dsslive (0.1.0) dapper; urgency=low
+
+  * initial import of gfxboot-theme-dsslive
+
+ -- Daniele Favara <danjele@gmail.com>  Thu, 29 Dec 2005 18:24:47 +0100
+
+gfxboot-theme-ubuntu (0.1.5) dapper; urgency=low
+
+  * debian/rules: Stop trying to install *.dat.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Wed, 21 Dec 2005 16:23:37 +0000
+
+gfxboot-theme-ubuntu (0.1.4) dapper; urgency=low
+
+  * Remove kroete.dat idle animation, which doesn't fit with the Ubuntu
+    theme.
+  * Show colour bit depth of each mode in VGA menu.
+  * Include video modes with at least 16-bit colour, not just exactly 16-bit
+    colour.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 19 Dec 2005 18:40:12 +0000
+
+gfxboot-theme-ubuntu (0.1.3) dapper; urgency=low
+
+  * Add live CD test function (looks for /casper/filesystem.cloop).
+  * Offer normal/expert mode panel option on media other than live CDs.
+  * Swap round "VGA" and "Other Options" panel entries.
+  * Restore the short and full panel modes, the latter accessed using "Other
+    Options"; put the normal/expert mode choice only in the full mode.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 19 Dec 2005 10:41:38 +0000
+
+gfxboot-theme-ubuntu (0.1.2) dapper; urgency=low
+
+  * Don't add "64" to the end of certain kernel names when booting on amd64.
+  * Remove obsolete alternate kernel feature.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Wed, 14 Dec 2005 10:47:48 +0000
+
+gfxboot-theme-ubuntu (0.1.1) dapper; urgency=low
+
+  * Make this Architecture: amd64 i386 rather than all, since it depends on
+    gfxboot which is only supported on those architectures.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 12 Dec 2005 16:44:06 +0000
+
+gfxboot-theme-ubuntu (0.1.0) dapper; urgency=low
+
+  * Initial release, based on the SuSE theme in gfxboot 3.2.5. Notable
+    changes in this theme versus SuSE:
+    - Remove "Christmas penguins" theme.
+    - Remove driver update disk feature.
+    - Remove boot loader splash; usplash should be able to provide
+      everything we need along these lines.
+    - Remove SuSE-specific images and sounds.
+    - Drop back to just 640x480 modes (with a last-resort fallback to
+      640x400x4), at least for now.
+    - Use "splash.pcx" in the syslinux configuration directory as the
+      background image if we find it. We'll use this for alternate
+      Ubuntu/Kubuntu/Edubuntu branding.
+    - Interpret a subset of the syslinux simple menu configuration syntax in
+      the isolinux configuration file to allow hiding menu items and setting
+      human-readable labels.
+    - Remove all help texts (which were SuSE-specific anyway); the intent is
+      for this to be a generic theme and to put help texts elsewhere,
+      probably in debian-installer. Disable the help panel item if no help
+      texts are available.
+    - Various visual rearrangements.
+    - Use the installed version of getx11font rather than that in the
+      grandparent directory.
+    - Always show the full panel rather than having multiple modes.
+    - Remove bizarre "move down one boot menu option the first time a key is
+      pressed" weirdness.
+    - Use subtler boot menu selection colours in place of inverse-video.
+    - Change the font to GNU unifont, from the unifont package.
+    - Update language codes and names from localechooser 0.22ubuntu2.
+    - Include /usr/share/gfxboot/themes/Ubuntu/bootlogo.tar.gz, which can be
+      unpacked directly into /isolinux on a CD rather than having to unpack
+      and repack cpio archives.
+    - Avoid mentioning the distribution name in "insert boot disk" messages.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Mon, 12 Dec 2005 11:01:59 +0000
