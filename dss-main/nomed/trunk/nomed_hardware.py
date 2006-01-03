@@ -27,6 +27,7 @@ class DeviceManager:
         self.hal_manager.connect_to_signal("NewCapability", 
                          lambda *args: self.gdl_changed("NewCapability", *args)) 
 
+       
         #self.virtual_root = self.build_device_tree()
         #print self.virtual_root.print_tree(0)
         
@@ -59,7 +60,8 @@ class DeviceManager:
         #    i[0] == volume.is_mounted  [property_name]
         #    i[1] == False              [removed]
         #    i[2] == False              [added] 
-        print 
+        print "#######################"
+        print num_changes
         print "#######################"
         print change_list
         print "#######################"  

@@ -1,3 +1,32 @@
+nomed_hardware.py:
+
+==Class DeviceManager==
+===__init__(self):===
+*(bus): define a dbus.Systembus 
+*(hal_manager_obj): define a bus.get_object('named_service','object_path') 
+** named_service = org.freedesktop.Hal
+** object_path   = /org/freedesktop/Hal/Manag 
+*(hal_manager): define a dbus.Interface('name_serice', 'object_path')
+** object        = hal_manager_obj,
+** dbus_interface= org.freedesktop.Hal.Manager
+* connect hal_manager to signals: [ gdl_changed ]
+** DeviceAdded
+** DeviceRemoved
+** NewCapability
+*(device_names): hal_manager.GetAllDevices() [a list of device udi]
+* add_device_signal_recv for each device in device_names: [ add_device_signal_recv ]
+** PropertyModified
+===def add_device_signal_recv (self, udi):===
+* add a signal receiver property_modified
+===property_modified(self, device_udi, num_changes, change_list):===
+* device_udi: the device identifier [ from device_names ]
+* num_changes: number of changed prop
+* change_list[n]: list of changed prop  (0 =< n =< 2)
+** change_list[0] == property_name
+** change_list[1] == removed 
+** change_list[2] == added
+** ex: [('volume.mount_point', False, False), ('volume.is_mounted', False, False)]
+
 CAMERA:
 
 --------------
