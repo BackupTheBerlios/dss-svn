@@ -1,0 +1,179 @@
+2005-09-27  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* unlink-all.sh: New test for situations where you have opaque
+	whiteouts to the right of a file.
+
+	* rmdir-all.sh: Test for BUG420, but it doesn't fail as
+	described in the email.
+
+2005-09-14  David P. Quigley  <dquigley@fsl.cs.sunysb.edu>
+
+	* scaffold: touch will return 0 on an immutable file so the
+	test in havechattr will be done with echo now
+
+2005-09-01  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* branchman.sh: Functionize, and add a query check.
+
+2005-08-29  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* Detect working chattr so we can run tests on reiser.
+
+	* fsync.sh: Run fsync on a file.
+
+2005-08-24  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* scaffold (checkperms): Permissions checking function.
+	* create.sh (BUG383): Test for BUG383.
+
+2005-08-23  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* rename-all.sh: Test for BUG388.
+
+2005-08-18  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* unlink-all.sh: Add BUG 319 regression test, because that fix
+	introduced a reference count leak elsewhere.  This should make sure
+	the subsequent fix doesn't unfix 319.
+
+2005-08-17  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* link.sh, unlink-all.sh: Make it easier to run a subset of tests.
+	* flock.sh: Use complete_test.
+
+2005-08-16  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* scaffold: Make sure unmount is executed for each mount.
+
+2005-08-15  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* flock.sh: Test for bug 360.
+
+2005-08-12  Arun M. Krishnakumar  <arunmk@fsl.cs.sunysb.edu>
+
+	* all files : now the files can be used for testing
+	unionfs over NFS as well
+
+2005-08-11  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* branchman.sh: Test to trigger BUG 370.
+
+2005-08-10  Arun M. Krishnakumar  <arunmk@fsl.cs.sunysb.edu>
+
+	* all files : introduced a variable to set the lower-level
+	directory. introduced a variable that will later help
+	test NFS in future (this does not test it completely now).
+
+2005-08-10  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* branchman.sh: Branch removal using new unionctl remount.
+
+2005-08-04  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* branchman.sh: Test branch removal.
+
+	* truncate-all.sh: Update mount options.
+
+2005-08-03  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* branchman.sh: Test of adding a branch.
+
+2005-08-01  Arun M. Krishnakumar  <arunmk@fsl.cs.sunysb.edu>
+
+	* link-rename.sh: Added a test case to check bugs #345
+	and #351. This checks for copyups across ro branches.
+
+2005-08-01  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* open.sh: Test directory-none-directory open.
+
+	* incgen.sh: Regression test for generation number increment.
+
+2005-07-26  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* unlink-first.sh: No longer needed.
+
+2005-07-22  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* scaffold: Behave slightly better when chattr -i'ing the tree.
+	* Makefile: Die on a failed test.
+	* progs/open-unlink.c: Fix a comment typo.
+
+2005-07-22  Arun M. Krishnakumar  <arunmk@fsl.cs.sunysb.edu>
+
+	* open-unlink.sh : fixed some small issues. this must
+	completely knockout bug #296
+
+2005-07-20  Arun M. Krishnakumar  <arunmk@fsl.cs.sunysb.edu>
+
+	* rmdir-all.sh : updated the test cases to use dir_opaque
+
+2005-07-20  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* open-unlink.sh: A shell script that calls a program that does nasty
+	a combination of open, unlink, and copyup after unlink. (Works on Ext2,
+	but currently provokes bad Unionfs behavior.)
+
+	* scaffold: Remove checkfile_after_remove and checkfile_after_create
+	as checktype does the same thing.
+	* unlink-all.sh: Check type of files after removal.
+	* unlink-whiteout.sh: Update results of tests and test rw symlink.
+
+2005-07-19  Arun M. Krishnakumar  <arunmk@fsl.cs.sunysb.edu>
+
+	* mkdir.sh : updated the mkdir to use the dir_opaque
+
+2005-07-19  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* scaffold: Add symlink support.
+	* unlink-whiteout.sh: Add symlink tests (currently broken).
+
+2005-03-02  David P. Quigley  <dquigley@fsl.cs.sunysb.edu>
+
+	* link.sh: Fixed more cases that were not correct due to new unionfs_link
+	code
+
+2005-02-18  David P. Quigley  <dquigley@fsl.cs.sunysb.edu>
+
+	* link.sh: Some cases were no longer valid due to the changes to unionfs_link.
+	The test cases have been fixed to reflect this and new ones have been added.
+
+2005-02-08  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* link.sh: Test two directories on the same ro branch.
+
+2004-12-27  Charles P. Wright  <cwright@fsl.cs.sunysb.edu>
+
+	* chmod.sh: Reproduce bug 142.
+
+2004-08-25  Mohammad Nayyer Zubair  <zubair@filer.fsl.cs.sunysb.edu>
+
+	* create.sh: tested unionfs_create()
+
+2004-08-24  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* symlink.sh: readlink to make sure that it worked, and check the hierarchy
+
+	* *.sh: Use set -e, so we don't need to do || exit $?
+	* scaffold: Support checking devices.
+	* mknod.sh: Make sure the devices are created and check the results!
+
+	* Clean up the output for some of the scripts.
+	* truncate-all.sh: Embed truncate.c into shell script and compile it.
+
+2004-08-19  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* rename-whiteout.sh: Test rename-whiteout.
+
+2004-08-18  Mohammad Nayyer Zubair  <zubair@filer.fsl.cs.sunysb.edu>
+
+	* link.sh: script to test all cases of unionfs_link()
+
+2004-08-17  Charles P. Wright <cwright@fsl.cs.sunysb.edu>
+
+	* testplan: symlink, link, truncate, times, and mknod were left out
+		A detailed mknod plan example is included
+	* unlink.sh: Test recursive whiteout creation and an error in the
+		middle
+	* scaffold: Create immutable files with 'i' instead of 'f'
+

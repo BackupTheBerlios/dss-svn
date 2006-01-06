@@ -1,0 +1,105 @@
+.\" Process with groff -man -Tascii unionimap.8
+.\"
+.TH UNIONIMAP 8 "August 2004" Linux
+.SH NAME
+unionimap \- a tool to manipulate Unionfs inode map files.
+.SH SYNOPSIS
+
+.P
+.B unionimap
+[
+.I
+-c
+]
+.I FORWARDMAP
+
+.B unionimap
+[
+.I
+-a FORWARDMAP
+]
+.I REVERSEMAP PATH
+
+.B unionimap
+[
+.I
+-d
+]
+.I MAP
+
+.SH DESCRIPTION
+.B unionimap
+By default, Unionfs generates a different set of inode numbers each time you
+mount a file system.  Additionally, the inode numbers used for reading
+directories is different than those reported by stat.  This can confuse some
+utilities, and prevents NFS exports from gracefully handing remounts or server
+restarts.
+
+To alleviate these problems, Unionfs supports persistent inode maps.  unionimap
+is a utility that will generate the inode map files to be loaded at mount time
+by Unionfs.  An inode map consists of two main components, a forward map which
+translates Unionfs inode numbers to lower-level inode numbers and a lower-level
+file system, and several reverse maps that are each associated with a single
+lower-level file system.  Note that the maps are associated with file systems,
+and not branches.  This means that if you have two branches on the same
+lower-level file system, they use only a single reverse map.
+
+.SH OPTIONS
+.IP "-c"
+create a forward map file.  This option takes the filename of the forward
+map to create as an argument.  This file name can be the absolute path to the
+file that you want to create or you can create it in the local directory and
+then move it.
+
+.IP "-a"
+creates a reverse map file and adds it to a forward map file.  The -a flag
+itself takes the forward map to add the new reverse map into.  The remaining
+two arguments are the filename of the reverse map  and then a path to the file
+system you wish to create the map for.  This will allow the map to have the
+appropriate fsid for the file system that you are adding to the map.  If the
+file system in question does not return a fsid (i.e., it returns 0 for that
+value in stat), then one will be created based on the device's major and minor
+numbers.
+
+.IP "-d"
+dump the contents of either a forward or reverse map.  Specify multiple times
+for more output.  If
+.IP "-d"
+ is specified once, then
+the header information for the map is printed.
+If
+.IP "-d" is specified twice, then
+the contents of the map are also printed.  For a forward map the contents are
+keys of a Unionfs inode number and the value is a pair of file system numbers
+and lower inode numbers.  For the reverse map, the key is a lower-level inode
+number, and the value is a Unionfs inode number.
+
+.SH USAGE EXAMPLE
+
+.TP
+unionimap -c /tmp/foo.forward
+Create a map named foo.forward in /tmp/
+.TP
+unionimap -a /tmp/foo.forward /tmp/foo.reverse /tmp/
+Create a map named foo.reverse in /tmp using /tmp as the directory to build the
+fsid from and add it to the forward map located in /tmp/foo.forward
+.TP
+unionimap -a /tmp/foo.forward /tmp/foo.reverse2 /n/other
+Create a map named foo.reverse2 in /tmp using /n/other as the directory to
+build the fsid from and add it to the forward map located in /tmp/foo.forward
+.TP
+unionimap -d /tmp/foo.forward
+Display the header contents of /tmp/foo.forward
+.TP
+unionimap -d -d /tmp/foo.forward
+Display the header and body contents of /tmp/foo.forward
+.SH AUTHORS
+Charles Wright <cwright@cs.sunysb.edu>,
+David Quigley <dquigley@ic.sunysb.edu>,
+Erez Zadok <ezk@cs.sunysb.edu>
+.SH "SEE ALSO"
+.BR unionfs(4),
+http://unionfs.filesystems.org/
+
+\"  LocalWords:  groff Tascii unionimap Unionfs FORWARDMAP REVERSEMAP fsid TP
+\"  LocalWords:  tmp Quigley Erez unionfs
