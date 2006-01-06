@@ -129,7 +129,7 @@ clean:
 	rm -rf $(dirs_to_clean)
 	rm -f $(stamps_to_clean)
 	$(MAKE) clean
-	dh_clean 
+	#dh_clean 
 
 install: 
 	dh_testdir
