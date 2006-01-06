@@ -1,0 +1,150 @@
+ <head>   <title></title> </head>mainBoot Loader HelpDsslive
+
+Use this menu to select the desired function. If you have problems navigating in this help system, press F1 to enter the helpdescription of the help system. The main functions in this menu are:
+
+linuxDefault: This boot mode works on most machines. If you experience a system freeze during boot or problems with detection of your hardware components, such as disk controllers or network cards, try one of the following boot options.
+
+noacpiACPIDisabled: Many of the currently-sold computers have incomplete or faulty ACPI implementations. This selection disables ACPI support in the kernel, but still enables many performance features, like DMA for IDE hard disks.
+
+failsafeSafeSettings: If you were not successful with Default, this selection might solve the issue.
+
+memtestMemoryTest: Memory testing is useful for more than checking installation of new memory modules. It is a stress test for a big part of your computer system and may indicate hardware problems.
+
+optBootOptions: The boot options may change the behavior of your system completely. They are settings for the kernel.
+
+helpF1Help: This is context sensitive. It will show different screens depending on the active element of the boot screen. There is also a description of this help system available.
+
+videomodeF3VideoMode: Here, choose between different screen resolutions while booting. If you encounter problems with the graphical boot, the text mode may be a work-around for you.
+
+keytableF4Language: Set language and keyboard mapping used by the boot loader.helpUsing the Help SystemThe boot loader online help is context sensitive. It gives information about the selected menu item or, if you are editing boot options, it tries to look up information about the option in which the cursor is positioned.
+
+Navigation Keys
+
+Up Arrow: highlight previous link
+Down Arrow: highlight next link
+Left Arrow, Backspace: return to previous topic
+Right Arrow, Enter, Space: follow link
+Page Up: scroll up one page
+Page Down: scroll down one page
+Home: go to page start
+End: go to page end
+Esc: leave help
+
+Return to mainStartPagevideomodeVideo Mode SelectionPress F3 to get the list of video modes your graphics card supports. The highest mode your monitor can display is preselected.
+
+It is possible that your monitor cannot be detected automatically. In that case, select your preferred mode manually.
+
+If your system has problems with the graphics card during the boot, the text mode may be a usable work-around.
+
+Return to mainStartPagekeytableLanguage and Keyboard Layout SelectionPress F4 to change language and keyboard layout the boot loader uses.
+
+Return to mainStartPagelinuxDefaultSelect default optbootoptions entered are used in the start-up. This item activates many features of commonly available hardware.
+
+Return to mainStartPagenoacpiACPI DisabledVery new hardware sometimes requires ACPI to control the interrupt handling. ACPI completely replaces the old APM system.
+
+Select ACPI Disabled if you encounter problems during boot of the kernel. Known problems with machines that have problems with ACPI are:
+
+* kernel freezes when booting
+* PCI Cards are not detected or initialized properly
+
+Return to mainStartPagefailsafeSafe SettingsSelect safe settings if you encounter hangs while booting or irreproducible errors. This option disables DMA for IDE drives and all power management features. See also the kernel options for o_acpiacpi and o_ideide.
+
+Return to mainStartPagememtestMemory TestThe included memory test provides good possibilities to stress test the hardware of a system. Its main purpose is to detect broken RAM, but it also stresses many other parts of the system.
+There is no guarantee that the memory is good if no errors are found, although most of memory defects will be found.
+
+Return to mainStartPageoptBoot OptionsSome of the more common options are:
+
+o_basebase --use a different base module
+o_kernelkernel --use a different kernel module
+o_basedeliver --use a different deliver module
+o_dhcpdhcp --enable dhcp
+o_clockclock --set hw clock
+o_tztz --set timezone
+o_xconfxconf --configure inreactively the X server
+o_lconflconf --configure inreactively the locales
+o_hostnamehostname --use a different hostname
+o_usernameusername --use a different username
+o_passwordpassword --use a password for username
+o_splashsplash -- influence the behavior of the splash screen
+o_acpiacpi -- advanced configuration and power interface
+o_ideide -- control the IDE subsystem
+
+Return to mainStartPageo_baseBoot Options: baseUse a different base module.
+
+base=[base|base-ppc|base-sparc|base-debian| ... ]
+
+The default chice is to use base/base, using base= it's possible to specify the base module to load.
+
+Return to optBootOptionso_kernelBoot Options: kernelUse a different base module.
+
+kernel=[kernel|kernel-ppc|kernel-sparc|kernel-2.7| ... ]
+
+The default chice is to use kernel/kernel, using kernel= it's possible to specify the kernel module to load.
+
+Return to optBootOptionso_deliverBoot Options: deliverUse a different base module.
+
+deliver=[autoconf|hwsetup|hwinfo|discover| ... ]
+
+The default chice is to use deliver/autoconf, using deliver= it's possible to specify the autoconf module to load.
+
+Return to optBootOptionso_dhcpBoot Options: dhcpEnable dhcp at boot.
+
+dhcp
+
+select this option in case you want to try to configure the network interface with dhcp.
+
+Return to optBootOptionso_clockBoot Options: clockSet the hardware clock.
+
+clock=[localtime|utc]
+
+Indicates that the Hardware Clock is kept in Coordinated Universal Time [utc] or local time [localtime], respectively.
+
+Return to optBootOptionso_tzBoot Options: tzSet the timezone.
+
+tz=[ex: Europe/Rome]
+
+A valid system time together with the correct local time zone will give you best performance and highest reliablility.
+
+Return to optBootOptionso_xconfBoot Options: xconfConfigure interactively the X server.
+
+xonf=dialog 
+
+select this option in case you video card is not properly detected.
+
+Return to optBootOptionso_lconfBoot Options: lconfConfigure interactively the locales.
+
+lconf=dialog
+
+select this option in case you need to change the default locales..
+
+Return to optBootOptionso_hostnameBoot Options: hostnameSet a different hostname, default dsslive.
+
+hostname=name
+
+Return to optBootOptionso_usernameBoot Options: usernameSet a different username, default debaser..
+
+username=name
+
+Return to optBootOptionso_passwordBoot Options: passwordUse a password..
+
+password=passwd
+
+the default option is to don't use any possword..
+
+Return to optBootOptionso_splashBoot Options: splashThe splash screen is the picture shown during system start-up.
+
+splash
+
+Activates splash,a progress bar is drawn, kernel and boot messages are still shown.
+
+Return to optBootOptionso_acpiBoot Options: acpiACPI (Advanced Configuration and Power Interface) is a standard that defines power and configuration management interfaces between an operating system and the BIOS. By default, acpi is switched on when a BIOS is detected that is newer than from year 2000. There are several commonly used parameters to control the behavior of ACPI:
+
+pci=noacpi -- do not use ACPI to route PCI interrupts acpi=oldboot -- only the parts of ACPI that are relevant for booting remain activated
+acpi=off -- switch off ACPI completely
+acpi=force -- switch on ACPI even if your BIOS is dated before 2000
+
+ Return to optBootOptionso_ideBoot Options: ideIDE is, unlike SCSI, commonly used in most desktop workstations. To circumvent some hardware problems that occur with IDE systems, use the kernel parameter:
+
+ide=nodma -- switch off DMA for IDE drives
+
+Return to optBootOptions. Return to mainStartPage 

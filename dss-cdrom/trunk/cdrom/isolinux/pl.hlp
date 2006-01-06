@@ -1,0 +1,166 @@
+mainPomoc programu ładującegoWitaj w SUSE Linux 10.1
+
+Użyj tego menu aby wybrać odpowiednią funkcję. Jeśli masz problem z nawigacją w tym systemie pomocy, naciśnij klawisz F1 aby przejść do helpopisu systemu pomocy. Główne funkcje w tym menu to:
+
+harddiskUruchomieniezdyskutwardego: Ten wybór nie zrobi nic z systemem. Uruchomi tylko wcześniej zainstalowany system operacyjny.
+
+linuxInstalacja: Ten tryb instalacji działa na większości maszyn. Jeśli okaże się, że system umiera w czasie startu albo są problemy z wykryciem elementów sprzętu, takich jak sterowniki dysków czy karty sieciowe, spróbuj jednej z poniższych opcji instalacyjnych.
+
+noacpiInstalacja--wyłączoneACPI: Większość z obecnie sprzedawanych komputerów ma niekompletne albo błędne implementacje ACPI. Ten wybór wyłącza obsługę ACPI w jądrze, ale zachowuje wiele ustawień zwiększających wydajność, takich jak DMA dla dysków IDE.
+
+failsafeInstalacja--ustawieniebezpieczne: Jeśli nie powiodło Ci się z opcją Instalacja, to ten wybór może rozwiązać twój problem.
+
+rescueSystemawaryjny: Ten obraz startowy uruchamia niewielki system Linux ładowany do pamięci RAM. Jest to użyteczne jeśli system nie uruchamia się poprawnie. Po uruchomieniu systemu zaloguj się jako root.
+
+memtestTestpamięci: Testowanie pamięci jest użytecznie nie tylko przy sprawdzaniu nowych modułów pamięci. Jest to intensywny test dla większości części systemu komputerowego i może pomóc wykryć problemy ze sprzętem.
+
+optOpcjestartowe: Opcje startowe mogą zupełnie zmienić zachowanie uruchamianego systemu. Są to ustawienia jądra systemu.
+
+helpF1Pomoc: Pomoc kontekstowa. Pokaże różne ekrany w zależności od aktywnego elementu ekranu startowego. Dostępny jest tam także opis tego systemu pomocy.
+
+videomodeF3trybgraficzny: Tutaj wybierasz różne ustawienia rozdzielczości ekranu w czasie instalacji. Jeśli będziesz miał problem z instalacją graficzną, to rozwiązaniem dla Ciebie może być tryb tekstowy.
+
+install_srcF4Źródłoinstalacji: Wybierz źródło instalacji.
+
+keytableF2Język: Wybierz język i układ klawiatury używany przez program ładujący.
+
+driverupdateF5aktualizacjasterowników: Dla bardzo nowych maszyn, do instalacji systemu może być potrzebna aktualizacja sterowników.helpUżywanie systemu pomocyPomoc programu ładującego jest kontekstowa. Daje informacje o wybranym elemencie menu albo jeśli edytujesz opcje startowe, próbuje znaleźć informacje o opcji, w której znajduje się kursor.
+
+Klawisze nawygacyjne
+
+  Up Arrow: podświetl poprzedni odsyłacz
+  Down Arrow: podświetl następny odsyłacz
+  Left Arrow, Backspace: wróć do poprzedniego tematu
+  Right Arrow, Enter, Spacja: idź za odsyłaczem
+  Page Up: przewiń stronę w górę
+  Page Down: przewiń stronę w dół
+  Home: idź na początek strony
+  End: idź na koniec strony
+  Esc: wyjdź z pomocy
+
+
+Wróć do mainstronypoczątkowejdriverupdateAktualizacja sterownikówJeśli potrzebujesz dyskierki albo płyty CD-ROM z aktualizacją sterowników, to naciśnij klawisz F5. Program ładujacy poprosi Cię o włożenie nośnika po załadowaniu jądra systemu Linux.
+
+Aktualizacja sterowników to zwykle dyskietka z nowymi wersjami sterowników sprzętu albo poprawkami niezbędnymi w czasie instalacji.
+
+Wróć do mainstronypoczątkowejvideomodeWybór trybu graficznegoNaciśnij F3 dla uzyskania listy trybów graficznych obsługiwanych przez twoją kartę graficzną. Najwyższy tryb, jaki może wyświetlać twój monitor jest wybrany domyślnie.
+
+Możliwe jest, że twój monitor nie zostanie automatycznie rozpoznany. W takim przypadku wybierz tryb ręcznie.
+
+Jeśli twój system ma problemy z kartą graficzną w czasie instalacji, to rozwiązaniem dla Ciebie może być tryb tekstowy.
+
+Wróć do mainstronypoczątkowejkeytableWybór języka i układu klawiaturyAby zmienić język i układ klawiatury używany przez program ładujący naciśnij F2.
+
+Wróć do mainstronypoczątkowejinstall_srcŹródło instalacjiNaciśnij F4 aby wybrać źródło instalacji.
+
+To jest to samo co użycie opcji startowej o_installinstall.
+
+Wróć do mainstronypoczątkowejlinuxInstalacjaWybierz Instalacja aby uruchomić domyślną instalację. Podane optopcjestartowe będą użyte w czasie uruchamiania systemu. Aktywują one różne możliwości udostępniane przez sprzęt.
+
+
+
+Wróć do mainstronypoczątkowejharddiskUruchom z dysku twardegoWybierz Uruchom zainstalowany system aby uruchomić system zainstalowany już na lokalnym twardym dysku. System ten musi być poprawnie zainstalowany, ponieważ uruchamiany jest tylko rekord MBR (Master Boot Record) na pierwszym twardym dysku. Identyfikator urządzenia, które jest pierwszym twardym dyskiem jest zapisany w BIOS-ie komputera.
+
+Skorzystaj z tej możliwości, jeśli zapomniałeś wyjąć płytę CD albo DVD z napędu i chcesz uruchomić komputer z twardego dysku.
+
+
+
+Wróć do mainstronypoczątkowejnoacpiInstalacja -- ACPI wyłączoneBardzo nowy sprzęt wymaga czasem APCI do sterowania obsługą przerwań. APCI całkowicie zastępuje stary system APM.
+
+Wybierz Instalacja -- ACPI wyłączone jeśli napotkasz problemy w czasie uruchamiania jądra. Znane problemy z maszynami, mającymi kłopoty z ACPI to:
+
+   * jądro umiera w czasie uruchamiania
+   * karty PCI nie są poprawnie wykrywane albo inicjowane
+
+
+
+Wróć do mainstronypoczątkowejfailsafeInstalacja -- ustawienia bezpieczneWybierz Instalacja -- ustawienia bezpieczne, jeśli system się zawiesza przy instalacja albo pojawiają się jakieś dziwne błędy. Opcja ta wyłącza DMA dla dysków IDE oraz jakąkolwiek obsługę zarządzania energią. Zobacz także opcje jądra o_apmapm, o_acpiacpi i o_ideide.
+
+Wróć do mainstronypoczątkowejrescueSystem awaryjnySystem awaryjny jest małym systemem ładowanym do RAM dysku. Używając go możliwe jest wykonanie wszelkiego rodzaju zmian w zainstalowanym systemie. System jest przeznaczony dla ekspertów, ponieważ są w nim dostępne wyłącznie niskopoziomowe narzędzia.
+
+
+
+Wróć do mainstronypoczątkowejmemtestTest pamięciTest pamięci daje możliwość wykonania intensywnego przetestowania sprzętu systemu. Podstawowym celem jest wykrycie uszkodzonych pamięci RAM, ale testowanych jest także wiele innych części systemu.
+Brak błędów w czasie testu nie jest gwarancją, że pamięć jest nieuszkodzona, chociaż większość uszkodzeń zostanie wykryta.
+
+
+Wróć do mainstronypoczątkowejoptOpcje startoweDostępne są dwa typy opcji startowych. Pierwszy, dotyczący instalatora. Drugi, opcje jądra. Kilka typowych opcji to:
+
+a) opcje instalatora
+
+  o_installinstalacja -- wybór źródła instalacji
+  networkopcjesieciowe -- opcje sieciowe
+  o_vncopcjevnc -- opcje instalacji przez VNC
+
+b) opcje jądra
+
+  o_splashsplash -- wpływa wygląd ekranu (splash screen)
+  o_apmapm -- włączenie zarządzania energią
+  o_acpiacpi -- zaawansowany interfejs konfiguracji zarządzania energią
+  o_ideide -- zarządzanie podsystemem IDE
+
+
+Wróć do mainstronypoczątkowejo_installOpcje instalatora: instalacjaDomyślnie jako źródło instalacji przeszukiwane są lokalne napędy CD-ROM. Dla instalacji sieciowej wybierz opcję install. Możliwe protokoły instalacji to
+  * FTP
+  * NFS
+  * HTTP
+Składnia jest taka sama jak w standardowych URL-ach. Na przykład, jeśli twój serwer jest pod adresem 192.168.0.1 i chcesz instalować przez NFS z katalogu /install na tym serwerze, to podajesz źródło tak:
+
+  install=nfs://192.168.0.1/install
+
+Karta sieciowa będzie skonfigurowana albo przez dhcp albo musisz podać parametry samodzielnie jak jest opisane w networkopcjachsieciowych.
+
+
+Wróć do optopcjistartowycho_splashOpcje jądra: splashSplash screen to obrazek pokazywany w czasie uruchamiania systemu.
+
+splash=0
+Wyłączenie splash screen. Może być przydatne na bardzo starych monitorach albo jeśli wystąpią błędy.
+
+splash=verbose
+Aktywacja splash screen, komunikaty jądra i startowe są widoczne.
+
+splash=silent
+Aktywacja splash screen, brak komunikatów. Pokazywany jest pasek postępu.
+
+Wróć do optopcjistartowychnetworkOpcje instalatora: opcje siecioweMożliwe jest teraz skonfigurowanie interfejsu sieciowego. Sprzęt będzie wykryty później przez YaST2. Minimalny zestaw opcji do konfiguracji karty sieciowej składa się z adresu IP i maski sieci. Na przykład:
+
+  hostip=192.168.0.10 netmask=255.255.255.0
+
+albo w skróconej formie:
+
+  hostip=192.168.0.10/24
+
+Jeśli podałeś o_installinstalacjęsieciową i nie podasz tych dwóch opcji, instalator spróbuje skonfigurować interfejs sieciowy używając dhcp. Jeśli potrzebujesz podać domyślną bramę, podaj ją w opcji gateway. Na przykład:
+
+  gateway=192.168.0.8
+
+
+Wróć do optopcjistartowycho_vncOpcje instalatora: vncAby włączyć instalację VNC, podaj parametry vnc i vncpassword:
+
+  vnc=1 vncpassword=example
+
+Zostanie uruchomiony serwer VNC i możesz sterować programem YaST2 za pośrednictwem klienta VNC ze zdalnego klienta.
+
+
+Wróć do optopcjistartowycho_apmOpcje jądra: apmAPM jest jedną z dwóch strategii zarządzania energią używaną we współczesnych komputerach. Wykorzystywana jest głównie w komputerach przenośnych do takich funkcji jak usypianie na dysk ale może być także odpowiedzialny za wyłączanie komputera po zaniku zasilania. APM polega na poprawnie funkcjonującym BIOS-ie. Jeśli BIOS nie działa poprawnie, to APM ma ograniczone zastosowanie, może nawet uniemożliwiać pracę komputera. Dlatego można go wyłączyć parametrem
+
+  apm=off -- zupełnie wyłącz APM
+
+Niektóre najnowsze komputery mogą skorzystać z nowszego standardu o_acpiACPI.
+
+Wróć do optopcjistartowycho_acpiOpcje jądra: acpiACPI (Advanced Configuration and Power Interface) jest standardem definiującym interfejs między systemem operacyjnym i BIOS-em. Domyślnie acpi jest włączone po stwierdzeniu, że BIOS pochodzi z roku późniejszego niż 2000. Istnieje kilka typowo używanych parametrów sterujących działaniem ACPI:
+
+  pci=noacpi -- nie używaj ACPI nie przekierowuj przerwań PCI   acpi=oldboot -- aktywowane są tylko części ACPI dotyczące procesu uruchamiania systemu
+  acpi=off -- zupełne wyłączenie ACPI
+  acpi=force -- włącz ACPI nawet, jeśli BIOS pochodzi sprzed roku 2000
+
+Zastępuje on stary system o_apmapm, zwłaszcza na nowych komputerach.
+
+Wróć do optOpcjistartowycho_ideOpcje jądra: ideIDE jest w przeciwieństwie do SCSI powszechnie wykorzystywane w stacjach roboczych. Dla zapobieżenie niektórym problemom pojawiającym się w systemach IDE użyj parametru jądra:
+
+  ide=nodma -- wyłącz dma dla urządzeń IDE
+
+
+Wróć do optOpcjistartowychbitsSoftware Type SelectionYou have the choice to install the 32-bit or 64-bit version of SUSE LINUX.
+
+Return to mainStartPage 
