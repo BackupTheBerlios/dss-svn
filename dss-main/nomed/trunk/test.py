@@ -31,6 +31,8 @@ import libxml2
 
 """
 filename='/usr/share/hal/fdi/policy/10osvendor/10-storage-policy.fdi'
+dict_match={}
+dict_rules=[]
 #filename='/home/debaser/.ivman/IvmConfigActions.xml'
 def processNode(reader):
     #print "%d %d %s %d %s" % (reader.Depth(), reader.NodeType(),
@@ -59,10 +61,54 @@ def processNode(reader):
             )
         if reader.NodeType() == 1: # Element
             while reader.MoveToNextAttribute():
+		print '####'
+		print indent
                 print "%s * %d %d (%s) [%s]" % (indent, reader.Depth(), reader.NodeType(),reader.Name(),reader.Value())
-
- 
-
+def processNode1(reader):
+    #print "%d %d %s %d %s" % (reader.Depth(), reader.NodeType(),
+    #                          reader.Name(), reader.IsEmptyElement(),
+    #                          reader.Value())
+    a=[15,14,8]
+    b=1
+    if reader.NodeType() not in a:
+        indent=' '*reader.Depth()
+        #print "%s %d %d (%s) [%s] " %(
+        #    indent,
+        #    reader.Depth(),
+        #    reader.NodeType(),
+        #    reader.Name(),
+            #reader.LocalName(),
+            #reader.Prefix(),
+            #reader.NamespaceUri(),
+            #reader.BaseUri(),
+            #reader.HasAttributes(),
+            #reader.HasValue(),
+        #    reader.Value(),
+            #reader.IsDefault,
+            #reader.XmlLang(),
+            #reader.IsEmptyElement(),
+            #reader.AttributeCount()
+        #    )
+        if reader.NodeType() == 1: # Element
+            #print '###'
+            while reader.Name() == 'match':
+                while reader.MoveToNextAttribute():
+                    #print '####'
+                    #print indent
+                    #print "%s * %d %d (%s) [%s]" % (indent, reader.Depth(), reader.NodeType(),reader.Name(),reader.Value())
+                    key=reader.Value()
+                    num=1
+                    while reader.MoveToNextAttribute(): 
+                        dict_match[key]=reader.Value()
+                        indent=reader.Depth()*' '
+                        num=num+1
+                        print " %s %s %s %s" % (str(num),reader.Depth(),key,dict_match[key])
+                    
+        #print dict_match
+    b=b+1
+    print b
+    return dict_match
+    
 def streamFile(filename):
     try:
         reader = libxml2.newTextReaderFilename(filename)
@@ -71,13 +117,38 @@ def streamFile(filename):
         return
 
     ret = reader.Read()
+    num=reader.Depth() 
+    #print ret
     while ret == 1:
-        processNode(reader)
-        ret = reader.Read()
+        
+        #print reader.Name()
+        ret = reader.Read() 
+        processNode1(reader) 
+        
+        while reader.Depth() == num + 1:
+            print "%s %s %s" % ('###Num + 1',reader.Depth(),reader.Name())
+            processNode1(reader)
+            print "depth %s" %(reader.Depth())
+            num = num +1
+            #num = 
+            #tri = tri +1 
+            #print "tri %s" % (tri)
+       # while reader.Depth() == num :
+       #     print '###Num ' 
+       #     processNode1(reader)
+        
 
     if ret != 0:
         print "%s : failed to parse" % (filename)
 
-streamFile(filename)
+    #print processNode1(reader)
+    dict_rules.append(processNode1(reader))
+   # print dict_rules
+    return dict_rules
+
+a=streamFile(filename)
+#print a
+#for i in a:
+#    print i
 
 

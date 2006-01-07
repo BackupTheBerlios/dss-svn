@@ -52,14 +52,15 @@ for device in device_list:
         device.parent_device=None
 
 device_obj = virtual_root.find_by_udi(device_udi)
-
-for udi in device_names:
+device_udi=['/org/freedesktop/Hal/devices/volume_label_']
+for udi in device_udi:
     print
     print "--------------"
     print "udi: %s" %(udi)
     device_prop = virtual_root.find_by_udi(udi)
-    for key in device_prop.properties.keys():
+    print device_prop.properties
+    #for key in device_prop.properties.keys():
 
-        print "%s : %s" % (key ,device_prop.properties[key])
+    #    print "%s : %s" % (key ,device_prop.properties[key])
 
 #print device_obj.properties.keys()
