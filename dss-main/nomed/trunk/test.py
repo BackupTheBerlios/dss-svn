@@ -70,6 +70,7 @@ def processNode1(reader):
     #                          reader.Value())
     a=[15,14,8]
     b=1
+    list_match=[]
     if reader.NodeType() not in a:
         indent=' '*reader.Depth()
         #print "%s %d %d (%s) [%s] " %(
@@ -97,17 +98,16 @@ def processNode1(reader):
                     #print indent
                     #print "%s * %d %d (%s) [%s]" % (indent, reader.Depth(), reader.NodeType(),reader.Name(),reader.Value())
                     key=reader.Value()
-                    num=1
-                    while reader.MoveToNextAttribute(): 
+                    while reader.MoveToNextAttribute():
+                        dict_match={}
                         dict_match[key]=reader.Value()
-                        indent=reader.Depth()*' '
-                        num=num+1
-                        print " %s %s %s %s" % (str(num),reader.Depth(),key,dict_match[key])
+                        #print "%s %s %s" % (reader.Depth(),key,dict_match[key])
+                        list_match=[reader.Depth(),dict_match]
                     
         #print dict_match
-    b=b+1
-    print b
-    return dict_match
+    #b=b+1
+    #print b
+    return list_match
     
 def streamFile(filename):
     try:
@@ -119,25 +119,33 @@ def streamFile(filename):
     ret = reader.Read()
     num=reader.Depth() 
     #print ret
+    index=1
+    num = 3
     while ret == 1:
         
         #print reader.Name()
         ret = reader.Read() 
-        processNode1(reader) 
-        
-        while reader.Depth() == num + 1:
-            print "%s %s %s" % ('###Num + 1',reader.Depth(),reader.Name())
-            processNode1(reader)
-            print "depth %s" %(reader.Depth())
-            num = num +1
+        list=processNode1(reader)
+        if list != []:
+            if list[0] == num:
+                
+                print "%s %s %s" % ('#',index,list)
+                index = index +1
+                num = num + 1
+            if list[0] == num - 1:
+                print "%s %s %s" % ('*',index,list) 
+                index = index +1
+        #while reader.Depth() == num + 1:
+        #    print "%s %s %s" % ('###Num + 1',reader.Depth(),reader.Name())
+        #    processNode1(reader)
+        #    print "depth %s" %(reader.Depth())
+        #    num = num +1
             #num = 
             #tri = tri +1 
             #print "tri %s" % (tri)
        # while reader.Depth() == num :
        #     print '###Num ' 
        #     processNode1(reader)
-        
-
     if ret != 0:
         print "%s : failed to parse" % (filename)
 
