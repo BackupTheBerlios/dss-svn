@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*- SGML -*- -->
+
+<deviceinfo version="0.2">
+<!-- prova -->
+  <device>
+      <!--detect new removable devices-->
+      <match key="block.is_volume" value="false">
+          <!--<match key="storage.removable" value="true">-->
+              <match key="storage.policy.should_mount" value="true">
+                  <!--audio player -->
+                  <match key="portable_audio_player.access_method" value="storage">
+                      <merge key="notify" value="Summary: $storage.model$ $storage.vendor$" message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-ipod"/>
+                      <merge key="unotify" value="Summary: $storage.model$ $storage.vendor$"  message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-ipod"/> 
+                  </match>
+                  <!--usb generic -->
+                  <match key="storage.bus" value="usb">
+                      <merge key="notify" value="Summary: $storage.model$ $storage.vendor$" message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-hsrddisk-usb"/>
+                      <merge key="unotify" value="Summary: $storage.model$ $storage.vendor$"  message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-harddisk-usb"/> 
+                  </match>
+            </match>
+    <!--</match>--> 
+    </match> 
+    <!-- mount volume if mountable -->
+    <match key="volume.is_partition" value="True">
+      <match key="volume.policy.should_mount" value="True">
+          <merge key="mount" value="true"/>
+          <merge key="exec" value="thunar $volume.mount_point$"/>
+          <!--
+          <merge key="notify" value="Summary" message="Message notify $volume.mount_point$" action="Action" icon="gnome-dev-harddsk"/>
+          <merge key="unotify" value="Summary" message="Message notify $volume.mount_point$ " action="Action" icon="gnome-dev-harddisk"/>
+          -->
+      </match>
+  </match> 
+  -->
+    <!--bluetooth -->
+    <match key="info.categoty" value="bluetooth_hci">
+          <merge key="exec" value="gnome-obex-server"/>
+          <merge key="exec" value="gnome-bluetooth-manager"/>
+          <merge key="notify" value="Summary $info.category$" message="Message notify Bluetooth" action="Action" icon="bluetooth"/>
+          <merge key="unotify" value="Summary $info.category$" message="Message unotify Bluetooth" action="Action" icon="bluetooth"/>
+          <merge key="execun" value="killall gnome-obex-server"/>
+    </match>
+    <!--camera -->  
+    <match key="info.categoty" value="camera">
+        <match key="info.bus" value="usb">  
+          <merge key="exec" value="gthumb --import-photos "/>
+          <merge key="exec" value="gnome-bluetooth-manager"/>
+          <merge key="notify" value="Summary $info.category$" message="Message notify Camera" action="Action" icon="camera"/>
+          <merge key="unotify" value="Summary $info.category$" message="Message unotify Camera" action="Action" icon="camera"/>
+        </match>
+    </match>  
+    <!-- usb mouse -->
+    <match key="info.bus" value="usb">
+        <match key="usb.product" value="USB HID Interface">  
+          <match key="linux.hotplug_type" value="1">
+            <merge key="notify" value="Summary" message="Message notify $vm.info.product$ $vm.info.vendor$" action="Action" icon="gnome-dev-mouse-optical"/>
+            <merge key="unotify" value="Summary" message="Message unotify $vm.info.product$ $vm.info.vendor$" action="Action" icon="gnome-dev-mouse-optical"/>
+          </match>
+        </match>
+    </match> 
+    <!--network -->
+       <match key="linux.subsytem" value="net">
+          <merge key="notify" value="Summary" message="Message notify $net.interface$" action="Action" icon="gnome-dev-network"/>
+          <merge key="unotify" value="Summary" message="Message unotify $net.interface$" action="Action" icon="gnome-dev-network"/>
+    </match> 
+    <!--pcmcia -->
+    <match key="info.bus" value="pcmcia">
+          <merge key="notify" value="Summary " message="Message notify PCMCIA" action="Action" icon="gnome-dev-pcmcia"/>
+          <merge key="unotify" value="Summary " message="Message unotify PCMCIA" action="Action" icon="gnome-dev-pcmcia"/>
+    </match> 
+    <!--usb printer -->
+    <match key="info.bus" value="bus">
+        <match key="info.linux.driver" value="buslp">
+          <merge key="exec" value="sudo /etc/init.d/cupsys restart "/> 
+          <merge key="notify" value="Summary " message="Message notify Usb Printer" action="Action" icon="gnome-dev-printer"/>
+          <merge key="unotify" value="Summary " message="Message unotify Usb Printer" action="Action" icon="gnome-dev-printer"/>
+    </match> 
+    <!--usb scanner -->
+    <!-- webcam -->
+    <!--audio cd-->
+    <match key="volume.disc.type" value="cd_rom">
+        <match key="volume.disc.has_data" value="false">
+            <match key="volume.disc.has_audio" value="true">
+                <merge key="exec" value="grip $hal.block.device$"/> 
+                <merge key="notify" value="Summary " message="Message notify Audio CD " action="Action" icon="gnome-dev-cdrom-audio"/>
+                <merge key="unotify" value="Summary " message="Message unotify Audio CD" action="Action" icon="gnome-dev-cdrom-audio"/>
+            </match>
+        </match>
+    </match> 
+    <!--Burner -->
+    <match key="hal.volume.disc.is_blank" value="true">
+       <match key="hal.volume.disc.has_audio" value="false"> 
+               <merge key="exec" value="graveman $hal.block.device$"/> 
+               <merge key="notify" value="Summary " message="Message notify Blank CD " action="Action" icon="gnome-dev-cdrom"/>
+               <merge key="unotify" value="Summary " message="Message unotify Blank CD" action="Action" icon="gnome-dev-cdrom"/>
+           </match>
+       </match>
+    </match>  
+  </device>
+</deviceinfo>
+
