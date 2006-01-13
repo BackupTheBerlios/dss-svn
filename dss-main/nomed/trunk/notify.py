@@ -1,10 +1,10 @@
 #!/usr/bin/python
 """Usage"""
 from subprocess import PIPE, Popen
-import os
+import os.path
 import sys
 import getopt
-sys.path.append("/home/nomed/Desktop/dss/ideas/nomed")
+sys.path.append("/usr/share/hermes")
 from utils.notification import NotificationDaemon
 
 class Notifier:
@@ -63,13 +63,26 @@ def main(argv):
         if nomed.error != '':
            nomed.msg_render.show_error(summary,nomed.error)
         elif nomed.error == '':
-           nomed.msg_render.show_info(summary,message + '\n' + nomed.output)  
+           summary='prova'
+           actions = {"Click me": None}
+           nid=nomed.msg_render.show(summary,message + '\n' + nomed.output,"gtk-dialog-info",actions = actions)
+           self.msg_render.close(nid)
+  
     else:
         if command != '':
             nomed.command(command)
             message=message  + command
             print message
-        nomed.msg_render.show_info(summary,message)
+        #nomed.msg_render.show_info(summary,message)
+	
+        def perf_action(act):
+            os.system(act) 
+        def open_volume():
+            os.system('thunar ') 
+
+        actions = {"actionD": open_volume}
+        nid=nomed.msg_render.show(summary,message,"gtk-dialog-info",actions = actions )
+        #nomed.msg_render.close(nid)
     source = "".join(args)              
     
 

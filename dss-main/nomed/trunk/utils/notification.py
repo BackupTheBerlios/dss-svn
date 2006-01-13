@@ -20,6 +20,7 @@ class NotificationDaemon(object):
     def __init__(self): 
         self.logger = logging.getLogger()
         bus = dbus.SessionBus()
+        #bus = dbus.SystemBus() 
         obj = bus.get_object('org.freedesktop.Notifications',
                 '/org/freedesktop/Notifications')
 
@@ -35,15 +36,18 @@ class NotificationDaemon(object):
             
 
             def action_invoked(nid, action_id): 
+                print res,nid
                 if action_handlers.has_key(action_id) and res == nid:
                     #Execute the action handler
                     thread.start_new_thread(action_handlers[action_id], ())
 
-                self.iface.CloseNotification(dbus.UInt32(nid))
+                #self.iface.CloseNotification(dbus.UInt32(nid))
 
             condition = False
             while not condition:
                 try:
+                    print 'Ciao'
+                    print action_invoked
                     #self.logger.debug("Trying to connect to ActionInvoked")
                     self.iface.connect_to_signal("ActionInvoked", action_invoked)
                     condition = True
@@ -56,8 +60,20 @@ class NotificationDaemon(object):
 
         else:
             #Fixing no actions messages
-            notify_actions = [(1, 2)] 
-            res = self.iface.Notify("nomed", [dbus.String(icon)],dbus.UInt32(0),  ' ', dbus.Byte(0), summary,  message,  [dbus.String(icon)], notify_actions, [(1,2)],  dbus.Boolean(1), dbus.UInt32(8))
+            notify_actions = [(1, 1)] 
+
+        res = self.iface.Notify("Nomed", 
+                                    [dbus.String(icon)],
+                                    dbus.UInt32(0),  
+                                    '', 
+                                    dbus.Byte(0), 
+                                    summary,  
+                                    message,  
+                                    [dbus.String(icon)], 
+                                    notify_actions, 
+                                    [(1,2)],  
+                                    dbus.Boolean(1), 
+                                    dbus.UInt32(7))
         return res
 
 
@@ -112,6 +128,8 @@ class NotificationDaemon(object):
             i += 1
         #print notify_actions
         #print action_handlers
+        print notify_actions, action_handlers
+
         return notify_actions, action_handlers
 
 

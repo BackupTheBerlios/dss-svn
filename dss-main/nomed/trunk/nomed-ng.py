@@ -15,6 +15,7 @@ class DeviceManager:
         
         self.msg_render=NotificationDaemon()     
         self.udi_dict = {}
+        self.virtual_root = {}
         self.bus = dbus.SystemBus()
         self.hal_manager_obj = self.bus.get_object('org.freedesktop.Hal', 
                                                    '/org/freedesktop/Hal/Manager')
@@ -31,8 +32,8 @@ class DeviceManager:
                          lambda *args: self.gdl_changed("NewCapability", *args)) 
 
        
-        self.virtual_root = self.build_device_tree()
-        print self.virtual_root.print_tree(0)
+        
+        #print self.virtual_root.print_tree(0)
         
         # Add listeners for all devices
         try:
@@ -44,20 +45,16 @@ class DeviceManager:
         
         for name in device_names:
 	        self.add_device_signal_recv (name); 
-        self.update_device_list()
+        print "############"
+        self.update_device_dict()
         gtk.main()
     def properties_rules(self,device_udi):
-        print "# properties_rules"
-        print self.virtual_root
-        device_obj = self.udi_to_device(device_udi) 
-        #device_obj=self.devicestore.find_by_udi(device_udi) 
-        rules=RulesParser(input=device_obj.properties)
+        properties = self.udi_to_properties(device_udi) 
+        rules=RulesParser(input=properties)
         required=rules.required
         actions=rules.actions
-        properties=device_obj.properties
         return required,actions,properties
-        #print rules.required, rules.actions
-        #print device_obj.properties 
+
         
     def property_modified(self, device_udi, num_changes, change_list):
         """This method is called when signals on the Device interface is
@@ -90,7 +87,7 @@ class DeviceManager:
                 print "##############################"
 
                 device_udi_obj = self.bus.get_object("org.freedesktop.Hal", device_udi)
-                device_obj = self.udi_to_device(device_udi)
+                properties  = self.udi_to_properties(device_udi)
             
             # if from the udi of the devce is possible to find the modified property:
             # value = the value of the hal key:
@@ -99,11 +96,11 @@ class DeviceManager:
             #    value=/media/usbdisk
             
             if device_udi_obj.PropertyExists(property_name, dbus_interface="org.freedesktop.Hal.Device"):
-                device_obj.properties[property_name] = device_udi_obj.GetProperty(property_name, 
+                properties[property_name] = device_udi_obj.GetProperty(property_name, 
                                                   dbus_interface="org.freedesktop.Hal.Device")
-                print "  value=%s"%(device_obj.properties[property_name])
+                print "  value=%s"%(properties[property_name])
         
-                rules=RulesParser(input=device_obj.properties)
+                rules=RulesParser(input=properties)
                 
 
                 #############################################################
@@ -114,12 +111,11 @@ class DeviceManager:
                 #############################################################
                 if "mount" in rules.actions.keys() and rules.actions["mount"]:
                     if property_name == "volume.mount_point":
-                        actor=Actor(rules.actions,rules.required,device_obj.properties,self.msg_render )
+                        actor=Actor(rules.actions,rules.required,properties,self.msg_render )
                         # if val is empty don't do anything
-                        actor.on_modified_mount(device_obj.properties[property_name])
-                        #actor.on_modified()
+                        actor.on_modified_mount(properties[property_name])
                 else:
-                    if property_name in rules.required.keys() and str(device_obj.properties[property_name]) == str(rules.required[property_name]):
+                    if property_name in rules.required.keys() and str(properties[property_name]) == str(rules.required[property_name]):
                         
                         pass
                     else:
@@ -138,51 +134,32 @@ class DeviceManager:
                         del device_obj.properties[property_name]
                     except:
                         pass
-
-            #device_focus_udi = self.get_current_focus_udi()
-            #if device_focus_udi != None:
-            #    device = self.udi_to_device(device_udi)
-            #    if device_focus_udi==device_udi:
-            #        self.update_device_notebook(device)
 	
     def gdl_changed(self, signal_name, device_udi, *args):
         """This method is called when a HAL device is added or removed."""
-        self.virtual_root = self.build_device_tree
         if signal_name=="DeviceAdded":
-            #self.virtual_root = self.build_device_tree
-            #self.devicestore=self.virtual_root
-            #print self.devicestore.find_by_udi(device_udi) 
             print "\nDeviceAdded, udi=%s"%(device_udi)
             self.add_device_signal_recv(device_udi)
-            self.update_device_list()
+            self.update_device_dict()
             required,actions,properties=self.properties_rules(device_udi)
             print actions
             actor=Actor(actions,required,properties,self.msg_render )
             actor.on_added()
-            #this is store for removed
-            
         elif signal_name=="DeviceRemoved":
             print "\nDeviceRemoved, udi=%s"%(device_udi) 
-            print "#1"
             required,actions,properties=self.properties_rules(device_udi)
-            print properties
-            print "#2"
             actor=Actor(actions,required,properties,self.msg_render)
-            print "#3"
             actor.on_removed() 
-            print "#4"
-            #self.virtual_root = self.build_device_tree
             self.remove_device_signal_recv(device_udi)
-            print "#5"
-            self.update_device_list()
+            self.virtual_root.pop(device_udi)
         elif signal_name=="NewCapability":
             [cap] = args 
-            #print "\nNewCapability, cap=%s, udi=%s"%(cap, device_udi)
+            print "\nNewCapability, cap=%s, udi=%s"%(cap, device_udi)
         else:
             print "*** Unknown signal %s"% signal_name 
 
     def add_device_signal_recv (self, udi):
-        self.bus.add_signal_receiver(lambda *args: self.property_modified(udi, *args),
+	self.bus.add_signal_receiver(lambda *args: self.property_modified(udi, *args),
 				     "PropertyModified",
 				     "org.freedesktop.Hal.Device",
 				     "org.freedesktop.Hal",
@@ -198,60 +175,41 @@ class DeviceManager:
             print "Older versions of the D-BUS bindings have an error when removing signals. Please upgrade."
             print e
     
-    def build_device_tree(self):
+    def build_device_dict(self):
         """Retrieves the device list from the HAL daemon and builds
         a tree of Device (Python) objects. The root is a virtual
         device"""
+        devices_dict={}
         device_names = self.hal_manager.GetAllDevices()
-        device_names.sort()
-
-        virtual_root = Device("virtual_root", None, {})
-        self.device_list = [virtual_root]
-        
-        # first build list of Device objects
-        # name == device's udi 
         for name in device_names:
             device_dbus_obj = self.bus.get_object("org.freedesktop.Hal" ,name)
-
             # properties is the list of hal properies of "name"
             properties = device_dbus_obj.GetAllProperties(dbus_interface="org.freedesktop.Hal.Device")
-            try:
-                parent_name = properties["info.parent"]
-            except KeyError:
-                # no parent, must be parent of virtual_root
-                parent_name = "/"
-            except TypeError:
-                print "Error: no properties for device %s"%name
-                continue
-            device = Device(name, parent_name, properties)
-            self.device_list.append(device)
+            # a dictionary of devices{udi:{properies}}
+            devices_dict[name]=properties
+            # get even info.vendor and info.product for messages
+            #if "info.vendor"  and "info.product" not in devices_dict[name].keys():
+            if "info.parent" in devices_dict[name].keys():
+                parent=devices_dict[name]["info.parent"]
+                device_dbus_obj = self.bus.get_object("org.freedesktop.Hal" ,parent) 
+                parent_prop=device_dbus_obj.GetAllProperties(dbus_interface="org.freedesktop.Hal.Device")
+                #get info.vendor and info.product from parent
+                if "info.product" and "info.vendor" in parent_prop.keys():
+                    devices_dict[name]["vm.info.vendor"]=parent_prop["info.vendor"]
+                    devices_dict[name]["vm.info.product"]=parent_prop["info.product"]
+        return devices_dict
 
-        # set parent_device and children for each Device object
-        for device in self.device_list:
-            parent_name = device.parent_name
-            device.parent_device = virtual_root
-            if parent_name!="/":
-                for p in self.device_list:
-                    if p.device_name==parent_name:
-                        device.parent_device = p
-                        p.children.append(device)
-            if device!=virtual_root and device.parent_device==virtual_root:
-                virtual_root.children.append(device)
-            if device==virtual_root:
-                device.parent_device=None
-        return virtual_root
+        
     
-    def update_device_list(self):
+    def update_device_dict(self):
         """Builds, or rebuilds, the device tree"""
         # We use a virtual root device so we have a single tree
-        self.virtual_root = self.build_device_tree()
-        print self.virtual_root
+        self.virtual_root = self.build_device_dict()
  
-    def udi_to_device(self, device_udi):
+    def udi_to_properties(self, device_udi):
         """Given a HAL UDI (Unique Device Identifier) this method returns
         the corresponding HAL device"""
-        #self.virtual_root = self.build_device_tree
-        return self.virtual_root.find_by_udi(device_udi) 
+        return self.virtual_root[device_udi]
 
     
 

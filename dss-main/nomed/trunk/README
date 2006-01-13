@@ -5,7 +5,7 @@ nomed_hardware.py:
 *(bus): define a dbus.Systembus 
 *(hal_manager_obj): define a bus.get_object('named_service','object_path') 
 ** named_service = org.freedesktop.Hal
-** object_path   = /org/freedesktop/Hal/Manag 
+** object_path   = /org/freedesktop/Hal/Manager 
 *(hal_manager): define a dbus.Interface('name_serice', 'object_path')
 ** object        = hal_manager_obj,
 ** dbus_interface= org.freedesktop.Hal.Manager
@@ -16,9 +16,10 @@ nomed_hardware.py:
 *(device_names): hal_manager.GetAllDevices() [a list of device udi]
 * add_device_signal_recv for each device in device_names: [ add_device_signal_recv ]
 ** PropertyModified
-===def add_device_signal_recv (self, udi):===
-* add a signal receiver property_modified
+
+
 ===property_modified(self, device_udi, num_changes, change_list):===
+"""This method is called when signals on the Device interface is received"""
 * device_udi: the device identifier [ from device_names ]
 * num_changes: number of changed prop
 * change_list[n]: list of changed prop  (0 =< n =< 2)

@@ -2,6 +2,7 @@ import dbus
 if getattr(dbus, 'version', (0,0,0)) >= (0,41,0):
     import dbus.glib
 from utils.device import Device
+import sys
 device_udi = '/org/freedesktop/Hal/devices/volume_uuid_C025_4348'
 udi_dict = {}
 bus = dbus.SystemBus()
@@ -51,14 +52,19 @@ for device in device_list:
     if device==virtual_root:
         device.parent_device=None
 
-device_obj = virtual_root.find_by_udi(device_udi)
-device_udi=['/org/freedesktop/Hal/devices/volume_label_']
+#device_obj = virtual_root.find_by_udi(device_udi)
+if len(sys.argv) == 1:
+    device_udi=device_names
+else:
+    device_udi=[sys.argv[1]]
+#
 for udi in device_udi:
     print
     print "--------------"
     print "udi: %s" %(udi)
     device_prop = virtual_root.find_by_udi(udi)
-    print device_prop.properties
+    for key in  device_prop.properties.keys():
+        print "%s: %s" % (key,device_prop.properties[key])
     #for key in device_prop.properties.keys():
 
     #    print "%s : %s" % (key ,device_prop.properties[key])

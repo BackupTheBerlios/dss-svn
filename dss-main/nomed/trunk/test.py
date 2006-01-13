@@ -1,5 +1,7 @@
 import libxml2
 #filename='test.xml'
+input={'volume.fstype': 'iso9660', 'info.category': 'volume', 'info.parent': '/org/freedesktop/Hal/devices/storage_serial_Y24F827932', 'info.product': 'DSS Live', 'volume.fsusage': 'filesystem', 'block.minor': 0, 'volume.is_mounted': True, 'linux.sysfs_path': '/sys/block/hdc/fakevolume', 'volume.is_disc': True, 'volume.disc.has_data': True, 'linux.hotplug_type': 3, 'volume.policy.desired_mount_point': 'cdrecorder', 'volume.size': 331644928L, 'block.storage_device': '/org/freedesktop/Hal/devices/storage_serial_Y24F827932', 'volume.fsversion': '', 'volume.uuid': '', 'volume.mount_point': '/media/cdrom', 'volume.disc.is_blank': False, 'block.device': '/dev/hdc', 'info.udi': '/org/freedesktop/Hal/devices/volume_label_', 'block.is_volume': True, 'info.capabilities': ['volume', 'block'], 'volume.is_partition': True, 'volume.disc.has_audio': False, 'volume.disc.is_appendable': False, 'linux.sysfs_path_device': '/sys/block/hdc/fakevolume', 'volume.disc.is_rewritable': True, 'block.major': 22, 'volume.disc.type': 'cd_rw', 'volume.num_blocks': 647744, 'volume.label': 'DSS Live', 'volume.block_size': 2048}
+
 """
     *  NodeType: The node type, 
     ** 1 for start element, 
@@ -30,7 +32,7 @@ import libxml2
     * AttributeCount: provides the number of attributes of the current node.
 
 """
-filename='/usr/share/hal/fdi/policy/10osvendor/10-storage-policy.fdi'
+filename='10-storage-policy.fdi'
 dict_match={}
 dict_rules=[]
 #filename='/home/debaser/.ivman/IvmConfigActions.xml'
@@ -69,10 +71,8 @@ def processNode1(reader):
     #                          reader.Name(), reader.IsEmptyElement(),
     #                          reader.Value())
     a=[15,14,8]
-    b=1
     list_match=[]
     if reader.NodeType() not in a:
-        indent=' '*reader.Depth()
         #print "%s %d %d (%s) [%s] " %(
         #    indent,
         #    reader.Depth(),
@@ -90,19 +90,32 @@ def processNode1(reader):
             #reader.IsEmptyElement(),
             #reader.AttributeCount()
         #    )
+        #print reader.NodeType()
+        
         if reader.NodeType() == 1: # Element
             #print '###'
-            while reader.Name() == 'match':
+            #while reader.Name() == 'match':
+                #print reader.Depth(),reader.Value()
+            tag=reader.Name()
+            depth=reader.Depth()
+            while reader.MoveToNextAttribute():
+                #print reader.Depth(),reader.Value()
+                #print '####'
+                #print indent
+                #print "%s * %d %d (%s) [%s]" % (indent, reader.Depth(), reader.NodeType(),reader.Name(),reader.Value())
+                key=reader.Value()
                 while reader.MoveToNextAttribute():
-                    #print '####'
-                    #print indent
-                    #print "%s * %d %d (%s) [%s]" % (indent, reader.Depth(), reader.NodeType(),reader.Name(),reader.Value())
-                    key=reader.Value()
-                    while reader.MoveToNextAttribute():
+                    if reader.NodeType() == 2:
                         dict_match={}
                         dict_match[key]=reader.Value()
                         #print "%s %s %s" % (reader.Depth(),key,dict_match[key])
-                        list_match=[reader.Depth(),dict_match]
+                        list_match=[tag,depth,dict_match]
+                        print '%s %s'% (list_match,reader.NodeType())
+                    
+                       
+                            
+                            
+            
                     
         #print dict_match
     #b=b+1
@@ -115,37 +128,20 @@ def streamFile(filename):
     except:
         print "unable to open %s" % (filename)
         return
-
+    #num=reader.Depth()
     ret = reader.Read()
-    num=reader.Depth() 
-    #print ret
-    index=1
-    num = 3
-    while ret == 1:
-        
-        #print reader.Name()
-        ret = reader.Read() 
-        list=processNode1(reader)
-        if list != []:
-            if list[0] == num:
-                
-                print "%s %s %s" % ('#',index,list)
-                index = index +1
-                num = num + 1
-            if list[0] == num - 1:
-                print "%s %s %s" % ('*',index,list) 
-                index = index +1
-        #while reader.Depth() == num + 1:
-        #    print "%s %s %s" % ('###Num + 1',reader.Depth(),reader.Name())
-        #    processNode1(reader)
-        #    print "depth %s" %(reader.Depth())
-        #    num = num +1
-            #num = 
-            #tri = tri +1 
-            #print "tri %s" % (tri)
-       # while reader.Depth() == num :
-       #     print '###Num ' 
-       #     processNode1(reader)
+    
+    while ret == 1: 
+        list=processNode1(reader) 
+        ret = reader.Read()
+        while len(list) != 0:
+            while reader.Depth() == list[1]:
+                list=processNode1(reader)
+                ret = reader.Read()
+                print 'ciao'
+            
+       
+
     if ret != 0:
         print "%s : failed to parse" % (filename)
 

@@ -20,6 +20,7 @@ class Notify:
         icon_theme = gtk.icon_theme_get_default() 
 	icon_lookup=icon_theme.lookup_icon('drive-harddisk',48 ,gtk.ICON_LOOKUP_USE_BUILTIN) 
         icon=icon_lookup.get_filename()
+        print icon
 	#icon=icon_theme.get_builtin_pixbuf() 
 	print icon
         #def actions_to():
