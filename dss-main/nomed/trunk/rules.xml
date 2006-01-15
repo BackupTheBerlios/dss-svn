@@ -11,22 +11,22 @@
                     <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
                     <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
                     <merge key="notify" value="Summary: $storage.model$ $storage.vendor$" message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-ipod"/>
-                    <merge key="unotify" value="Summary: $storage.model$ $storage.vendor$"  message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-ipod"/> 
+                    <merge key="unotify" value="Summary: $storage.model$ $storage.vendor$"  message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="$config.icon.mp3$"/> 
                 </match>
                 <!--usb generic -->
                 <match key="storage.bus" value="usb">
                     <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
                     <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
-                    <merge key="notify" value="Summary: $storage.model$ $storage.vendor$" message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-harddisk-usb"/>
-                    <merge key="unotify" value="Summary: $storage.model$ $storage.vendor$"  message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-harddisk-usb"/>
+                    <merge key="notify" value="Summary: $storage.model$ $storage.vendor$" message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="$config.icon.usb$"/> 
+                    <merge key="unotify" value="Summary: $storage.model$ $storage.vendor$"  message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="$config.icon.usb$"/>
                     <merge key="exec" value="echo $USER!!: i found a new device: $storage.bus$ | festival --tts"/>
                 </match>
                 <!-- ieee1394 -->
                 <match key="storage.bus" value="ieee1394">
                     <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
                     <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
-                    <merge key="notify" value="$storage.model$ $storage.vendor$" message="$storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-hafine fine harddisk-1394"/>
-                    <merge key="unotify" value="$storage.model$ $storage.vendor$"  message="$storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="gnome-dev-harddisk-1394"/> 
+                    <merge key="notify" value="$storage.model$ $storage.vendor$" message="$storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="$config.icon.ieee1394$"/>
+                    <merge key="unotify" value="$storage.model$ $storage.vendor$"  message="$storage.drive_type$ $storage.bus$ $block.device$" action="Action" icon="$config.icon.ieee1394$"/> 
                 </match>
             </match>
         </match> 
@@ -37,8 +37,8 @@
                 <merge key="exec" value="$config.filemanager.exec$ $volume.mount_point$"/>
                 <!-- 
                 <merge key="notify" value="$volume.label$" message="$info.category$ $volume.disc.type$" action="Action" icon="gnome-dev-cdrom"/>
-                <merge key="unotify" value="$volume.label$" message="$info.category$ $volume.disc.type$" action="Action" icon="gnome-dev-cdrom"/> 
                 -->
+                <merge key="unotify" value="$volume.label$" message="$info.category$ $volume.disc.type$" action="Action" icon="$config.icon.cdrom$"/> 
             </match>
         </match> 
         <!-- mount volume if mountable -->
@@ -50,6 +50,7 @@
                 <merge key="notify" value="Summary" message="Message notify ciao $volume.mount_point$" action="Action" icon="gnome-dev-harddsk"/>
                 <merge key="unotify" value="Summary" message="Message notify ciao $volume.mount_point$ " action="Action" icon="gnome-dev-harddisk"/> 
                 -->
+                
             </match>
         </match>
         <!--bluetooth -->
@@ -68,8 +69,8 @@
                     <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
                     <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
                     -->
-                    <merge key="notify" value="Summary" message="Message notify $vm.info.product$ $vm.info.vendor$" action="Action" icon="gnome-dev-mouse-optical"/>
-                    <merge key="unotify" value="Summary" message="Message unotify $vm.info.product$ $vm.info.vendor$" action="Action" icon="gnome-dev-mouse-optical"/>
+                    <merge key="notify" value="Summary" message="Message notify $vm.info.product$ $vm.info.vendor$" action="Action" icon="$config.icon.mouse"/>
+                    <merge key="unotify" value="Summary" message="Message unotify $vm.info.product$ $vm.info.vendor$" action="Action" icon="$config.icon.mouse$"/>
                 </match>
             </match>
         </match>
@@ -77,15 +78,15 @@
         <match key="linux.subsytem" value="net">
             <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
             <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
-            <merge key="notify" value="Summary" message="Message notify $net.interface$" action="Action" icon="gnome-dev-network"/>
-            <merge key="unotify" value="Summary" message="Message unotify $net.interface$" action="Action" icon="gnome-dev-network"/>
+            <merge key="notify" value="Summary" message="Message notify $net.interface$" action="Action" icon="$config.icon.network$"/>
+            <merge key="unotify" value="Summary" message="Message unotify $net.interface$" action="Action" icon="$config.icon.network$"/>
         </match> 
         <!--pcmcia -->
         <match key="info.bus" value="pcmcia">
             <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
             <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
-            <merge key="notify" value="Summary " message="Message notify PCMCIA" action="Action" icon="gnome-dev-pcmcia"/>
-            <merge key="unotify" value="Summary " message="Message unotify PCMCIA" action="Action" icon="gnome-dev-pcmcia"/>
+            <merge key="notify" value="Summary " message="Message notify PCMCIA" action="Action" icon="$config.icon.pcmcia$"/>
+            <merge key="unotify" value="Summary " message="Message unotify PCMCIA" action="Action" icon="$config.icon.pcmcia$"/>
         </match> 
         <!--usb printer -->
         <match key="info.bus" value="bus">
@@ -93,8 +94,8 @@
                 <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
                 <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
                 <merge key="exec" value="sudo /etc/init.d/cupsys restart "/> 
-                <merge key="notify" value="Summary " message="Message notify Usb Printer" action="Action" icon="gnome-dev-printer"/>
-                <merge key="unotify" value="Summary " message="Message unotify Usb Printer" action="Action" icon="gnome-dev-printer"/>
+                <merge key="notify" value="Summary " message="Message notify Usb Printer" action="Action" icon="$config.icon.printer$"/>
+                <merge key="unotify" value="Summary " message="Message unotify Usb Printer" action="Action" icon="$config.icon.printer$"/>
             </match>  
         </match> 
         <!--usb scanner -->
@@ -106,8 +107,8 @@
                     <merge key="exec" value="$config.sound.exec$ $config.sound.added$"/>
                     <merge key="execun" value="$config.sound.exec$ $config.sound.removed$ "/>
                     <merge key="exec" value="grip $hal.block.device$"/> 
-                    <merge key="notify" value="Summary " message="Message notify Audio CD " action="Action" icon="gnome-dev-cdrom-audio"/>
-                    <merge key="unotify" value="Summary " message="Message unotify Audio CD" action="Action" icon="gnome-dev-cdrom-audio"/>
+                    <merge key="notify" value="Summary " message="Message notify Audio CD " action="Action" icon="$config.icon.cdrom-audio$"/>
+                    <merge key="unotify" value="Summary " message="Message unotify Audio CD" action="Action" icon="$config.icon.cdrom-audio$"/>
                 </match>
             </match>
         </match> 

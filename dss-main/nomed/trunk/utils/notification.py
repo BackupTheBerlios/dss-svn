@@ -98,15 +98,7 @@ class NotificationDaemon(object):
 
     # Private methods ###################################
     def process_actions(self, actions):
-        """
-        Devuelve una 2-tupla donde cada elemento es un diccionario.
-
-        El primero contiene como claves los nombres de las acciones y como
-        valores enteros los identificadores de la acción a tomar.
-
-        El segundo contiene como claves los identificadores (enteros) de las
-        acciones a tomar y como valores las funciones a ejecutar
-        """
+       
         #print actions
         if actions == {}:
             #FIXME

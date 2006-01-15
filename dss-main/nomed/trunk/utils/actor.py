@@ -81,6 +81,7 @@ class Actor:
             elif tag == "unotify":
                 for string in actions[tag]:
                     unotify.append(string)
+       # print self.config
         return exe,exeun,mount,notify,unotify
     
     def run_app(self,appname):
@@ -92,21 +93,25 @@ class Actor:
             summary=self.properties["info.product"]
             body="%s %s" % ("block device",dev)
             mountcmd="%s %s" % ("pmount",dev)
+            ejectcmd="%s %s" % ("eject",dev)
             straction="%s %s" % ("Mount",self.properties["info.category"])
              
             def pmount():
                 os.system(mountcmd)
             actions={straction: pmount}
+            def eject():
+                os.system("eject")
             # print messages
             print "   %s: %s" % ("Summary",summary)
             print "   %s: %s" % ("Body",body)
             #print "   %s: %s" % ("Action",)
             print "   %s: %s" % ("Action",mountcmd)
             if self.properties["volume.fstype"] == "iso9660":
-                icon="gtk-cdrom"
+                icon=IconPath(self.config["config.icon.cdrom"]).icon_path
                 #icon=gtk.STOCK_CDROM
             else:
-                icon="gtk-harddisk"
+                actions["Eject"]=eject
+                icon=IconPath(self.config["config.icon.harddisk"]).icon_path
             
             self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
             
