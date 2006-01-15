@@ -10,12 +10,13 @@ import os.path
 
 class Actor:
 
-    def __init__(self,actions,required, properties,msg_render):
+    def __init__(self,actions,required, properties,msg_render,config):
         
         self.msg_render=msg_render
         self.properties=properties
         self.udi=properties['info.udi']
         self.actions=actions
+        self.config=config
         #convert hal variable
         for key in self.actions.keys():
             if key != "mount":
@@ -26,7 +27,7 @@ class Actor:
                     for listindex in range(len(self.actions[key])):
                         for i in range(len(self.actions[key][listindex])): 
                             self.actions[key][listindex][i]=self.convert_var(self.actions[key][listindex][i],self.properties)
-        print self.actions
+        #print self.actions
         self.exe,self.exeun,self.mount,self.notify,self.unotify=self.convert_actions(self.actions)
         
         
@@ -40,6 +41,9 @@ class Actor:
                     key=list[i].replace("$","")
                     if key in properties.keys():
                         val=properties[key]
+                        list[i]=val
+                    elif key in self.config.keys():
+                        val=self.config[key]
                         list[i]=val
             string=""
             for i in list:
@@ -63,15 +67,13 @@ class Actor:
                     if not string.endswith("&"):
                         string="%s %s" % (string,"&")
                     exe.append(string)
-            elif tag == "exeun":
+            elif tag == "execun":
                 for string in actions[tag]:
                     string=string.strip()
                     if not string.endswith("&"):
                         string="%s %s" % (string,"&")
-                    exeun.append(string)
+                    exeun.append(string)        
             elif tag == "mount":
-                #for string in actions[tag]:
-                #    mount.append(string)
                 mount=actions[tag]
             elif tag == "notify":
                 for string in actions[tag]:
@@ -87,23 +89,39 @@ class Actor:
     def on_added(self):
         if self.mount == True:
             dev=self.properties["block.device"]
+            summary=self.properties["info.product"]
+            body="%s %s" % ("block device",dev)
             mountcmd="%s %s" % ("pmount",dev)
-            print "  exec=%s" % mountcmd
-            print
-            #self.run_app(mountcmd)
+            straction="%s %s" % ("Mount",self.properties["info.category"])
+             
             def pmount():
                 os.system(mountcmd)
-            #action={"prova": pmount}
-            pmount()
-            self.msg_render.show_info("volume.mount_point","prova",actions=action)
+            actions={straction: pmount}
+            # print messages
+            print "   %s: %s" % ("Summary",summary)
+            print "   %s: %s" % ("Body",body)
+            #print "   %s: %s" % ("Action",)
+            print "   %s: %s" % ("Action",mountcmd)
+            if self.properties["volume.fstype"] == "iso9660":
+                icon="gtk-cdrom"
+                #icon=gtk.STOCK_CDROM
+            else:
+                icon="gtk-harddisk"
+            
+            self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
             
         else:
             for app in self.exe:
+                print "   Exec: %s" % app
                 self.run_app(app)
         for notify_list in self.notify:
             icon=IconPath(notify_list[ICON])
             if icon.icon_path == None:
                 icon.icon_path = "gtk-dialog-info"
+            # print messages
+            print "   %s: %s" % ("Summary",notify_list[SUMMARY])
+            print "   %s: %s" % ("Body",notify_list[MESSAGE] )
+            print "   %s: %s" % ("Icon",icon.icon_path)
             self.msg_render.show(notify_list[SUMMARY],
                         notify_list[MESSAGE],
                         icon.icon_path
@@ -112,18 +130,20 @@ class Actor:
 
     def on_removed(self):
         for app in self.exeun:
-           print "  exeun=%s" % app
-           self.run_app(app)
-        print self.unotify
+            print "   Execun: %s" % app
+            self.run_app(app)
         for unotify_list in self.unotify:
             icon=IconPath(unotify_list[ICON])
             if icon.icon_path == None:
                 icon.icon_path = "gtk-dialog-info"
+            # print messages
+            print "   %s: %s" % ("Summary",unotify_list[SUMMARY])
+            print "   %s: %s" % ("Body",unotify_list[MESSAGE] )
+            print "   %s: %s" % ("Icon",icon.icon_path)
             self.msg_render.show(unotify_list[SUMMARY],
                         unotify_list[MESSAGE],
                         icon.icon_path
                         )
-            print unotify_list[SUMMARY]
                 
     
     def on_modified(self):

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*- SGML -*- -->
+
+<config version="0.1">
+<!-- prova -->
+  <sound>
+      <!--play sound on added-->
+      <match key="added" value="/usr/share/sounds/gaim/arrive.wav"/>
+      <match key="removed" value="/usr/share/sounds/gaim/leave.wav"/>
+      <match key="exec" value="aplay -q"/>
+  </sound>
+  <speach>
+      <match key="added" value="Added: to the system:"/>
+      <match key="removed" value="Removed: from the system:"/>
+      <match key="exec" value="flite -t"/> 
+  </speach>
+  <filemanager>
+      <match key="exec" value="thunar"/>
+  </filemanager>
+  <camera>
+      <match key="exec" value="gthumb --import-photos "/> 
+  </camera>
+  <cdrecord>
+      <match key="exec" value="graveman"/>
+  </cdrecord>
+  <audiocd>
+      <match key="exec" value="grip"/>
+  </audiocd>  
+</config>
+

@@ -4,7 +4,6 @@ from subprocess import PIPE, Popen
 import os.path
 import sys
 import getopt
-sys.path.append("/usr/share/hermes")
 from utils.notification import NotificationDaemon
 
 class Notifier:
@@ -80,7 +79,7 @@ def main(argv):
         def open_volume():
             os.system('thunar ') 
 
-        actions = {"actionD": open_volume}
+        actions = {"Mount": open_volume, "Umount": "echo ciao", "Properties": "echo ciao" }
         nid=nomed.msg_render.show(summary,message,"gtk-dialog-info",actions = actions )
         #nomed.msg_render.close(nid)
     source = "".join(args)              

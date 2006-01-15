@@ -7,7 +7,7 @@ import libxml2
 class RulesParser:
     
     def __init__(self,
-                 filename="/usr/share/nomed/rules.xml",
+                 filename="rules.xml",
                  input={},
                  path="/deviceinfo/device/*[1]",
                  props=["key","value"]
@@ -30,9 +30,12 @@ class RulesParser:
                     if value == "true" or value == "false":
                         value=value.capitalize()
                     #print required
-                    #print key,input[key],value
+
                     if key in input.keys() and str(input[key]) == value:
                         required[key]=value
+                        print "<match>"
+                        print key,value
+                        print "</match>"
                         #print key,input[key]
                         #print "if3"
                         if ctxt.xpathEval(path+"/merge") != []:
@@ -110,7 +113,8 @@ class RulesParser:
         self.actions=actions
         #print self.required,self.actions
         doc.freeDoc()
-        #print input
+        
+        
 
     def PathIncrease(self,string,pop):
         a=string.split("/")

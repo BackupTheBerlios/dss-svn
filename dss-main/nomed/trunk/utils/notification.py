@@ -28,26 +28,23 @@ class NotificationDaemon(object):
 
     # Main Message #######################################################
 
-    def show(self, summary, message, icon, actions = {}): 
+    def show(self, summary, message, icon, actions = {},expires=1): 
         #print actions
         if actions != {}:
            
             (notify_actions, action_handlers) = self.process_actions(actions)
             
 
-            def action_invoked(nid, action_id): 
-                print res,nid
+            def action_invoked(nid, action_id):
                 if action_handlers.has_key(action_id) and res == nid:
                     #Execute the action handler
                     thread.start_new_thread(action_handlers[action_id], ())
-
-                #self.iface.CloseNotification(dbus.UInt32(nid))
+                    action_handlers[action_id]()
+                    #self.iface.CloseNotification(dbus.UInt32(nid))
 
             condition = False
             while not condition:
-                try:
-                    print 'Ciao'
-                    print action_invoked
+                try: 
                     #self.logger.debug("Trying to connect to ActionInvoked")
                     self.iface.connect_to_signal("ActionInvoked", action_invoked)
                     condition = True
@@ -60,7 +57,7 @@ class NotificationDaemon(object):
 
         else:
             #Fixing no actions messages
-            notify_actions = [(1, 1)] 
+            notify_actions = [(1, 2)] 
 
         res = self.iface.Notify("Nomed", 
                                     [dbus.String(icon)],
@@ -71,9 +68,10 @@ class NotificationDaemon(object):
                                     message,  
                                     [dbus.String(icon)], 
                                     notify_actions, 
-                                    [(1,2)],  
-                                    dbus.Boolean(1), 
-                                    dbus.UInt32(7))
+                                    {"":""},
+                                    dbus.Boolean(expires), 
+                                    dbus.UInt32(9))
+        
         return res
 
 
@@ -126,9 +124,6 @@ class NotificationDaemon(object):
             notify_actions[key] = i
             action_handlers[i] = value
             i += 1
-        #print notify_actions
-        #print action_handlers
-        print notify_actions, action_handlers
 
         return notify_actions, action_handlers
 

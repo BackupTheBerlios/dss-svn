@@ -7,7 +7,9 @@ if getattr(dbus, 'version', (0,0,0)) >= (0,41,0):
 from utils.device import Device
 from utils.actor import Actor
 from utils.rules import RulesParser
+from utils.config import ConfigParser
 from utils.notification import NotificationDaemon
+import os.path
 #from nomed import Notify
 
 class DeviceManager:
@@ -15,6 +17,7 @@ class DeviceManager:
         
         self.msg_render=NotificationDaemon()     
         self.udi_dict = {}
+        self.config = {}
         self.virtual_root = {}
         self.bus = dbus.SystemBus()
         self.hal_manager_obj = self.bus.get_object('org.freedesktop.Hal', 
@@ -33,7 +36,7 @@ class DeviceManager:
 
        
         
-        #print self.virtual_root.print_tree(0)
+       
         
         # Add listeners for all devices
         try:
@@ -41,12 +44,14 @@ class DeviceManager:
         except:
             print 'add here notification-daemon error'
         
-        #print device_names
+        
         
         for name in device_names:
 	        self.add_device_signal_recv (name); 
-        print "############"
+        
         self.update_device_dict()
+        config=ConfigParser()
+        self.config=config.dict_config
         gtk.main()
     def properties_rules(self,device_udi):
         properties = self.udi_to_properties(device_udi) 
@@ -81,10 +86,10 @@ class DeviceManager:
            
             print "  key=%s, rem=%d, add=%d"%(property_name, removed, added)
             if property_name=="info.parent":
-                #print "###############################################"
+                
                 self.update_device_list()        
             else:
-                print "##############################"
+                
 
                 device_udi_obj = self.bus.get_object("org.freedesktop.Hal", device_udi)
                 properties  = self.udi_to_properties(device_udi)
@@ -111,7 +116,7 @@ class DeviceManager:
                 #############################################################
                 if "mount" in rules.actions.keys() and rules.actions["mount"]:
                     if property_name == "volume.mount_point":
-                        actor=Actor(rules.actions,rules.required,properties,self.msg_render )
+                        actor=Actor(rules.actions,rules.required,properties,self.msg_render,self.config )
                         # if val is empty don't do anything
                         actor.on_modified_mount(properties[property_name])
                 else:
@@ -121,7 +126,6 @@ class DeviceManager:
                     else:
                         rules.actions={}
                         rules.required={}
-                        print rules.required, rules.actions 
 
                 #################################################################
                     
@@ -137,18 +141,22 @@ class DeviceManager:
 	
     def gdl_changed(self, signal_name, device_udi, *args):
         """This method is called when a HAL device is added or removed."""
+        #play sound 
+        playsound_removed=''
+        playsound_added=''
         if signal_name=="DeviceAdded":
             print "\nDeviceAdded, udi=%s"%(device_udi)
             self.add_device_signal_recv(device_udi)
             self.update_device_dict()
             required,actions,properties=self.properties_rules(device_udi)
-            print actions
-            actor=Actor(actions,required,properties,self.msg_render )
+            actor=Actor(actions,required,properties,self.msg_render,self.config )
             actor.on_added()
         elif signal_name=="DeviceRemoved":
             print "\nDeviceRemoved, udi=%s"%(device_udi) 
             required,actions,properties=self.properties_rules(device_udi)
-            actor=Actor(actions,required,properties,self.msg_render)
+
+            actor=Actor(actions,required,properties,self.msg_render,self.config)
+
             actor.on_removed() 
             self.remove_device_signal_recv(device_udi)
             self.virtual_root.pop(device_udi)
@@ -156,7 +164,8 @@ class DeviceManager:
             [cap] = args 
             print "\nNewCapability, cap=%s, udi=%s"%(cap, device_udi)
         else:
-            print "*** Unknown signal %s"% signal_name 
+            print "*** Unknown signal %s"% signal_name
+        
 
     def add_device_signal_recv (self, udi):
 	self.bus.add_signal_receiver(lambda *args: self.property_modified(udi, *args),
