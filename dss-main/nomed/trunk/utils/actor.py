@@ -10,13 +10,16 @@ import os.path
 
 class Actor:
 
-    def __init__(self,actions,required, properties,msg_render,config):
+    def __init__(self,actions,required, properties,msg_render,config,voice):
         
         self.msg_render=msg_render
         self.properties=properties
         self.udi=properties['info.udi']
         self.actions=actions
         self.config=config
+        self.voice=voice
+        self.cmdaction=''
+        self.tagslist=["/n","<b>","</b>",'"','SAY="']
         #convert hal variable
         for key in self.actions.keys():
             if key != "mount":
@@ -28,10 +31,12 @@ class Actor:
                         for i in range(len(self.actions[key][listindex])): 
                             self.actions[key][listindex][i]=self.convert_var(self.actions[key][listindex][i],self.properties)
         #print self.actions
-        self.exe,self.exeun,self.mount,self.notify,self.unotify=self.convert_actions(self.actions)
+        self.exe,self.exeun,self.mount,self.sound,self.notify,self.unotify=self.convert_actions(self.actions)
         
         
-
+    def cmd_exec(self):
+        os.system(self.cmdaction) 
+                
     def convert_var(self,string,properties):
         """Convert hal variables (keys) in strings (values)"""
         if "$" in string:
@@ -41,14 +46,19 @@ class Actor:
                     key=list[i].replace("$","")
                     if key in properties.keys():
                         val=properties[key]
-                        list[i]=val
                     elif key in self.config.keys():
                         val=self.config[key]
-                        list[i]=val
+                    elif key in self.voice.keys():
+                        val=self.voice[key]
+                    list[i]=val
             string=""
             for i in list:
-                string="%s %s" %(string,i)
-            string=string.strip()
+                #check if the tag \n is present: new line
+                if i in self.tagslist:
+                    string="%s%s" %(string,i)
+                else:
+                    string="%s %s" %(string,i)
+            #string=string.strip()
         return string
         
     def convert_actions(self,actions):
@@ -60,6 +70,7 @@ class Actor:
         mount=False
         notify=[]
         unotify=[]
+        sound=['off']
         for tag in actions.keys():
             if tag == "exec":
                 for string in actions[tag]:
@@ -75,6 +86,8 @@ class Actor:
                     exeun.append(string)        
             elif tag == "mount":
                 mount=actions[tag]
+            elif tag == "sound":
+                sound=actions[tag]
             elif tag == "notify":
                 for string in actions[tag]:
                     notify.append(string)
@@ -82,51 +95,60 @@ class Actor:
                 for string in actions[tag]:
                     unotify.append(string)
        # print self.config
-        return exe,exeun,mount,notify,unotify
+        return exe,exeun,mount,sound,notify,unotify
     
-    def run_app(self,appname):
-        os.system(appname)
         
     def on_added(self):
+        if self.sound[0] == 'on': 
+            self.cmdaction="%s %s" %(self.config["config.sound.exec"],self.config["config.sound.added"])
+            self.cmd_exec()
+
+        #this is just in case of mount=True
+        # then PropertyChange signal occurs
         if self.mount == True:
             dev=self.properties["block.device"]
             summary=self.properties["info.product"]
             body="%s %s" % ("block device",dev)
-            mountcmd="%s %s" % ("pmount",dev)
-            ejectcmd="%s %s" % ("eject",dev)
+            cmdmount="%s %s" % ("pmount",dev)
             straction="%s %s" % ("Mount",self.properties["info.category"])
              
-            def pmount():
-                os.system(mountcmd)
-            actions={straction: pmount}
-            def eject():
-                os.system("eject")
-            # print messages
-            print "   %s: %s" % ("Summary",summary)
-            print "   %s: %s" % ("Body",body)
-            #print "   %s: %s" % ("Action",)
-            print "   %s: %s" % ("Action",mountcmd)
+            #def pmount():
+            #    os.system(cmdmount)
+            self.cmdaction=cmdmount
+            actions={straction: self.cmd_exec}
+            
+
             if self.properties["volume.fstype"] == "iso9660":
                 icon=IconPath(self.config["config.icon.cdrom"]).icon_path
                 #icon=gtk.STOCK_CDROM
             else:
-                actions["Eject"]=eject
                 icon=IconPath(self.config["config.icon.harddisk"]).icon_path
-            
+                       # print messages
+            print "   %s: %s" % ("Icon",str(icon))
+            print "   %s: %s" % ("Sound",self.sound)
+            print "   %s: %s" % ("Summary",str(summary))
+            print "   %s: %s" % ("Body",str(body))
+            #print "   %s: %s" % ("Action",)
+            print "   %s: %s" % ("Action",cmdmount) 
+
             self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
             
         else:
             for app in self.exe:
                 print "   Exec: %s" % app
-                self.run_app(app)
+                self.cmdaction=app
+                self.cmd_exec() 
+
         for notify_list in self.notify:
-            icon=IconPath(notify_list[ICON])
+            icon=IconPath(notify_list[ICON].strip())
             if icon.icon_path == None:
                 icon.icon_path = "gtk-dialog-info"
             # print messages
+            print "   %s: %s" % ("Icon",icon.icon_path) 
             print "   %s: %s" % ("Summary",notify_list[SUMMARY])
-            print "   %s: %s" % ("Body",notify_list[MESSAGE] )
-            print "   %s: %s" % ("Icon",icon.icon_path)
+            print "   %s: %s" % ("Body",notify_list[MESSAGE])
+ 
+            #print notify_list
             self.msg_render.show(notify_list[SUMMARY],
                         notify_list[MESSAGE],
                         icon.icon_path
@@ -134,17 +156,23 @@ class Actor:
                 
 
     def on_removed(self):
+        if self.sound[0] == "on": 
+            self.cmdaction="%s %s" %(self.config["config.sound.exec"],self.config["config.sound.removed"])
+            self.cmd_exec()
         for app in self.exeun:
             print "   Execun: %s" % app
-            self.run_app(app)
+            self.cmdaction=app
+            self.cmd_exec()
         for unotify_list in self.unotify:
-            icon=IconPath(unotify_list[ICON])
+            icon=IconPath(unotify_list[ICON].strip())
             if icon.icon_path == None:
                 icon.icon_path = "gtk-dialog-info"
+            
             # print messages
+            print "   %s: %s" % ("Icon",icon.icon_path)
             print "   %s: %s" % ("Summary",unotify_list[SUMMARY])
             print "   %s: %s" % ("Body",unotify_list[MESSAGE] )
-            print "   %s: %s" % ("Icon",icon.icon_path)
+
             self.msg_render.show(unotify_list[SUMMARY],
                         unotify_list[MESSAGE],
                         icon.icon_path
@@ -154,17 +182,43 @@ class Actor:
     def on_modified(self):
         for app in self.exe:
             print "  exec=%s" %app
-            self.run_app(app) 
+            self.cmdaction=app
+            self.cmd_exec() 
          
     def on_modified_mount(self,val):
         if val == "":
-            pass
+            
+            dev=self.properties["block.device"]
+            summary=self.properties["info.product"]
+            body="%s %s" % ("block device",dev)
+            cmdaction="%s %s" % (self.config["config.static.eject"],dev)
+            straction="%s %s" % (self.config["config.static.streject"],self.properties["info.category"])
+             
+
+            
+            
+            # print messages
+            print "   %s: %s" % ("Summary",summary)
+            print "   %s: %s" % ("Body",body)
+            #print "   %s: %s" % ("Action",)
+            print "   %s: %s" % ("Action",cmdaction)
+            if self.properties["volume.fstype"] == "iso9660":
+                icon=IconPath(self.config["config.icon.cdrom"]).icon_path
+                self.cmdaction=cmdaction
+                actions={straction: self.cmd_exec} 
+                
+            else:
+                actions=""
+                icon=IconPath(self.config["config.icon.harddisk"]).icon_path
+            
+            self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
         else:
             for app in self.exe:
                 print "  exec=%s" %app
-                self.run_app(app)
+                self.cmdaction=app
+                self.cmd_exec()
         
-            
+           
         
 
 if __name__ == "__main__":

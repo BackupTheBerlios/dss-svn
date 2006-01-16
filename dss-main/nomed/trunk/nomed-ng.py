@@ -8,6 +8,7 @@ from utils.device import Device
 from utils.actor import Actor
 from utils.rules import RulesParser
 from utils.config import ConfigParser
+from utils.voice import VoiceParser
 from utils.notification import NotificationDaemon
 import os.path
 #from nomed import Notify
@@ -18,6 +19,7 @@ class DeviceManager:
         self.msg_render=NotificationDaemon()     
         self.udi_dict = {}
         self.config = {}
+        self.voice = {}
         self.virtual_root = {}
         self.bus = dbus.SystemBus()
         self.hal_manager_obj = self.bus.get_object('org.freedesktop.Hal', 
@@ -50,9 +52,14 @@ class DeviceManager:
 	        self.add_device_signal_recv (name); 
         
         self.update_device_dict()
+        # config.xml dict
         config=ConfigParser()
         self.config=config.dict_config
+        # voice.xml dict
+        voice=VoiceParser()
+        self.voice=voice.dict_voice
         gtk.main()
+        
     def properties_rules(self,device_udi):
         properties = self.udi_to_properties(device_udi) 
         rules=RulesParser(input=properties)
@@ -116,7 +123,7 @@ class DeviceManager:
                 #############################################################
                 if "mount" in rules.actions.keys() and rules.actions["mount"]:
                     if property_name == "volume.mount_point":
-                        actor=Actor(rules.actions,rules.required,properties,self.msg_render,self.config )
+                        actor=Actor(rules.actions,rules.required,properties,self.msg_render,self.config,self.voice )
                         # if val is empty don't do anything
                         actor.on_modified_mount(properties[property_name])
                 else:
@@ -149,13 +156,13 @@ class DeviceManager:
             self.add_device_signal_recv(device_udi)
             self.update_device_dict()
             required,actions,properties=self.properties_rules(device_udi)
-            actor=Actor(actions,required,properties,self.msg_render,self.config )
+            actor=Actor(actions,required,properties,self.msg_render,self.config,self.voice )
             actor.on_added()
         elif signal_name=="DeviceRemoved":
             print "\nDeviceRemoved, udi=%s"%(device_udi) 
             required,actions,properties=self.properties_rules(device_udi)
 
-            actor=Actor(actions,required,properties,self.msg_render,self.config)
+            actor=Actor(actions,required,properties,self.msg_render,self.config,self.voice)
 
             actor.on_removed() 
             self.remove_device_signal_recv(device_udi)

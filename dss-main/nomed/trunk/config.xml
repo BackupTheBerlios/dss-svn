@@ -1,48 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?> <!-- -*- SGML -*- -->
 
 <config version="0.1">
-<!-- prova -->
-  <sound>
-      <!--play sound on added-->
-      <match key="added" value="/usr/share/sounds/gaim/arrive.wav"/>
-      <match key="removed" value="/usr/share/sounds/gaim/leave.wav"/>
-      <match key="exec" value="aplay -q"/>
-  </sound>
-  <speach>
-      <match key="added" value="Added: to the system:"/>
-      <match key="removed" value="Removed: from the system:"/>
-      <match key="exec" value="flite -t"/> 
-  </speach>
-  <filemanager>
-      <match key="exec" value="thunar"/>
-  </filemanager>
-  <camera>
-      <match key="exec" value="gthumb --import-photos "/> 
-  </camera>
-  <cdrecord>
-      <match key="exec" value="graveman"/>
-  </cdrecord>
-  <audiocd>
-      <match key="exec" value="grip"/>
-  </audiocd>
-  <icon>
-      <!-- do not change key="hardisk|cdrom" -->
-      <match key="harddisk" value="gnome-dev-harddisk"/>
-      <match key="cdrom" value="gnome-dev-cdrom"/>
-      <!--  -->
-      <match key="usb" value="gnome-dev-harddisk-usb" />
-      <match key="usb" value="gnome-dev-harddisk-usb" /> 
-      <match key="mp3" value="gnome-dev-ipod"/>
-      <match key="ieee1394" value="gnome-dev-harddisk-1394"/>
-      <match key="mouse" value="gnome-dev-mouse-optical" />
-      <match key="pcmcia" value="gnome-dev-pcmcia" />
-      <match key="network" value="gnome-dev-network"/>
-      <match key="printer" value="gnome-dev-printer"/>
-      <match key="cdrom-audio" value="gnome-dev-cdrom-audio"/>
-      <match key="bluetooth" value="bluetooth"/>
-      
-      
-      
-  </icon>
+    <static>
+        <match key="mount" value="pmount"/>
+        <match key="strmount" value="Mount"/>
+        <match key="eject" value="eject"/>
+        <match key="streject" value="Eject"/>
+    </static>
+    <sound>
+        <!--play sound on added-->
+        <match key="added" value="/usr/share/sounds/gaim/arrive.wav"/>
+        <match key="removed" value="/usr/share/sounds/gaim/leave.wav"/>
+        <match key="exec" value="aplay -q"/>
+    </sound>
+    
+    <speach> 
+        <match key="say" value="@content">sh /tmp/say.sable>/tmp/.say.sable | festival --tts /tmp/.say.sable</match>
+        <match key="read" value="@content">festival --tts </match>
+    </speach>
+    <filemanager>
+        <match key="exec" value="thunar"/>
+    </filemanager>
+    <camera>
+        <match key="exec" value="gthumb --import-photos "/> 
+    </camera>
+    <cdrecord>
+        <match key="exec" value="graveman"/>
+    </cdrecord>
+    <audiocd>
+        <match key="exec" value="grip"/>
+    </audiocd>
+    <icon>
+        <!-- do not change key="hardisk|cdrom" -->
+        <match key="harddisk" value="gnome-dev-harddisk"/>
+        <match key="cdrom" value="gnome-dev-cdrom"/>
+        <!--  -->
+        <match key="usb" value="gnome-dev-harddisk-usb" />
+        <match key="usb" value="gnome-dev-harddisk-usb" /> 
+        <match key="mp3" value="gnome-dev-ipod"/>
+        <match key="ieee1394" value="gnome-dev-harddisk-1394"/>
+        <match key="mouse" value="gnome-dev-mouse-optical" />
+        <match key="pcmcia" value="gnome-dev-pcmcia" />
+        <match key="network" value="gnome-dev-network"/>
+        <match key="printer" value="gnome-dev-printer"/>
+        <match key="cdrom-audio" value="gnome-dev-cdrom-audio"/>
+        <match key="bluetooth" value="bluetooth"/> 
+    </icon>
 </config>
 

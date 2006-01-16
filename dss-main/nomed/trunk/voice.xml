@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*- SGML -*- -->
+
+<voice version="0.1">
+ 
+    <!--USB mouse: $config.speach.mouse_usb$ -->
+    <match key="mouse_usb" value="@content">
+        <SABLE>
+            <SPEAKER NAME="male3">
+                <SAYAS MODE="acronym">USB</SAYAS> Mouse ready to use
+            </SPEAKER> 
+        </SABLE>
+    </match>
+    <!--USB device: $config.speach.device_usb$ -->
+    <match key="device_usb" value="@content">
+        <SABLE>
+            <SPEAKER NAME="male3">
+                <SAYAS MODE="acronym">USB</SAYAS> Device ready to use
+            </SPEAKER> 
+        </SABLE>
+    </match>
+    <!--MP3 device: $config.speach.device_usb$ -->
+    <match key="mp3player" value="@content">
+        <SABLE>
+            <SPEAKER NAME="male3">
+                <SAYAS MODE="acronym">MP3</SAYAS> Player ready to use
+            </SPEAKER> 
+        </SABLE>
+    </match>
+    <!--MP3 device: $config.speach.device_usb$ -->
+    <match key="device_ieee1394" value="@content">
+        <SABLE>
+            <SPEAKER NAME="male3">
+                <SAYAS MODE="acronym">Fire Wire</SAYAS> Device ready to use
+            </SPEAKER> 
+        </SABLE>
+    </match>
+</voice>

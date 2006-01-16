@@ -13,7 +13,15 @@ class ConfigParser:
                  ):
         doc = libxml2.parseFile(filename)
         ctxt = doc.xpathNewContext()
-        self.dict_config={}
+        
+        #define tags
+        self.dict_config={"tag.n":"\n"}
+        self.dict_config["tag.bash"]='"'
+        self.dict_config["tag.bopen"]="<b>"
+        self.dict_config["tag.bclose"]="</b>"
+        self.dict_config["tag.sayopen"]='SAY="'
+        self.dict_config["tag.sayclose"]=self.dict_config["tag.bash"]
+        
         res0 = ctxt.xpathEval(path)
         for i in range(len(res0)):
             tag=res0[i].name
@@ -30,6 +38,9 @@ class ConfigParser:
                     key=str(haskey.children)
                     value=str(hasvalue.children)
                     dictkey="config."+tag+"."+key
+                    if value == "@content":
+                        value=res1[k].content
+                        print k,value
                     self.dict_config[dictkey]=value
            
         doc.freeDoc()
