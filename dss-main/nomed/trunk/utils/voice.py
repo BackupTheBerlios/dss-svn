@@ -7,7 +7,7 @@ import libxml2
 class VoiceParser:
     
     def __init__(self,
-                 filename="voice.xml",
+                 filename="xml/voice.xml",
                  path="/voice/*",
                  props=["key","value"],
                  filepath="/tmp/."

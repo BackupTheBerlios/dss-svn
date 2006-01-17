@@ -84,12 +84,16 @@ say:
                     <merge key="sound" 
                         value="on"/>
                     <!-- voice: ieee1394 device -->
-                    <merge key="exec" 
-                        value="$config.speach.read$ $voice.device_ieee1394$"/> 
+                    <merge key="say" 
+                        value="$config.speach.read$ $voice.add_ieee1394$"/> 
+                    <merge key="sayun" 
+                        value="$config.speach.read$ $voice.rem_ieee1394$"/>
+                    <!-- notify -->
                     <merge key="notify" 
                         value="$storage.model$ $storage.vendor$" 
                         message="$storage.drive_type$ $storage.bus$ $block.device$" 
-                        action="Action" icon="$config.icon.ieee1394$"/>
+                        action="Action" 
+                        icon="$config.icon.ieee1394$"/>
                     <merge key="unotify" 
                         value="$storage.model$ $storage.vendor$"  
                         message="$storage.drive_type$ $storage.bus$ $block.device$" 
@@ -104,8 +108,11 @@ say:
                 <merge key="sound" 
                     value="on"/>
                 <!-- voice: cdrom device-->
-                <merge key="exec" 
-                    value="$config.speach.read$ $voice.device_usb$"/>
+                <merge key="say" 
+                    value="$config.speach.read$ $voice.add_cdrom$"/>
+                <merge key="sayun" 
+                    value="$config.speach.read$ $voice.rem_cdrom$"/>
+                <!-- mount -->
                 <merge key="mount" 
                     value="true"/>
                 <merge key="exec" 
@@ -173,8 +180,11 @@ say:
                 <match key="linux.hotplug_type" value="1">
                     <merge key="sound" value="on"/>
                     <!-- voice USB mouse -->
-                    <merge key="exec" 
-                        value="$config.speach.read$ $voice.mouse_usb$"/>
+                    <merge key="sayun" 
+                        value="$config.speach.read$ $voice.rem_mouseusb$"/>
+                    <merge key="say" 
+                        value="$config.speach.read$ $voice.add_mouseusb$"/>
+                    <!--notify USB -->
                     <merge key="notify" 
                         value="Summary" 
                         message="$tag.bopen$ Message notify $tag.bclose$ $tag.n$ $vm.info.product$ $vm.info.vendor$" action="" 

@@ -7,7 +7,7 @@ import libxml2
 class RulesParser:
     
     def __init__(self,
-                 filename="rules.xml",
+                 filename="xml/rules.xml",
                  input={},
                  path="/deviceinfo/device/*[1]",
                  props=["key","value"]

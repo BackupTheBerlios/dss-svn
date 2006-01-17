@@ -7,7 +7,7 @@ import libxml2
 class ConfigParser:
     
     def __init__(self,
-                 filename="config.xml",
+                 filename="xml/config.xml",
                  path="/config/*",
                  props=["key","value"]
                  ):

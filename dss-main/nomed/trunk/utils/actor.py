@@ -10,14 +10,14 @@ import os.path
 
 class Actor:
 
-    def __init__(self,actions,required, properties,msg_render,config,voice):
+    def __init__(self,actions,required, properties,msg_render,config,sable):
         
         self.msg_render=msg_render
         self.properties=properties
         self.udi=properties['info.udi']
         self.actions=actions
         self.config=config
-        self.voice=voice
+        self.sable=sable
         self.cmdaction=''
         self.tagslist=["/n","<b>","</b>",'"','SAY="']
         #convert hal variable
@@ -30,8 +30,9 @@ class Actor:
                     for listindex in range(len(self.actions[key])):
                         for i in range(len(self.actions[key][listindex])): 
                             self.actions[key][listindex][i]=self.convert_var(self.actions[key][listindex][i],self.properties)
+        
         #print self.actions
-        self.exe,self.exeun,self.mount,self.sound,self.notify,self.unotify=self.convert_actions(self.actions)
+        self.exe,self.exeun,self.mount,self.sound,self.notify,self.unotify,self.voice,self.voiceun=self.convert_actions(self.actions)
         
         
     def cmd_exec(self):
@@ -48,8 +49,9 @@ class Actor:
                         val=properties[key]
                     elif key in self.config.keys():
                         val=self.config[key]
-                    elif key in self.voice.keys():
-                        val=self.voice[key]
+                    elif key in self.sable.keys():
+                        val=self.sable[key]
+
                     list[i]=val
             string=""
             for i in list:
@@ -71,6 +73,8 @@ class Actor:
         notify=[]
         unotify=[]
         sound=['off']
+        voice=[]
+        voiceun=[]
         for tag in actions.keys():
             if tag == "exec":
                 for string in actions[tag]:
@@ -94,14 +98,21 @@ class Actor:
             elif tag == "unotify":
                 for string in actions[tag]:
                     unotify.append(string)
+            elif tag == "say":
+                for string in actions[tag]:
+                    voice.append(string)
+            elif tag == "sayun":
+                for string in actions[tag]:
+                    voiceun.append(string)
        # print self.config
-        return exe,exeun,mount,sound,notify,unotify
+        return exe,exeun,mount,sound,notify,unotify,voice,voiceun
     
         
     def on_added(self):
         if self.sound[0] == 'on': 
             self.cmdaction="%s %s" %(self.config["config.sound.exec"],self.config["config.sound.added"])
             self.cmd_exec()
+       
 
         #this is just in case of mount=True
         # then PropertyChange signal occurs
@@ -132,6 +143,10 @@ class Actor:
             print "   %s: %s" % ("Action",cmdmount) 
 
             self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
+            for app in self.voice:
+                print "   Say: %s" % app
+                self.cmdaction=app
+                self.cmd_exec()   
             
         else:
             for app in self.exe:
@@ -153,7 +168,7 @@ class Actor:
                         notify_list[MESSAGE],
                         icon.icon_path
                         )
-                
+    
 
     def on_removed(self):
         if self.sound[0] == "on": 
@@ -177,7 +192,10 @@ class Actor:
                         unotify_list[MESSAGE],
                         icon.icon_path
                         )
-                
+        for app in self.voiceun:
+            print "   Say: %s" % app
+            self.cmdaction=app
+            self.cmd_exec()       
     
     def on_modified(self):
         for app in self.exe:
