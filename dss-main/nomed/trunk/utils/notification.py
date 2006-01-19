@@ -40,7 +40,7 @@ class NotificationDaemon(object):
                     #Execute the action handler
                     thread.start_new_thread(action_handlers[action_id], ())
                     action_handlers[action_id]()
-                    #self.iface.CloseNotification(dbus.UInt32(nid))
+                    self.iface.CloseNotification(dbus.UInt32(nid))
 
             condition = False
             while not condition:
@@ -57,9 +57,25 @@ class NotificationDaemon(object):
 
         else:
             #Fixing no actions messages
-            notify_actions = [(1, 2)] 
-
-        res = self.iface.Notify("Nomed", 
+            notify_actions = [(1, 2)]
+        #parameters_map={"sound_file":dbus.Variant("tune.mp3"), "suppress_sound":dbus.Variant(True), "x":dbus.Variant(100), "y":dbus.Variant(50) }
+        #parameters_map={ "x":dbus.Variant(), "y":dbus.Variant() }
+        parameters_map=[""]
+        
+        
+       # Determine the version of notifications
+		# FIXME: This code is blocking, as is the next set. That should be fixed
+		# now that we have a class to encapsulate this behavior
+        
+        try:
+            (name, vendor, version) = self.iface.GetServerInfo()
+        except:
+            # No way to determine the version number, set it to the latest
+            # since it doesn't properly support the version number
+            version = '0.3.1'
+        if version.startswith('0.2'): 
+            try:
+                res = self.iface.Notify("Nomed", 
                                     [dbus.String(icon)],
                                     dbus.UInt32(0),  
                                     '', 
@@ -68,9 +84,25 @@ class NotificationDaemon(object):
                                     message,  
                                     [dbus.String(icon)], 
                                     notify_actions, 
-                                    {"":""},
+                                    parameters_map,
                                     dbus.Boolean(expires), 
                                     dbus.UInt32(9))
+            except AttributeError:
+                version = '0.3.1'
+        print version
+        if version.startswith('0.3'):
+            res = self.iface.Notify("Nomed", 
+                    dbus.String(icon),
+                    dbus.UInt32(0), 
+                    '', 
+                    #dbus.Byte(0), 
+                    dbus.String(summary),  
+                    dbus.String(message),  
+                    #[dbus.String(icon)], 
+                    notify_actions, 
+                    #parameters_map,
+                    dbus.UInt32(9*1000)) 
+                                    
         
         return res
 

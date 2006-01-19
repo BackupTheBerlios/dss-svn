@@ -52,9 +52,9 @@ say:
                         value="$config.speach.read$ $voice.mp3player$"/>    
                     <merge key="notify" 
                         value="Summary: $storage.model$ $storage.vendor$" 
-                        message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$" 
-                        action="Action" 
-                        icon="gnome-dev-ipod"/>
+                        message="Message notify: $storage.drive_type$ $storage.bus$ $block.device$"  
+                        icon="gnome-dev-ipod">
+                    </merge>
                     <merge key="unotify" 
                         value="Summary: $storage.model$ $storage.vendor$"  
                         message="Message unotify: $storage.drive_type$ $storage.bus$ $block.device$" 

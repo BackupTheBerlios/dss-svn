@@ -36,7 +36,9 @@ class Actor:
         
         
     def cmd_exec(self):
-        os.system(self.cmdaction) 
+        os.system(self.cmdaction)
+    def voice_exec(self):
+        os.system(self.voicesay)
                 
     def convert_var(self,string,properties):
         """Convert hal variables (keys) in strings (values)"""
@@ -145,8 +147,8 @@ class Actor:
             self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
             for app in self.voice:
                 print "   Say: %s" % app
-                self.cmdaction=app
-                self.cmd_exec()   
+                self.voicesay=app
+                self.voice_exec()   
             
         else:
             for app in self.exe:

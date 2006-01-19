@@ -31,10 +31,13 @@ class DeviceManager:
         # per the hal spec
         self.hal_manager.connect_to_signal("DeviceAdded", 
                          lambda *args: self.gdl_changed("DeviceAdded", *args))
+        print self.hal_manager
         self.hal_manager.connect_to_signal("DeviceRemoved", 
                          lambda *args: self.gdl_changed("DeviceRemoved", *args))
+        print self.hal_manager
         self.hal_manager.connect_to_signal("NewCapability", 
                          lambda *args: self.gdl_changed("NewCapability", *args)) 
+        print self.hal_manager
 
        
         
@@ -54,9 +57,11 @@ class DeviceManager:
         self.update_device_dict()
         # config.xml dict
         config=ConfigParser()
+        print config
         self.config=config.dict_config
         # voice.xml dict
         voice=VoiceParser()
+        print voice
         self.voice=voice.dict_voice
         gtk.main()
         

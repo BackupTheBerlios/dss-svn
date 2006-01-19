@@ -86,7 +86,7 @@ class RulesParser:
                             actions[key]=value
                         elif key == "notify" or key == "unotify":
                             hasmessage=match.hasProp("message")
-                            hasaction=match.hasProp("action")
+                            #hasaction=match.hasProp("action")
                             hasicon=match.hasProp("icon")
                             if hasmessage != None:
                                 message=str(hasmessage.children)
@@ -96,12 +96,12 @@ class RulesParser:
                                 icon=str(hasicon.children)
                             else:
                                 icon=None
-                            if hasaction != None:
-                                action=str(hasaction.children)
-                            else:
-                                action=None
+                            #if hasaction != None:
+                            #    action=str(hasaction.children)
+                            #else:
+                            #    action=None
                             
-                            actions[key].append([value,message,icon,action])
+                            actions[key].append([value,message,icon])
                         else:
                             if key in actions.keys():
                                 actions[key].append(value)
@@ -112,6 +112,7 @@ class RulesParser:
         self.required=required
         self.actions=actions
         #print self.required,self.actions
+        print self.actions
         doc.freeDoc()
         
         
