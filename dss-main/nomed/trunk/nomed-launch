@@ -1,0 +1,4 @@
+#!/usr/bin/python
+import Nomed.nomed
+Nomed.nomed.main()
+

@@ -1,0 +1,12 @@
+Source: nomed
+Section: unknown
+Priority: optional
+Maintainer: Daniele Favara <danjele@gmail.com>
+Build-Depends: debhelper (>= 4.0.0),python-dev
+Standards-Version: 3.6.2
+
+Package: nomed
+Architecture: any
+Depends: ${shlibs:Depends}, ${python:Depends}, libxml2, notification-daemon, hal, dbus
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
