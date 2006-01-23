@@ -9,8 +9,8 @@
     </static>
     <sound>
         <!--play sound on added-->
-        <match key="added" value="/usr/share/sounds/gaim/arrive.wav"/>
-        <match key="removed" value="/usr/share/sounds/gaim/leave.wav"/>
+        <match key="added" value="/usr/share/sounds/nomed/arrive.wav"/>
+        <match key="removed" value="/usr/share/sounds/nomed/leave.wav"/>
         <match key="exec" value="aplay -q"/>
     </sound>
     
