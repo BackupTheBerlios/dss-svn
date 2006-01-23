@@ -14,9 +14,10 @@ import os.path
 #from nomed import Notify
 
 class DeviceManager:
-    def __init__(self):
+    def __init__(self,appdir):
         
         self.msg_render=NotificationDaemon()     
+        self.appdir=appdir
         self.udi_dict = {}
         self.config = {}
         self.voice = {}
@@ -56,18 +57,18 @@ class DeviceManager:
         
         self.update_device_dict()
         # config.xml dict
-        config=ConfigParser()
-        print config
+        config=ConfigParser(filename=self.appdir+"/config.xml")
+        #print config
         self.config=config.dict_config
         # voice.xml dict
-        voice=VoiceParser()
-        print voice
+        voice=VoiceParser(filename=self.appdir+"/voice.xml")
+        #print voice
         self.voice=voice.dict_voice
         gtk.main()
         
     def properties_rules(self,device_udi):
         properties = self.udi_to_properties(device_udi) 
-        rules=RulesParser(input=properties)
+        rules=RulesParser(filename=self.appdir+"/rules.xml",input=properties)
         required=rules.required
         actions=rules.actions
         return required,actions,properties
@@ -117,7 +118,7 @@ class DeviceManager:
                                                   dbus_interface="org.freedesktop.Hal.Device")
                 print "  value=%s"%(properties[property_name])
         
-                rules=RulesParser(input=properties)
+                rules=RulesParser(filename=self.appdir+"/rules.xml", input=properties)
                 
 
                 #############################################################
@@ -236,8 +237,8 @@ class DeviceManager:
 
 
 
-def main():
-    startdev = DeviceManager()
+def main(appdir="xml"):
+    startdev = DeviceManager(appdir)
 if __name__ == "__main__":
     main()
     

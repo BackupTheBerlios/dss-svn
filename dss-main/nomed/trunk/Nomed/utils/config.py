@@ -11,6 +11,7 @@ class ConfigParser:
                  path="/config/*",
                  props=["key","value"]
                  ):
+        
         doc = libxml2.parseFile(filename)
         ctxt = doc.xpathNewContext()
         

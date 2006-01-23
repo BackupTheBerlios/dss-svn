@@ -1,4 +1,17 @@
 #!/usr/bin/python
+import os 
+import shutil
 import Nomed.nomed
-Nomed.nomed.main()
+userhome=os.environ["HOME"]
+appdir=userhome+"/.nomed"
+if not os.path.isdir(appdir):
+    os.mkdir(appdir)
 
+for root, dirs, files in os.walk("/etc/nomed", topdown=False):
+    for name in files:
+        if not os.path.isfile(os.path.join(appdir, name)):
+            shutil.copyfile(os.path.join(root, name),os.path.join(appdir, name))
+
+Nomed.nomed.main(appdir)
+            
+    
