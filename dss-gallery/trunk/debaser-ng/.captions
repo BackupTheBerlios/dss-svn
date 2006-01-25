@@ -5,9 +5,9 @@
 # show, add a # sign at the beginning of their respective lines.  You may
 # also change the order of images in your slide show at this time.
 
-dirchooser.png ---- 
+strap-intro.png ---- 
 step1-distro.png ---- 
 step2-options.png ---- 
 step3-options.png ---- 
 step4-select.png ---- 
-strap-intro.png ---- 
+dirchooser.png ---
