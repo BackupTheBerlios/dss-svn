@@ -4,7 +4,7 @@ from subprocess import PIPE, Popen
 import os.path
 import sys
 import getopt
-from utils.notification import NotificationDaemon
+from Nomed.utils.notification import NotificationDaemon
 
 class Notifier:
     def __init__(self):
