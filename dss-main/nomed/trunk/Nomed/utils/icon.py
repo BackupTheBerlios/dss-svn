@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 import sys
 import gtk
-
+import os
 
 
 class IconPath:
@@ -12,7 +12,9 @@ class IconPath:
         icon_pixbuf=None
         icon_theme = gtk.icon_theme_get_default()
         self.icon_list=icon_theme.list_icons()
-        if icon_name in self.icon_list:  
+        if os.path.isfile(icon_name):
+            icon_path=icon_name
+        elif icon_name in self.icon_list:  
             icon_path=self.get_icon_path(icon_theme,icon_name)
             icon_pixbuf=gtk.gdk.pixbuf_new_from_file_at_size(icon_path,48,48)
         #icon_data=[icon_pixbuf,icon_name, icon]
@@ -23,13 +25,8 @@ class IconPath:
         self.icon_pixbuf=icon_pixbuf
 
     def get_icon_path(self,icontheme, iconname):
-       
-        #print iconname
-        if icontheme.has_icon(iconname) == True:
-            icon_lookup=icontheme.lookup_icon(iconname,48 ,gtk.ICON_LOOKUP_FORCE_SVG)
-            icon=icon_lookup.get_filename()
-        else:
-            icon=''
+        icon_lookup=icontheme.lookup_icon(iconname,48 ,gtk.ICON_LOOKUP_FORCE_SVG)
+        icon=icon_lookup.get_filename()
         return icon
 def main():
     import sys

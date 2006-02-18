@@ -10,9 +10,10 @@ import os.path
 
 class Actor:
 
-    def __init__(self,actions,required, properties,msg_render,config,sable):
+    def __init__(self,actions,required, properties,msg_render,config,sable,coordinates=None):
         
         self.msg_render=msg_render
+        self.coordinates=coordinates
         self.properties=properties
         self.udi=properties['info.udi']
         self.actions=actions
@@ -28,11 +29,16 @@ class Actor:
                         self.actions[key][i]=self.convert_var(self.actions[key][i],self.properties)
                 else:
                     for listindex in range(len(self.actions[key])):
-                        for i in range(len(self.actions[key][listindex])): 
+                        for i in range(len(self.actions[key][listindex])):
+                            #print "############"
+                            #print self.actions[key][listindex][i]
                             self.actions[key][listindex][i]=self.convert_var(self.actions[key][listindex][i],self.properties)
+                            #print self.actions[key][listindex][i]
+                            
         
         #print self.actions
         self.exe,self.exeun,self.mount,self.sound,self.notify,self.unotify,self.voice,self.voiceun=self.convert_actions(self.actions)
+        
         
         
     def cmd_exec(self):
@@ -47,6 +53,9 @@ class Actor:
             for i in range(len(list)):
                 if list[i].startswith("$") and list[i].endswith("$"):
                     key=list[i].replace("$","")
+                    #print "########################################"
+                    #print properties.keys()
+                    #print "#######################################"
                     if key in properties.keys():
                         val=properties[key]
                     elif key in self.config.keys():
@@ -111,6 +120,7 @@ class Actor:
     
         
     def on_added(self):
+        #print "on_added"
         if self.sound[0] == 'on': 
             self.cmdaction="%s %s" %(self.config["config.sound.exec"],self.config["config.sound.added"])
             self.cmd_exec()
@@ -123,36 +133,29 @@ class Actor:
             summary=self.properties["info.product"]
             body="%s %s" % ("block device",dev)
             cmdmount="%s %s" % ("pmount",dev)
-            straction="%s %s" % ("Mount",self.properties["info.category"])
-             
-            #def pmount():
-            #    os.system(cmdmount)
+            straction="%s %s" % ("Mount",self.properties["info.category"])   
             self.cmdaction=cmdmount
             actions={straction: self.cmd_exec}
-            
 
             if self.properties["volume.fstype"] == "iso9660":
                 icon=IconPath(self.config["config.icon.cdrom"]).icon_path
-                #icon=gtk.STOCK_CDROM
             else:
                 icon=IconPath(self.config["config.icon.harddisk"]).icon_path
-                       # print messages
-            print "   %s: %s" % ("Icon",str(icon))
-            print "   %s: %s" % ("Sound",self.sound)
-            print "   %s: %s" % ("Summary",str(summary))
-            print "   %s: %s" % ("Body",str(body))
-            #print "   %s: %s" % ("Action",)
-            print "   %s: %s" % ("Action",cmdmount) 
+            #print "   %s: %s" % ("Icon",str(icon))
+            #print "   %s: %s" % ("Sound",self.sound)
+            #print "   %s: %s" % ("Summary",str(summary))
+            #print "   %s: %s" % ("Body",str(body))
+            #print "   %s: %s" % ("Action",cmdmount) 
 
-            self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
+            self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0,coordinates=self.coordinates)
             for app in self.voice:
-                print "   Say: %s" % app
+                #print "   Say: %s" % app
                 self.voicesay=app
                 self.voice_exec()   
             
         else:
             for app in self.exe:
-                print "   Exec: %s" % app
+                #print "   Exec: %s" % app
                 self.cmdaction=app
                 self.cmd_exec() 
 
@@ -161,14 +164,14 @@ class Actor:
             if icon.icon_path == None:
                 icon.icon_path = "gtk-dialog-info"
             # print messages
-            print "   %s: %s" % ("Icon",icon.icon_path) 
-            print "   %s: %s" % ("Summary",notify_list[SUMMARY])
+            #print "   %s: %s" % ("Icon",icon.icon_path) 
+            #print "   %s: %s" % ("Summary",notify_list[SUMMARY])
             print "   %s: %s" % ("Body",notify_list[MESSAGE])
- 
             #print notify_list
             self.msg_render.show(notify_list[SUMMARY],
                         notify_list[MESSAGE],
-                        icon.icon_path
+                        icon.icon_path,
+                        coordinates=self.coordinates
                         )
     
 
@@ -192,7 +195,8 @@ class Actor:
 
             self.msg_render.show(unotify_list[SUMMARY],
                         unotify_list[MESSAGE],
-                        icon.icon_path
+                        icon.icon_path,
+                        coordinates=self.coordinates
                         )
         for app in self.voiceun:
             print "   Say: %s" % app
@@ -231,7 +235,7 @@ class Actor:
                 actions=""
                 icon=IconPath(self.config["config.icon.harddisk"]).icon_path
             
-            self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0)
+            self.msg_render.show(summary,body,actions=actions,icon=icon,expires=0,coordinates=self.coordinates)
         else:
             for app in self.exe:
                 print "  exec=%s" %app

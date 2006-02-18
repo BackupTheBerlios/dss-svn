@@ -28,39 +28,47 @@ class NotificationDaemon(object):
 
     # Main Message #######################################################
 
-    def show(self, summary, message, icon, actions = {},expires=1): 
+    def show(self, summary, message, icon, actions = {},expires=1,coordinates=None): 
         #print actions
         if actions != {}:
-           
+  
             (notify_actions, action_handlers) = self.process_actions(actions)
-            
-
+            #print notify_actions, action_handlers
             def action_invoked(nid, action_id):
+                #print "action nid:%s action id:%s" % (nid , action_id)
+                #print "this is the res nid: %s %s" % (res,nid)
                 if action_handlers.has_key(action_id) and res == nid:
                     #Execute the action handler
+                    #print res,nid
                     thread.start_new_thread(action_handlers[action_id], ())
                     action_handlers[action_id]()
                     self.iface.CloseNotification(dbus.UInt32(nid))
-
-            condition = False
-            while not condition:
-                try: 
+            self.iface.connect_to_signal("ActionInvoked", action_invoked)
+            #condition = False
+            #while not condition:
+            #    try: 
                     #self.logger.debug("Trying to connect to ActionInvoked")
-                    self.iface.connect_to_signal("ActionInvoked", action_invoked)
-                    condition = True
-                except:
-                    logmsg = "ActionInvoked handler not configured. "
-                    logmsg += "Trying to run notification-daemon."
-                    self.logger.warning(logmsg)
-                    os.system('/usr/lib/notification-daemon/notification-daemon &')                
-                    time.sleep(0.2)
+            #        self.iface.connect_to_signal("ActionInvoked", action_invoked)
+            #        condition = True
+            #    except:
+            #        logmsg = "ActionInvoked handler not configured. "
+            #        logmsg += "Trying to run notification-daemon."
+            #        self.logger.warning(logmsg)
+            #        os.system('/usr/lib/notification-daemon/notification-daemon &')                
+            #        time.sleep(0.2)
 
         else:
             #Fixing no actions messages
-            notify_actions = [(1, 2)]
+            notify_actions = ""
         #parameters_map={"sound_file":dbus.Variant("tune.mp3"), "suppress_sound":dbus.Variant(True), "x":dbus.Variant(100), "y":dbus.Variant(50) }
-        #parameters_map={ "x":dbus.Variant(), "y":dbus.Variant() }
-        parameters_map=[""]
+        if coordinates != None:
+            x=coordinates[0]
+            y=coordinates[1]
+            parameters_map={ "x":x, "y":y}
+        else:
+            parameters_map={}
+        #"sound-file":dbus.Variant("home/nomed/Desktop/DSS-svn/dss/dss-main/nomed/trunk/sounds/arrive.wav")}
+        #parameters_map=""
         
         
        # Determine the version of notifications
@@ -91,17 +99,27 @@ class NotificationDaemon(object):
                 version = '0.3.1'
         print version
         if version.startswith('0.3'):
-            res = self.iface.Notify("Nomed", 
-                    dbus.String(icon),
-                    dbus.UInt32(0), 
-                    '', 
+            #res = self.iface.Notify("Nomed", 
+             #       dbus.String(icon),
+              #      dbus.UInt32(0), 
+              #      '', 
                     #dbus.Byte(0), 
-                    dbus.String(summary),  
-                    dbus.String(message),  
+               #     dbus.String(summary),  
+               #     dbus.String(message),  
                     #[dbus.String(icon)], 
-                    notify_actions, 
+               #     notify_actions, 
                     #parameters_map,
-                    dbus.UInt32(9*1000)) 
+               #     dbus.UInt32(9*1000)) 
+            #print notify_actions
+            res = self.iface.Notify("Nomed", 
+                                    dbus.UInt32(0),  
+                                    dbus.String(icon), 
+                                    summary,  
+                                    message,  
+                                    notify_actions, 
+                                    #["firefox", "firefox browser"],
+                                    parameters_map,
+                                    dbus.Int32(0))
                                     
         
         return res
@@ -109,18 +127,22 @@ class NotificationDaemon(object):
 
     # Specific messages #################################
 
-    def show_info(self, summary, message, actions = {}):
+    def show_info(self, summary, message, actions = {}, coordinates=None):
         return self.show(summary, message, "gtk-dialog-info", actions)
 
 
-    def show_warning(self, summary, message, actions = {}):
+    def show_warning(self, summary, message, actions = {},coordinates=None):
         return self.show(summary, message, "gtk-dialog-warning", actions)
 
 
-    def show_error(self, summary, message, actions = {}):
+    def show_error(self, summary, message, actions = {},coordinates=None):
         return self.show(summary, message, "gtk-dialog-error", actions)
-
-
+    def show_mail(self, summary, message,icon):
+        self.cmdaction="firefox http://gmail.google.com"
+        actions={"View": self.cmd_exec}
+        return self.show(summary, message,icon, actions,coordinates=None)
+    def cmd_exec(self):
+        os.system(self.cmdaction)
     def close(self, nid):
         try:
             self.iface.CloseNotification(dbus.UInt32(nid))
@@ -136,17 +158,23 @@ class NotificationDaemon(object):
             #FIXME
             return {}, {}
 
-        for key in actions.keys():
-            actions[" "] = None
+        #for key in actions.keys():
+        #    actions[" "] = None
 
-        notify_actions = {}
+        notify_actions = []
         action_handlers = {}
         i = 1
         #print actions.items()
+        #print key
         for key, value in actions.items():
-            #print key
-            notify_actions[key] = i
-            action_handlers[i] = value
+            print key,value
+            
+            
+            notify_actions.append(str(i))
+            notify_actions.append(key)
+            #print notify_actions
+            action_handlers[str(i)] = value
+            #print action_handlers
             i += 1
 
         return notify_actions, action_handlers

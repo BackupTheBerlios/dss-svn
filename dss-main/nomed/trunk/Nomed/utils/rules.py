@@ -33,9 +33,9 @@ class RulesParser:
 
                     if key in input.keys() and str(input[key]) == value:
                         required[key]=value
-                        print "<match>"
-                        print key,value
-                        print "</match>"
+                        #print "<match>"
+                        #print key,value
+                        #print "</match>"
                         #print key,input[key]
                         #print "if3"
                         if ctxt.xpathEval(path+"/merge") != []:
@@ -112,7 +112,7 @@ class RulesParser:
         self.required=required
         self.actions=actions
         #print self.required,self.actions
-        print self.actions
+        #print self.actions
         doc.freeDoc()
         
         
