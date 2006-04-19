@@ -127,14 +127,15 @@ class Wizard:
       setattr(self, widget.get_name(), widget)
 
     self.customize_installer()
+    
 
 
   def run(self):
     """run the interface."""
 
     # show interface
-    self.show_browser()
-
+    #self.show_browser()
+    
     # Resizing labels according to screen resolution
     for widget in self.glade.get_widget_prefix(""):
       if widget.__class__ == gtk.Label and widget.get_name()[-6:-1] == 'label':
@@ -146,8 +147,13 @@ class Wizard:
     # Declare SignalHandler
     self.glade.signal_autoconnect(self)
 
+    # mouse
+    #self.live_installer.window.set_cursor (None) 
+    
     # Start the interface
+    
     gtk.main()
+    
 
 
   def customize_installer(self):
@@ -165,9 +171,15 @@ class Wizard:
     self.total_images   = glob.glob("%s/snapshot*.png" % PIXMAPSDIR)
     self.total_images.reverse()
     self.total_messages = open(messages_uri).readlines()
-
+    SHOOTSDIR = os.path.join(PATH, 'htmldocs/', self.distro, self.lang) 
+    if os.path.exists(SHOOTSDIR):
+        pass
+    else:
+        SHOOTSDIR = os.path.join(PATH, 'htmldocs/', self.distro, 'en') 
+    print SHOOTSDIR
     # set pixmaps
     if ( gtk.gdk.get_default_root_window().get_screen().get_width() > 1024 ):
+      self.photo0.set_from_file(os.path.join(PIXMAPSDIR, "photo_1280.png"))
       self.logo_image0.set_from_file(os.path.join(PIXMAPSDIR, "logo_1280.jpg"))
       self.logo_image1.set_from_file(os.path.join(PIXMAPSDIR, "logo_1280.jpg"))
       self.photo1.set_from_file(os.path.join(PIXMAPSDIR, "photo_1280.jpg"))
@@ -178,6 +190,7 @@ class Wizard:
       #self.photo2.set_from_file(os.path.join(PIXMAPSDIR, "photo_1280.jpg"))
       self.logo_image4.set_from_file(os.path.join(PIXMAPSDIR, "logo_1280.jpg"))
     else:
+      self.photo0.set_from_file(os.path.join(PIXMAPSDIR, "photo_1024.png"))
       self.logo_image0.set_from_file(os.path.join(PIXMAPSDIR, "logo_1024.jpg"))
       self.logo_image1.set_from_file(os.path.join(PIXMAPSDIR, "logo_1024.jpg"))
       self.photo1.set_from_file(os.path.join(PIXMAPSDIR, "photo_1024.jpg"))
@@ -189,18 +202,30 @@ class Wizard:
       self.logo_image4.set_from_file(os.path.join(PIXMAPSDIR, "logo_1024.jpg"))
 
     self.installing_image.set_from_file(os.path.join(PIXMAPSDIR, "snapshot1.png"))
+    # set shoots 
+    self.snapshoot1.set_from_file(os.path.join(SHOOTSDIR, "snapshot1.png"))
+    self.snapshoot2.set_from_file(os.path.join(SHOOTSDIR, "snapshot2.png"))
+    self.snapshoot3a.set_from_file(os.path.join(SHOOTSDIR, "snapshot3a.png"))
+    self.snapshoot3b.set_from_file(os.path.join(SHOOTSDIR, "snapshot3b.png"))
+    self.snapshoot3c.set_from_file(os.path.join(SHOOTSDIR, "snapshot3c.png"))
+    self.snapshoot4.set_from_file(os.path.join(SHOOTSDIR, "snapshot4.png"))
+    self.snapshoot5.set_from_file(os.path.join(SHOOTSDIR, "snapshot5.png"))
 
     # set fullscreen mode
     self.live_installer.fullscreen()
     self.live_installer.set_keep_above(True)
     self.live_installer.show()
-    self.live_installer.window.set_cursor(self.watch)
+    #self.live_installer.window.set_cursor(self.watch)
 
     # set initial bottom bar status
     self.back.hide()
-    self.help.hide()
+    self.help.show()
+    #self.help.connect('clicked', self.on_show_browser)
     self.next.set_label('gtk-go-forward')
-
+    color=gtk.gdk.color_parse('#ffffff')
+    self.eventbox1.modify_bg(gtk.STATE_NORMAL,color)
+    self.eventbox2.modify_bg(gtk.STATE_NORMAL,color)
+    self.eventbox3.modify_bg(gtk.STATE_NORMAL,color)
 
   def set_locales(self):
     """internationalization config. Use only once."""
@@ -211,9 +236,11 @@ class Wizard:
     gtk.glade.textdomain(domain)
     textdomain(domain)
     install(domain, LOCALEDIR, unicode=1)
+    
 
+    
 
-  def show_browser(self):
+  def show_browser1(self):
     """Embed Mozilla widget into a vbox."""
 
     import gtkmozembed
@@ -237,7 +264,7 @@ class Wizard:
     widget.show()
 
     # Setting Normal mouse cursor
-    self.live_installer.window.set_cursor(None)
+    #self.live_installer.window.set_cursor(None)
 
 
   def resize_text (self, widget, type):
@@ -393,7 +420,7 @@ class Wizard:
     # first image iteration
     self.images_loop()
     # Setting Normal cursor
-    self.live_installer.window.set_cursor(None)
+    #self.live_installer.window.set_cursor(None)
 
     path = '/usr/lib/python2.4/site-packages/ue/backend/'
 
@@ -637,6 +664,9 @@ class Wizard:
       return False
     self.set_progress(msg)
     return True
+    color=gtk.gdk.color_parse('#234fdb')
+    self.hbox33.modify_bg(gtk.STATE_NORMAL, color)
+    self.hbox33.show()
 
 
   def images_loop(self):
@@ -652,26 +682,39 @@ class Wizard:
   def on_help_clicked(self, widget):
     """show help message when help button is clicked."""
 
-    if ( self.steps.get_current_page() in [0, 1] ):
-      text = _("<span>Es necesario que introduzca su <b>nombre de usuario</b> para el sistema, su <b>nombre completo</b> para generar una ficha de usuario, así como el <b>nombre de máquina</b> con el que quiera bautizar su equipo. Deberá teclear la contraseña de usuario en dos ocasiones.</span>")
-      self.warning_info.set_markup(self.resize_text(text, '4'))
+    if  self.steps.get_current_page() == 0:
+     # text = _("<span>Es necesario que introduzca su <b>nombre de usuario</b> para el sistema, su <b>nombre completo</b> para generar una ficha de usuario, así como el <b>nombre de máquina</b> con el que quiera bautizar su equipo. Deberá teclear la contraseña de usuario en dos ocasiones.</span>")
+      #self.warning_info.set_markup(self.resize_text(text, '4'))
+      
+      #print self.steps.get_current_page()
       self.help.hide()
+      self.next.hide()
+      self.cancel.hide()
+      self.vbox41.hide()
+      self.browser_vbox.show()
+      self.back.show()
+
+
 
 
   def on_next_clicked(self, widget):
     """Callback to control the installation process between steps."""
-
+    
+    #widget.set_cursor(self.watch)
     # setting actual step
     step = self.steps.get_current_page()
     pre_log('info', 'Step_before = %d' % step)
-
+    self.live_installer.window.set_cursor(self.watch)
     # From Welcome to Info
     if step == 0:
+      self.help.hide()
+      self.back.show()
       self.next.set_label('gtk-go-forward')
       self.next.set_sensitive(False)
       self.steps.next_page()
+      #self.live_installer.window.set_cursor(None)
     # From Info to Peez
-    elif step == 1:
+    elif step == 1: 
       self.info_to_peez()
     # From Peez to {Gparted, Progress}
     elif step == 2:
@@ -682,14 +725,13 @@ class Wizard:
     # From Mountpoints to Progress
     elif step == 4:
       self.mountpoints_to_progress()
-
+    
     step = self.steps.get_current_page()
     pre_log('info', 'Step_after = %d' % step)
-
+    self.live_installer.window.set_cursor(None)
 
   def info_to_peez (self):
     """Processing info to peez step tasks."""
-
     from ue import validation
     #error_msg = ['\n']
     error = 0
@@ -754,6 +796,7 @@ class Wizard:
       self.back.show()
       self.help.hide()
       self.steps.next_page()
+      #self.live_installer.window.set_cursor(None) 
       # To disable peez2 utility, you must comment the line above
       # this one and uncoment the three below lines.
       # if self.gparted:
@@ -954,7 +997,7 @@ class Wizard:
       self.back.hide()
       self.steps.next_page()
       # setting busy mouse cursor
-      self.live_installer.window.set_cursor(self.watch)
+      #self.live_installer.window.set_cursor(self.watch)
 
       # refreshing UI
       while gtk.events_pending():
@@ -981,7 +1024,18 @@ class Wizard:
     self.next.set_sensitive(True)
     # Setting actual step
     step = self.steps.get_current_page()
+    if step == 0:
+      self.browser_vbox.hide()
+      self.back.hide()
+      self.back.hide()
+      self.help.show()
+      self.next.show()
+      self.cancel.show()
+      self.vbox41.show()
 
+    if step == 1:
+      self.back.hide()
+      self.help.show()
     if step == 2:
       self.back.hide()
 
@@ -1062,7 +1116,7 @@ class Wizard:
     if 2 == current and None == self.__assistant:
 
       # To set a "busy mouse":
-      self.live_installer.window.set_cursor (self.watch)
+      #self.live_installer.window.set_cursor (self.watch)
 
 ##       while gtk.events_pending ():
 ##         gtk.main_iteration ()
@@ -1070,7 +1124,7 @@ class Wizard:
       self.__assistant = Peez2 () # debug = False)
 
       # To set a normal mouse again:
-      self.live_installer.window.set_cursor (None)
+      #self.live_installer.window.set_cursor (None)
 
       for i in self.__assistant.get_drives ():
         self.drives.append_text ('%s' % i ['label'])
@@ -1198,14 +1252,14 @@ def launch_autoparted (wizard, assistant, drive, progress):
   result = None
 
   # To set a "busy mouse":
-  wizard.live_installer.window.set_cursor (wizard.watch)
+  #wizard.live_installer.window.set_cursor (wizard.watch)
 
   result = part.call_autoparted (assistant, drive, progress)
   progress.put ('')
   progress.put (result)
 
   # To set normal mouse again:
-  wizard.live_installer.window.set_cursor (None)
+  #wizard.live_installer.window.set_cursor (None)
 
 if __name__ == '__main__':
   w = Wizard('dsslive')

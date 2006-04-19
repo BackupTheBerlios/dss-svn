@@ -4,6 +4,7 @@
 <glade-interface>
 
 <widget class="GtkWindow" id="live_installer">
+  <property name="visible">True</property>
   <property name="has_focus">True</property>
   <property name="title" translatable="yes">Express installer</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
@@ -98,12 +99,448 @@
 	      <child>
 		<widget class="GtkVBox" id="browser_vbox">
 		  <property name="border_width">16</property>
-		  <property name="visible">True</property>
 		  <property name="homogeneous">False</property>
 		  <property name="spacing">0</property>
 
 		  <child>
-		    <placeholder/>
+		    <widget class="GtkScrolledWindow" id="scrolledwindow7">
+		      <property name="visible">True</property>
+		      <property name="can_focus">True</property>
+		      <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+		      <property name="vscrollbar_policy">GTK_POLICY_ALWAYS</property>
+		      <property name="shadow_type">GTK_SHADOW_NONE</property>
+		      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
+
+		      <child>
+			<widget class="GtkViewport" id="viewport2">
+			  <property name="visible">True</property>
+			  <property name="shadow_type">GTK_SHADOW_IN</property>
+
+			  <child>
+			    <widget class="GtkEventBox" id="eventbox1">
+			      <property name="visible">True</property>
+			      <property name="visible_window">True</property>
+			      <property name="above_child">False</property>
+
+			      <child>
+				<widget class="GtkVBox" id="vbox44">
+				  <property name="visible">True</property>
+				  <property name="homogeneous">False</property>
+				  <property name="spacing">0</property>
+
+				  <child>
+				    <widget class="GtkLabel" id="label67">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;xx-large&quot;  foreground=&quot;#3b5da5&quot;&gt;0. Intro&lt;/span&gt;
+
+&lt;span size=&quot;large&quot;  foreground=&quot;#90b5f9&quot;&gt;&lt;b&gt;
+The page you have just visited. Introduction, link to this quick guide and start 
+of the installation process.&lt;/b&gt;
+&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot1">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label68">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;xx-large&quot;  foreground=&quot;#3b5da5&quot;&gt;1. Identification&lt;/span&gt;
+
+&lt;span size=&quot;large&quot;   foreground=&quot;#90b5f9&quot;&gt;
+&lt;b&gt;Defining your name, user ID, password and the name of your computer
+ 
+The user, that will be generated during the installation, will be the administrator 
+(super  user), this  will  allow  to  add  or  delete  users  and  groups,  activate or 
+deactivate  services, install  new applications, change  data and time. When the 
+installation  process will  be over,  it's  suggested  to  add  a  new  user  without 
+administrator privileges.
+&lt;/b&gt;&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot2">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label69">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;xx-large&quot;  foreground=&quot;#3b5da5&quot;&gt;2. Disk space&lt;/span&gt;
+
+&lt;span size=&quot;large&quot; foreground=&quot;#90b5f9&quot;&gt;
+&lt;b&gt;The installer tries to make room for your Dsslive system, automatically.&lt;/b&gt;
+&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot3a">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label74">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;large&quot; foreground=&quot;#90b5f9&quot;&gt;&lt;b&gt;
+You can organize your disk space manually, if you prefer.
+&lt;/b&gt;&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot3b">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label71">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;large&quot;   foreground=&quot;#90b5f9&quot;&gt;
+&lt;b&gt;In this case it will be needed to specify in which partition to install each part of the 
+system.&lt;/b&gt;
+&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot3c">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label72">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;xx-large&quot;  foreground=&quot;#3b5da5&quot;&gt;3. Installation&lt;/span&gt;
+
+&lt;span size=&quot;large&quot;   foreground=&quot;#90b5f9&quot;&gt;&lt;b&gt;
+About  15  minutes of automatic copy of files. You can watch the  simultaneous 
+Dsslive slide tour to know more abotu the system  that is being installed in your 
+computer. Or you can simply go for  a drink.
+&lt;/b&gt;&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot4">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label73">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;xx-large&quot;  foreground=&quot;#3b5da5&quot;&gt;4. Ready!&lt;/span&gt;
+
+&lt;span size=&quot;large&quot; foreground=&quot;#90b5f9&quot;&gt;&lt;b&gt;
+End of the installation. Reboot your computer and start your new Dsslive love story.
+&lt;/b&gt;&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkImage" id="snapshoot5">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.10000000149</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">True</property>
+				      <property name="fill">True</property>
+				    </packing>
+				  </child>
+				</widget>
+			      </child>
+			    </widget>
+			  </child>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="padding">0</property>
+		      <property name="expand">True</property>
+		      <property name="fill">True</property>
+		    </packing>
+		  </child>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">True</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkVBox" id="vbox41">
+		  <property name="border_width">16</property>
+		  <property name="visible">True</property>
+		  <property name="homogeneous">True</property>
+		  <property name="spacing">0</property>
+
+		  <child>
+		    <widget class="GtkViewport" id="viewport3">
+		      <property name="visible">True</property>
+		      <property name="shadow_type">GTK_SHADOW_IN</property>
+
+		      <child>
+			<widget class="GtkEventBox" id="eventbox2">
+			  <property name="visible">True</property>
+			  <property name="visible_window">True</property>
+			  <property name="above_child">False</property>
+
+			  <child>
+			    <widget class="GtkHBox" id="hbox37">
+			      <property name="visible">True</property>
+			      <property name="homogeneous">False</property>
+			      <property name="spacing">0</property>
+
+			      <child>
+				<widget class="GtkImage" id="photo0">
+				  <property name="visible">True</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">40</property>
+				  <property name="ypad">0</property>
+				</widget>
+				<packing>
+				  <property name="padding">20</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkLabel" id="label66">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">&lt;span size=&quot;xx-large&quot;  foreground=&quot;#3b5da5&quot;&gt;dss liveinstaller&lt;/span&gt;
+
+&lt;span size=&quot;large&quot;  foreground=&quot;#90b5f9&quot;&gt;&lt;b&gt;The quickest way to install Dsslive in your computer&lt;/b&gt;&lt;/span&gt;
+&lt;span  foreground=&quot;#3b5da5&quot;&gt;
+You are about to install the  system you  are tasting and testing through this livecd. 
+it is a simple process of &lt;b&gt;3 steps&lt;/b&gt;,takes about &lt;b&gt;8 minutes&lt;/b&gt; and needs at least &lt;b&gt;1,5Gb&lt;/b&gt; 
+of  free disk space.&lt;/span&gt;</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">True</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">40</property>
+				  <property name="ypad">0</property>
+				  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				  <property name="width_chars">-1</property>
+				  <property name="single_line_mode">False</property>
+				  <property name="angle">0</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
+			    </widget>
+			  </child>
+			</widget>
+		      </child>
+		    </widget>
+		    <packing>
+		      <property name="padding">0</property>
+		      <property name="expand">True</property>
+		      <property name="fill">True</property>
+		    </packing>
 		  </child>
 		</widget>
 		<packing>
@@ -710,7 +1147,7 @@ Please note that User Name, Password and Computer Name must be single words with
 
 				  <child>
 				    <widget class="GtkLabel" id="user_err_2">
-				      <property name="label" translatable="yes">&lt;span foreground=&quot;#800000&quot;&gt;The &lt;b&gt;username&lt;/b&gt; contains capital letters (they are not allowed here)&lt;/span</property>
+				      <property name="label" translatable="yes">&lt;span foreground=&quot;#800000&quot;&gt;The &lt;b&gt;username&lt;/b&gt; contains capital letters (they are not allowed here)&lt;/span&gt;</property>
 				      <property name="use_underline">False</property>
 				      <property name="use_markup">True</property>
 				      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -878,7 +1315,7 @@ Please note that User Name, Password and Computer Name must be single words with
 
 				  <child>
 				    <widget class="GtkLabel" id="host_err_2">
-				      <property name="label" translatable="yes">&lt;span foreground=&quot;#800000&quot;&gt;The &lt;b&gt;hostanme&lt;/B&gt; contains white spaces (they are not allowed here).&lt;/span &gt;</property>
+				      <property name="label" translatable="yes">&lt;span foreground=&quot;#800000&quot;&gt;The &lt;b&gt;hostanme&lt;/b&gt; contains white spaces (they are not allowed here).&lt;/span &gt;</property>
 				      <property name="use_underline">False</property>
 				      <property name="use_markup">True</property>
 				      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -3392,58 +3829,87 @@ If you kept an intact home partition, you can now link it with the “/home” m
 		  </child>
 
 		  <child>
-		    <widget class="GtkVBox" id="vbox35">
-		      <property name="border_width">2</property>
+		    <widget class="GtkVBox" id="vbox45">
+		      <property name="border_width">16</property>
 		      <property name="visible">True</property>
-		      <property name="homogeneous">False</property>
+		      <property name="homogeneous">True</property>
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkImage" id="photo1">
+			<widget class="GtkViewport" id="viewport4">
 			  <property name="visible">True</property>
-			  <property name="xalign">0.5</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">30</property>
-			</widget>
-			<packing>
-			  <property name="padding">0</property>
-			  <property name="expand">False</property>
-			  <property name="fill">True</property>
-			</packing>
-		      </child>
+			  <property name="shadow_type">GTK_SHADOW_IN</property>
 
-		      <child>
-			<widget class="GtkLabel" id="goodbye_label1">
-			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">&lt;span size=&quot;x-large&quot; foreground=&quot;#3b5da5&quot;&gt;&lt;b&gt;The installation has been successfully completed.
+			  <child>
+			    <widget class="GtkEventBox" id="eventbox3">
+			      <property name="visible">True</property>
+			      <property name="visible_window">True</property>
+			      <property name="above_child">False</property>
 
-In order to work with your new free operative system you need to eject the CDLive and reboot your computer.&lt;/b&gt;&lt;/span&gt;</property>
-			  <property name="use_underline">False</property>
-			  <property name="use_markup">True</property>
-			  <property name="justify">GTK_JUSTIFY_CENTER</property>
-			  <property name="wrap">True</property>
-			  <property name="selectable">False</property>
-			  <property name="xalign">0.5</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">30</property>
-			  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
-			  <property name="width_chars">-1</property>
-			  <property name="single_line_mode">False</property>
-			  <property name="angle">0</property>
+			      <child>
+				<widget class="GtkHBox" id="hbox38">
+				  <property name="visible">True</property>
+				  <property name="homogeneous">False</property>
+				  <property name="spacing">0</property>
+
+				  <child>
+				    <widget class="GtkImage" id="photo1">
+				      <property name="visible">True</property>
+				      <property name="xalign">0.5</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">40</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">20</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <widget class="GtkLabel" id="label75">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">&lt;span size=&quot;x-large&quot; foreground=&quot;#3b5da5&quot;&gt;&lt;b&gt;The installation has been successfully completed.
+
+In order to work with your new free operative system you need to eject the 
+CDLive and reboot your computer.&lt;/b&gt;&lt;/span&gt;</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">True</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.5</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">40</property>
+				      <property name="ypad">0</property>
+				      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+				      <property name="width_chars">-1</property>
+				      <property name="single_line_mode">False</property>
+				      <property name="angle">0</property>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+				</widget>
+			      </child>
+			    </widget>
+			  </child>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
 			  <property name="expand">True</property>
-			  <property name="fill">False</property>
+			  <property name="fill">True</property>
 			</packing>
 		      </child>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
 		      <property name="expand">True</property>
-		      <property name="fill">False</property>
+		      <property name="fill">True</property>
 		    </packing>
 		  </child>
 		</widget>
@@ -3580,7 +4046,7 @@ In order to work with your new free operative system you need to eject the CDLiv
 		      <property name="visible">True</property>
 		      <property name="can_default">True</property>
 		      <property name="can_focus">True</property>
-		      <property name="label">gtk-media-previous</property>
+		      <property name="label">gtk-go-back</property>
 		      <property name="use_stock">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
 		      <property name="focus_on_click">True</property>
