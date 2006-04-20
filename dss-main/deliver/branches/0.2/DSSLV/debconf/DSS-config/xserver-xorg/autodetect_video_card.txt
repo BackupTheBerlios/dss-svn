@@ -1,5 +1,0 @@
-Name: xserver-xorg/autodetect_video_card
-Template: xserver-xorg/autodetect_video_card
-Value: true
-Owners: xserver-xorg
-
