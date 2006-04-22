@@ -1,1 +1,1 @@
-*.tar.bz2 usr/share/gfxboot/
+debian/*.tar.bz2 usr/share/gfxboot/
