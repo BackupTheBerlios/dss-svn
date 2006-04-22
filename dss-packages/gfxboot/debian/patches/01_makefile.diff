@@ -1,0 +1,45 @@
+--- doc/Makefile.orig	2006-04-22 09:22:07.000000000 +0200
++++ doc/Makefile	2006-04-22 09:22:42.000000000 +0200
+@@ -19,3 +19,8 @@
+ 
+ clean:
+ 	rm -rf *~ *.pdf *.html *.txt reference.xml *.dsl *.local
++
++install: all
++	install -m 755 -d $(DESTDIR)/usr/share/doc/gfxboot
++	install -m 644    gfxboot.html $(DESTDIR)/usr/share/doc/gfxboot/
++
+--- Makefile.orig	2006-04-22 09:20:41.000000000 +0200
++++ Makefile	2006-04-22 09:21:52.000000000 +0200
+@@ -3,15 +3,15 @@
+ CC	 = gcc
+ CFLAGS	 = -g -Wall -Wno-pointer-sign -O2 -fomit-frame-pointer
+ ifeq "$(ARCH)" "x86_64"
+-X11LIBS	 = /usr/X11/lib64
++X11LIBS	 = /usr/X11R6/lib64
+ else
+-X11LIBS	 = /usr/X11/lib
++X11LIBS	 = /usr/X11R6/lib
+ endif
+ THEMES	 = $(wildcard themes/*)
+ 
+ .PHONY: all themes clean install doc
+ 
+-all:	bin2c mkbootmsg bincode getx11font addblack
++all:	bin2c mkbootmsg bincode getx11font addblack doc
+ 
+ getx11font: getx11font.c
+ 	$(CC) $(CFLAGS) -L$(X11LIBS) $< -lX11 -o $@
+@@ -44,9 +44,9 @@
+ 	as --32 -ahlsn=jpeg.lst -o $@ $<
+ 
+ install: all
+-	install -d -m 755 $(DESTDIR)/usr/sbin $(DESTDIR)/usr/share/gfxboot
+-	install -m 755 mkbootmsg getx11font help2txt $(DESTDIR)/usr/sbin
+-	cp -a themes $(DESTDIR)/usr/share/gfxboot
++	install -d -m 755 $(DESTDIR)/usr/bin $(DESTDIR)/usr/share/gfxboot
++	install -m 755 mkbootmsg getx11font help2txt $(DESTDIR)/usr/share/gfxboot
++	#cp -a themes $(DESTDIR)/usr/share/gfxboot
+ 	cp -a bin $(DESTDIR)/usr/share/gfxboot
+ 
+ clean: themes doc
